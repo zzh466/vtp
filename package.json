@@ -18,7 +18,7 @@
     "test": "npm run unit && npm run e2e",
     "unit": "karma start test/unit/karma.conf.js",
     "postinstall": "",
-    "rebuild:devCTP": "node-gyp -j 16 rebuild --debug"
+    "rebuildCTP:dev": "node-gyp -j 16 rebuild --debug"
   },
   "build": {
     "productName": "vtp",
