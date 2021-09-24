@@ -17,7 +17,8 @@
     "pack:renderer": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.renderer.config.js",
     "test": "npm run unit && npm run e2e",
     "unit": "karma start test/unit/karma.conf.js",
-    "postinstall": ""
+    "postinstall": "",
+    "rebuild:devCTP": "node-gyp -j 16 rebuild --debug"
   },
   "build": {
     "productName": "vtp",
