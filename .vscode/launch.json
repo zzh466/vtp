@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug C/C++ Addon",
+            "type": "lldb",
+            "request": "launch",
+            "preLaunchTask": "npm: rebuildCTP:dev",
+            "program": "node",
+            "args": ["${workspaceFolder}/test/ctp/try.js"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "JS Debug Build",
+            "type": "node",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/test/ctp/try.js",
+            "preLaunchTask": "npm: buildCTP:dev"
+        }
+    ]
+}

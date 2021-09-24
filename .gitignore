@@ -9,3 +9,8 @@ npm-debug.log
 npm-debug.log.*
 thumbs.db
 !.gitkeep
+
+.vscode/c_cpp_properties.json
+node_modules/*
+.history/*
+*.con
