@@ -38,6 +38,7 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     console.log("rspUserLogin: info", JSON.stringify(info));
     login = true;
 
+    // 为空时即查询所有合约信息
     var instrumentID = "";
     trader.reqQryInstrument(instrumentID, function (field) {
         console.log('reqQryInstrument is callback');
