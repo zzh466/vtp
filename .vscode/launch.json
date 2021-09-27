@@ -16,7 +16,7 @@
             "request": "launch",
             "console": "integratedTerminal",
             "program": "${workspaceFolder}/test/ctp/try.js",
-            "preLaunchTask": "npm: buildCTP:dev"
+            "preLaunchTask": "npm: rebuildCTP:dev"
         }
     ]
 }

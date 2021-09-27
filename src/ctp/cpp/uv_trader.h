@@ -39,7 +39,7 @@ public:
   // 投资者结算结果确认
   // void  ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, void(*callback)(int, void*),int uuid);
   // 请求查询合约
-  //void ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrument, void(*callback)(int, void*),int uuid);
+  void ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrument, void(*callback)(int, void*),int uuid);
   // 请求查询资金账户
   void ReqQryTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, void (*callback)(int, void *), int uuid);
   // 请求查询投资者持仓
@@ -106,7 +106,7 @@ private:
   // 请求查询账户资金响应
   virtual void OnRspQryTradingAccount(CThostFtdcTradingAccountField *pTradingAccount, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast);
   // 请求查询合约响应
-  // virtual void OnRspQryInstrument(CThostFtdcInstrumentField *pInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast);
+  virtual void OnRspQryInstrument(CThostFtdcInstrumentField *pInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast);
   // 请求查询行情响应
   virtual void OnRspQryDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketData, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast);
   // 请求查询投资者结算结果响应

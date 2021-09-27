@@ -39,7 +39,7 @@ public:
 	///投资者结算结果确认
 	//static void ReqSettlementInfoConfirm(const FunctionCallbackInfo<Value>& args);
 	///请求查询合约
-	//static void ReqQryInstrument(const FunctionCallbackInfo<Value>& args);
+	static void ReqQryInstrument(const FunctionCallbackInfo<Value>& args);
 	///请求查询资金账户
 	static void ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args);
 	///请求查询投资者持仓
@@ -77,7 +77,7 @@ private:
 	//static void pkg_cb_rqinvestorposition(CbRtnField* data, Local<Value>*cbArray);
 	//static void pkg_cb_rqinvestorpositiondetail(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rqtradingaccount(CbRtnField *data, Local<Value> *cbArray);
-	//static void pkg_cb_rqinstrument(CbRtnField* data, Local<Value>*cbArray);
+	static void pkg_cb_rqinstrument(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rqdepthmarketdata(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqsettlementinfo(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rsperror(CbRtnField *data, Local<Value> *cbArray);

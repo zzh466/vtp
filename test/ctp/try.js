@@ -1,9 +1,5 @@
-// var path = require('path')
-// var nodePath = path.join(__dirname, '/build/Debug/ctp.node');
-// var ctp = require(nodePath);
-
-var ctp = require('../../build/Release/ctp.node');
-ctp.settings({log: true});
+var ctp = require('../../build/Debug/ctp.node');
+ctp.settings({ log: true });
 
 // simnow hanzhe
 var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
@@ -31,6 +27,7 @@ var m_AuthCode = "0000000000000000";
 
 console.log("try.js starting");
 
+var login = false;
 var trader = ctp.createTrader();
 
 trader.on("connect", function (result) {
@@ -70,27 +67,100 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   console.log("rspUserLogin: isLast", isLast);
   console.log("rspUserLogin: field", JSON.stringify(field));
   console.log("rspUserLogin: info", JSON.stringify(info));
-  trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function(result,iRequestID){
-    console.log('settlementinfo return val is '+result);
-  });
+  login = true;
+  // trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function (result, iRequestID) {
+  //   console.log('settlementinfo return val is ' + result);
+  // });
+
+  var instrumentID = "";
+    trader.reqQryInstrument(instrumentID, function (field) {
+      console.log('reqQryInstrument is callback');
+      console.log(field);
+    })
 });
 
-trader.on('rqSettlementInfo',function(requestId, isLast, field, info){
+var t_bInsertOrder = false;
+trader.on('rqSettlementInfo', function (requestId, isLast, field, info) {
   console.log("rqSettlementInfo: requestId", requestId);
   console.log("rqSettlementInfo: isLast", isLast);
-  console.log("rqSettlementInfo: field", JSON.stringify(field));
+  //console.log("rqSettlementInfo: field", JSON.stringify(field));
   console.log('rqsettlementinfo callback');
+
+  if (!t_bInsertOrder) {
+    t_bInsertOrder = true;
+
+    var instrumentID = "j2201";
+    var orderRef = "1632460886";
+    var direction = "0";
+    var combOffsetFlag = "0";
+    var limitPrice = "4840.1999999"
+    var volumeTotalOriginal = "1";
+    var requestID = "110";
+    var exchangeID = "DCE";
+    var insertOrder = {
+      "BrokerID": m_BrokerId,
+      "InvestorID": m_InvestorId,
+      "InstrumentID": instrumentID,
+      "OrderRef": orderRef,
+      "UserID": m_UserId,
+      //"OrderPriceType": "",
+      "Direction": direction,
+      "CombOffsetFlag": combOffsetFlag,
+      //"CombHedgeFlag": "",
+      "LimitPrice": limitPrice,
+      "VolumeTotalOriginal": volumeTotalOriginal,
+      //"TimeCondition": "",
+      //"GTDDate": "",
+      //"VolumeCondition": "",
+      //"MinVolume": "",
+      //"ContingentCondition": "",
+      //"StopPrice": "",
+      //"ForceCloseReason": "",
+      //"IsAutoSuspend": "",
+      //"BusinessUnit": "",
+      "RequestID": requestID,
+      //"UserForceClose": "",
+      //"IsSwapOrder": "",
+      "ExchangeID": exchangeID,
+      "InvestUnitID": "",
+      "AccountID": "",
+      "CurrencyID": "",
+      "ClientID": "",
+      "IPAddress": "",
+      "MacAddress": "",
+    };
+
+    // trader.reqOrderInsert(insertOrder, function (field) {
+    //   console.log('ReqOrderInsert is callback');
+    //   console.log(field);
+    // })
+  }
 });
 
-trader.on('rtnOrder',function(field){
+trader.on('rtnOrder', function (field) {
+  console.log('rtnOrder');
   console.log(field);
 });
-trader.on('rspError',function(requestId, isLast, field){
+
+trader.on('rtnTrade', function (field) {
+  console.log('rtnTrade');
+  console.log(field);
+})
+
+trader.on('rspError', function (requestId, isLast, field) {
   console.log(JSON.stringify(field));
 });
 
+trader.on('rqInstrument', function (requestId, isLast, field, info) {
+  console.log('rqInstrument');
+  console.log(JSON.stringify(requestId));
+  console.log(JSON.stringify(isLast));
+  console.log("rqInstrument: field", JSON.stringify(field));
+  console.log("rqInstrument: info", JSON.stringify(info));
+})
+
 trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
-  console.log("in js code:", 'connect return val is '+result);
+  console.log("in js code:", 'connect return val is ' + result);
 });
 
 console.log("in js code:", 'continute');

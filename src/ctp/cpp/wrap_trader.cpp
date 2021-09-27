@@ -60,11 +60,12 @@ void WrapTrader::Init(Isolate *isolate)
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqAuthenticate", ReqAuthenticate);
 
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqUserLogout", ReqUserLogout);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryInstrument", ReqQryInstrument);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryTradingAccount", ReqQryTradingAccount);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqOrderInsert", ReqOrderInsert);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqOrderAction", ReqOrderAction);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryDepthMarketData", ReqQryDepthMarketData);
-	NODE_SET_PROTOTYPE_METHOD(tpl, "reqQrySettlementInfo", ReqQrySettlementInfo);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "reqQrySettlementInfo", ReqQrySettlementInfo);
 
     constructor.Reset(isolate, tpl->GetFunction(context).ToLocalChecked());
 }
@@ -254,11 +255,11 @@ void WrapTrader::ReqAuthenticate(const FunctionCallbackInfo<Value> &args)
     String::Utf8Value appIDUtf8(isolate, args[3]->ToString(context).ToLocalChecked());
 
     CThostFtdcReqAuthenticateField req;
-	strcpy_s(req.BrokerID, ((std::string)*brokerUtf8).c_str());
-	strcpy_s(req.UserID, ((std::string)*userIDUtf8).c_str());
-	strcpy_s(req.UserProductInfo, "VTP");
-	strcpy_s(req.AuthCode, ((std::string)*authCodeUtf8).c_str());
-	strcpy_s(req.AppID, ((std::string)*appIDUtf8).c_str());
+    strcpy_s(req.BrokerID, ((std::string)*brokerUtf8).c_str());
+    strcpy_s(req.UserID, ((std::string)*userIDUtf8).c_str());
+    strcpy_s(req.UserProductInfo, "VTP");
+    strcpy_s(req.AuthCode, ((std::string)*authCodeUtf8).c_str());
+    strcpy_s(req.AppID, ((std::string)*appIDUtf8).c_str());
 
     int uuid = -1;
     if (!args[4]->IsUndefined() && args[4]->IsFunction())
@@ -353,6 +354,40 @@ void WrapTrader::ReqUserLogout(const FunctionCallbackInfo<Value> &args)
     return;
 }
 
+void WrapTrader::ReqQryInstrument(const FunctionCallbackInfo<Value> &args)
+{
+    Isolate *isolate = args.GetIsolate();
+    Local<Context> context = isolate->GetCurrentContext();
+    std::string log = "wrap_trader ReqQryInstrument------>";
+
+    if (args[0]->IsUndefined())
+    {
+        std::string _head = std::string(log);
+        logger_cout(_head.append(" Wrong arguments").c_str());
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
+        return;
+    }
+    int uuid = -1;
+    WrapTrader *obj = ObjectWrap::Unwrap<WrapTrader>(args.This());
+    if (!args[1]->IsUndefined() && args[1]->IsFunction())
+    {
+        uuid = ++s_uuid;
+        fun_rtncb_map[uuid].Reset(isolate, Local<Function>::Cast(args[1]));
+        std::string _head = std::string(log);
+        logger_cout(_head.append(" uuid is ").append(to_string(uuid)).c_str());
+    }
+
+    Local<String> instrumentId = args[0]->ToString(context).ToLocalChecked();
+    String::Utf8Value instrumentIdAscii(isolate, instrumentId);
+
+    CThostFtdcQryInstrumentField req;
+    memset(&req, 0, sizeof(req));
+    strcpy(req.InstrumentID, ((std::string)*instrumentIdAscii).c_str());
+    logger_cout(log.append(" ").append((std::string)*instrumentIdAscii).c_str());
+    obj->uvTrader->ReqQryInstrument(&req, FunRtnCallback, uuid);
+    return;
+}
+
 void WrapTrader::ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args)
 {
     Isolate *isolate = args.GetIsolate();
@@ -412,155 +447,164 @@ void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
         logger_cout(_head.append(" uuid is ").append(to_string(uuid)).c_str());
     }
     Local<Object> jsonObj = args[0]->ToObject(context).ToLocalChecked();
-    Local<Value> brokerId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "brokerId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> brokerId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked()).ToLocalChecked();
     if (brokerId->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->brokerId").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->BrokerID").ToLocalChecked()));
         return;
     }
     String::Utf8Value brokerId_(isolate, brokerId->ToString(context).ToLocalChecked());
-    Local<Value> investorId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "investorId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> investorId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked()).ToLocalChecked();
     if (investorId->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->investorId").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->InvestorID").ToLocalChecked()));
         return;
     }
     String::Utf8Value investorId_(isolate, investorId->ToString(context).ToLocalChecked());
-    Local<Value> instrumentId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "instrumentId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> instrumentId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked()).ToLocalChecked();
     if (instrumentId->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->instrumentId").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->InstrumentID").ToLocalChecked()));
         return;
     }
     String::Utf8Value instrumentId_(isolate, instrumentId->ToString(context).ToLocalChecked());
-    Local<Value> priceType = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "priceType").ToLocalChecked()).ToLocalChecked();
+    /*Local<Value> priceType = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "priceType").ToLocalChecked()).ToLocalChecked();
     if (priceType->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->priceType").ToLocalChecked()));
         return;
     }
-    String::Utf8Value priceType_(isolate, priceType->ToString(context).ToLocalChecked());
-    Local<Value> direction = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "direction").ToLocalChecked()).ToLocalChecked();
+    String::Utf8Value priceType_(isolate, priceType->ToString(context).ToLocalChecked());*/
+    Local<Value> direction = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "Direction").ToLocalChecked()).ToLocalChecked();
     if (direction->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->direction").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->Direction").ToLocalChecked()));
         return;
     }
     String::Utf8Value direction_(isolate, direction->ToString(context).ToLocalChecked());
-    Local<Value> combOffsetFlag = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "combOffsetFlag").ToLocalChecked()).ToLocalChecked();
+    Local<Value> combOffsetFlag = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "CombOffsetFlag").ToLocalChecked()).ToLocalChecked();
     if (combOffsetFlag->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->combOffsetFlag").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->CombOffsetFlag").ToLocalChecked()));
         return;
     }
     String::Utf8Value combOffsetFlag_(isolate, combOffsetFlag->ToString(context).ToLocalChecked());
-    Local<Value> combHedgeFlag = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "combHedgeFlag").ToLocalChecked()).ToLocalChecked();
+    /*Local<Value> combHedgeFlag = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "combHedgeFlag").ToLocalChecked()).ToLocalChecked();
     if (combHedgeFlag->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->combHedgeFlag").ToLocalChecked()));
         return;
     }
-    String::Utf8Value combHedgeFlag_(isolate, combHedgeFlag->ToString(context).ToLocalChecked());
-    Local<Value> vlimitPrice = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "limitPrice").ToLocalChecked()).ToLocalChecked();
+    String::Utf8Value combHedgeFlag_(isolate, combHedgeFlag->ToString(context).ToLocalChecked());*/
+    Local<Value> vlimitPrice = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "LimitPrice").ToLocalChecked()).ToLocalChecked();
     if (vlimitPrice->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->limitPrice").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->LimitPrice").ToLocalChecked()));
         return;
     }
     double limitPrice = vlimitPrice.As<Number>()->Value();
-    Local<Value> vvolumeTotalOriginal = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "volumeTotalOriginal").ToLocalChecked()).ToLocalChecked();
+    Local<Value> vvolumeTotalOriginal = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "VolumeTotalOriginal").ToLocalChecked()).ToLocalChecked();
     if (vvolumeTotalOriginal->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->volumeTotalOriginal").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->VolumeTotalOriginal").ToLocalChecked()));
         return;
     }
     int32_t volumeTotalOriginal = vvolumeTotalOriginal.As<Number>()->Value();
-    Local<Value> timeCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "timeCondition").ToLocalChecked()).ToLocalChecked();
+    /*Local<Value> timeCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "timeCondition").ToLocalChecked()).ToLocalChecked();
     if (timeCondition->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->timeCondition").ToLocalChecked()));
         return;
     }
-    String::Utf8Value timeCondition_(isolate, timeCondition->ToString(context).ToLocalChecked());
-    Local<Value> volumeCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "volumeCondition").ToLocalChecked()).ToLocalChecked();
+    String::Utf8Value timeCondition_(isolate, timeCondition->ToString(context).ToLocalChecked());*/
+    /*Local<Value> volumeCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "volumeCondition").ToLocalChecked()).ToLocalChecked();
     if (volumeCondition->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->volumeCondition").ToLocalChecked()));
         return;
     }
-    String::Utf8Value volumeCondition_(isolate, volumeCondition->ToString(context).ToLocalChecked());
-    Local<Value> vminVolume = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "minVolume").ToLocalChecked()).ToLocalChecked();
+    String::Utf8Value volumeCondition_(isolate, volumeCondition->ToString(context).ToLocalChecked());*/
+    /*Local<Value> vminVolume = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "minVolume").ToLocalChecked()).ToLocalChecked();
     if (vminVolume->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->minVolume").ToLocalChecked()));
         return;
     }
-    int32_t minVolume = vminVolume.As<Number>()->Value();
-    Local<Value> forceCloseReason = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "forceCloseReason").ToLocalChecked()).ToLocalChecked();
+    int32_t minVolume = vminVolume.As<Number>()->Value();*/
+    /*Local<Value> forceCloseReason = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "forceCloseReason").ToLocalChecked()).ToLocalChecked();
     if (forceCloseReason->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->forceCloseReason").ToLocalChecked()));
         return;
     }
-    String::Utf8Value forceCloseReason_(isolate, forceCloseReason->ToString(context).ToLocalChecked());
-    Local<Value> visAutoSuspend = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "isAutoSuspend").ToLocalChecked()).ToLocalChecked();
+    String::Utf8Value forceCloseReason_(isolate, forceCloseReason->ToString(context).ToLocalChecked());*/
+    /*Local<Value> visAutoSuspend = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "isAutoSuspend").ToLocalChecked()).ToLocalChecked();
     if (visAutoSuspend->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->isAutoSuspend").ToLocalChecked()));
         return;
     }
-    int32_t isAutoSuspend = visAutoSuspend.As<Number>()->Value();
-    Local<Value> vuserForceClose = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "userForceClose").ToLocalChecked()).ToLocalChecked();
+    int32_t isAutoSuspend = visAutoSuspend.As<Number>()->Value();*/
+    /*Local<Value> vuserForceClose = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "userForceClose").ToLocalChecked()).ToLocalChecked();
     if (vuserForceClose->IsUndefined())
     {
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->userForceClose").ToLocalChecked()));
         return;
     }
-    int32_t userForceClose = vuserForceClose.As<Number>()->Value();
+    int32_t userForceClose = vuserForceClose.As<Number>()->Value();*/
 
     CThostFtdcInputOrderField req;
     memset(&req, 0, sizeof(req));
     log.append(" ");
 
-    Local<Value> orderRef = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "orderRef").ToLocalChecked()).ToLocalChecked();
+    Local<Value> orderRef = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "OrderRef").ToLocalChecked()).ToLocalChecked();
     if (!orderRef->IsUndefined())
     {
         String::Utf8Value orderRef_(isolate, orderRef->ToString(context).ToLocalChecked());
         strcpy(req.OrderRef, ((std::string)*orderRef_).c_str());
         log.append("orderRef:").append((std::string)*orderRef_).append("|");
     }
-
-    Local<Value> vstopPrice = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "stopPrice").ToLocalChecked()).ToLocalChecked();
+    /*Local<Value> vstopPrice = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "stopPrice").ToLocalChecked()).ToLocalChecked();
     if (!vstopPrice->IsUndefined())
     {
         double stopPrice = vstopPrice.As<Number>()->Value();
         req.StopPrice = stopPrice;
         log.append("stopPrice:").append(to_string(stopPrice)).append("|");
-    }
-    Local<Value> contingentCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "contingentCondition").ToLocalChecked()).ToLocalChecked();
+    }*/
+    /*Local<Value> contingentCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "contingentCondition").ToLocalChecked()).ToLocalChecked();
     if (!contingentCondition->IsUndefined())
     {
         String::Utf8Value contingentCondition_(isolate, contingentCondition->ToString(context).ToLocalChecked());
         req.ContingentCondition = ((std::string)*contingentCondition_)[0];
         log.append("contingentCondition:").append((std::string)*contingentCondition_).append("|");
-    }
-
+    }*/
     strcpy(req.BrokerID, ((std::string)*brokerId_).c_str());
     strcpy(req.InvestorID, ((std::string)*investorId_).c_str());
     strcpy(req.InstrumentID, ((std::string)*instrumentId_).c_str());
-    req.OrderPriceType = ((std::string)*priceType_)[0];
+    req.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
+    //req.OrderPriceType = ((std::string)*priceType_)[0];
     req.Direction = ((std::string)*direction_)[0];
     req.CombOffsetFlag[0] = ((std::string)*combOffsetFlag_)[0];
-    req.CombHedgeFlag[0] = ((std::string)*combHedgeFlag_)[0];
+    memset(req.CombHedgeFlag, 0, sizeof(req.CombHedgeFlag));
+    req.CombHedgeFlag[0] = THOST_FTDC_HF_Speculation;
+    //req.CombHedgeFlag[0] = ((std::string)*combHedgeFlag_)[0];
     req.LimitPrice = limitPrice;
     req.VolumeTotalOriginal = volumeTotalOriginal;
-    req.TimeCondition = ((std::string)*timeCondition_)[0];
-    req.VolumeCondition = ((std::string)*volumeCondition_)[0];
-    req.MinVolume = minVolume;
-    req.ForceCloseReason = ((std::string)*forceCloseReason_)[0];
-    req.IsAutoSuspend = isAutoSuspend;
-    req.UserForceClose = userForceClose;
-    logger_cout(log.append("brokerID:").append((std::string)*brokerId_).append("|").append("investorID:").append((std::string)*investorId_).append("|").append("instrumentID:").append((std::string)*instrumentId_).append("|").append("priceType:").append((std::string)*priceType_).append("|").append("direction:").append((std::string)*direction_).append("|").append("comboffsetFlag:").append((std::string)*combOffsetFlag_).append("|").append("combHedgeFlag:").append((std::string)*combHedgeFlag_).append("|").append("limitPrice:").append(to_string(limitPrice)).append("|").append("volumnTotalOriginal:").append(to_string(volumeTotalOriginal)).append("|").append("timeCondition:").append((std::string)*timeCondition_).append("|").append("volumeCondition:").append((std::string)*volumeCondition_).append("|").append("minVolume:").append(to_string(minVolume)).append("|").append("forceCloseReason:").append((std::string)*forceCloseReason_).append("|").append("isAutoSuspend:").append(to_string(isAutoSuspend)).append("|").append("useForceClose:").append(to_string(userForceClose)).append("|").c_str());
+    req.TimeCondition = THOST_FTDC_TC_GFD;
+    memset(req.GTDDate, 0, sizeof(req.GTDDate));
+    //req.TimeCondition = ((std::string)*timeCondition_)[0];
+    req.VolumeCondition = THOST_FTDC_VC_AV;
+    //req.VolumeCondition = ((std::string)*volumeCondition_)[0];
+    req.MinVolume = 1;
+    req.ContingentCondition = THOST_FTDC_CC_Immediately;
+    memset(&(req.StopPrice), 0, sizeof(req.StopPrice));
+    req.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
+    req.IsAutoSuspend = 0;
+    memset(req.BusinessUnit, 0, sizeof(req.BusinessUnit));
+    req.UserForceClose = 0;
+    req.IsSwapOrder = 0;
+    logger_cout(
+        log.append("brokerID:").append((std::string)*brokerId_).append("|").append("investorID:").append((std::string)*investorId_).append("|").append("instrumentID:").append((std::string)*instrumentId_).append("|").append("direction:").append((std::string)*direction_).append("|").append("comboffsetFlag:").append((std::string)*combOffsetFlag_).append("|").append("limitPrice:").append(to_string(limitPrice)).append("|").append("volumnTotalOriginal:").append(to_string(volumeTotalOriginal)).append("|").c_str());
     obj->uvTrader->ReqOrderInsert(&req, FunRtnCallback, uuid);
     return;
 }
@@ -590,24 +634,24 @@ void WrapTrader::ReqOrderAction(const FunctionCallbackInfo<Value> &args)
     }
 
     Local<Object> jsonObj = args[0]->ToObject(context).ToLocalChecked();
-    Local<Value> vbrokerId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "brokerId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> vbrokerId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked()).ToLocalChecked();
     if (vbrokerId->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->brokerId").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->BrokerID").ToLocalChecked()));
         return;
     }
     String::Utf8Value brokerId_(isolate, vbrokerId->ToString(context).ToLocalChecked());
-    Local<Value> vinvestorId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "investorId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> vinvestorId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked()).ToLocalChecked();
     if (vinvestorId->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->investorId").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->InvestorID").ToLocalChecked()));
         return;
     }
     String::Utf8Value investorId_(isolate, vinvestorId->ToString(context).ToLocalChecked());
-    Local<Value> vinstrumentId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "instrumentId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> vinstrumentId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked()).ToLocalChecked();
     if (vinstrumentId->IsUndefined())
     {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->instrumentId").ToLocalChecked()));
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->InstrumentID").ToLocalChecked()));
         return;
     }
     String::Utf8Value instrumentId_(isolate, vinstrumentId->ToString(context).ToLocalChecked());
@@ -623,7 +667,7 @@ void WrapTrader::ReqOrderAction(const FunctionCallbackInfo<Value> &args)
     memset(&req, 0, sizeof(req));
 
     log.append(" ");
-    Local<Value> vorderRef = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "orderRef").ToLocalChecked()).ToLocalChecked();
+    Local<Value> vorderRef = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "OrderRef").ToLocalChecked()).ToLocalChecked();
     if (!vorderRef->IsUndefined())
     {
         String::Utf8Value orderRef_(isolate, vorderRef->ToString(context).ToLocalChecked());
@@ -703,7 +747,7 @@ void WrapTrader::ReqQryDepthMarketData(const FunctionCallbackInfo<Value> &args)
     return;
 }
 
-void WrapTrader::ReqQrySettlementInfo(const FunctionCallbackInfo<Value>& args)
+void WrapTrader::ReqQrySettlementInfo(const FunctionCallbackInfo<Value> &args)
 {
     Isolate *isolate = args.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();
@@ -734,7 +778,7 @@ void WrapTrader::ReqQrySettlementInfo(const FunctionCallbackInfo<Value>& args)
     strcpy(req.BrokerID, ((std::string)*brokerIDUtf8).c_str());
     strcpy(req.InvestorID, ((std::string)*investorIDUtf8).c_str());
     logger_cout(log.append(" ").append((std::string)*brokerIDUtf8).append("|").append(" ").append((std::string)*investorIDUtf8).append("|").c_str());
-    
+
     WrapTrader *obj = ObjectWrap::Unwrap<WrapTrader>(args.Holder());
     obj->uvTrader->ReqQrySettlementInfo(&req, FunRtnCallback, uuid);
     return;
@@ -910,14 +954,15 @@ void WrapTrader::FunCallback(CbRtnField *data)
 
         break;
     }
-        //        case T_ON_RQINSTRUMENT: {
-        //            Local <Value> argv[4];
-        //            pkg_cb_rqinstrument(data, argv);
-        //            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        //			fn->Call(isolate->GetCurrentContext()->Global(), 4, argv);
-        //
-        //            break;
-        //        }
+    case T_ON_RQINSTRUMENT:
+    {
+        Local<Value> argv[4];
+        pkg_cb_rqinstrument(data, argv);
+        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+
+        break;
+    }
     case T_ON_RQDEPTHMARKETDATA:
     {
         Local<Value> argv[4];
@@ -926,8 +971,9 @@ void WrapTrader::FunCallback(CbRtnField *data)
         fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
         break;
     }
-    case T_ON_RQSETTLEMENTINFO: {
-        Local <Value> argv[4];
+    case T_ON_RQSETTLEMENTINFO:
+    {
+        Local<Value> argv[4];
         pkg_cb_rqsettlementinfo(data, argv);
         Local<Function> fn = Local<Function>::New(isolate, cIt->second);
         fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
@@ -972,12 +1018,12 @@ void WrapTrader::pkg_cb_userlogin(CbRtnField *data, Local<Value> *cbArray)
     Isolate *isolate = Isolate::GetCurrent();
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
-    
+
     if (data->rtnField != NULL)
     {
         CThostFtdcRspUserLoginField *pRspUserLogin = static_cast<CThostFtdcRspUserLoginField *>(data->rtnField);
         Local<Object> jsonRtn = Object::New(isolate);
-        
+
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "TradingDay").ToLocalChecked(),
                      String::NewFromUtf8(isolate, pRspUserLogin->TradingDay).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "LoginTime").ToLocalChecked(),
@@ -998,14 +1044,14 @@ void WrapTrader::pkg_cb_userlogin(CbRtnField *data, Local<Value> *cbArray)
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "CZCETime").ToLocalChecked(), String::NewFromUtf8(isolate, pRspUserLogin->CZCETime).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "FFEXTime").ToLocalChecked(), String::NewFromUtf8(isolate, pRspUserLogin->FFEXTime).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "INETime").ToLocalChecked(), String::NewFromUtf8(isolate, pRspUserLogin->INETime).ToLocalChecked());
-        
+
         *(cbArray + 2) = jsonRtn;
     }
     else
     {
         *(cbArray + 2) = Object::New(isolate);
     }
-    
+
     *cbArray = Number::New(isolate, data->nRequestID);
     *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
     *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
@@ -1544,6 +1590,50 @@ void WrapTrader::pkg_cb_rqtradingaccount(CbRtnField *data, Local<Value> *cbArray
     return;
 }
 
+void WrapTrader::pkg_cb_rqinstrument(CbRtnField *data, Local<Value> *cbArray) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    Local<Context> context = isolate->GetCurrentContext();
+
+    Local<Object> jsonRtn = Object::New(isolate);
+    if (data->rtnField != NULL){
+        CThostFtdcInstrumentField *pInstrument = static_cast<CThostFtdcInstrumentField*>(data->rtnField);
+        jsonRtn = Object::New(isolate);
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->InstrumentID).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ExchangeID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->ExchangeID).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentName").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->InstrumentName).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ExchangeInstID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->ExchangeInstID).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ProductID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->ProductID).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ProductClass").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pInstrument->ProductClass).c_str()).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "DeliveryYear").ToLocalChecked(), Number::New(isolate, pInstrument->DeliveryYear));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "DeliveryMonth").ToLocalChecked(), Number::New(isolate, pInstrument->DeliveryMonth));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "MaxMarketOrderVolume").ToLocalChecked(), Number::New(isolate, pInstrument->MaxMarketOrderVolume));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "MinMarketOrderVolume").ToLocalChecked(), Number::New(isolate, pInstrument->MinMarketOrderVolume));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "MaxLimitOrderVolume").ToLocalChecked(), Number::New(isolate, pInstrument->MaxLimitOrderVolume));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "MinLimitOrderVolume").ToLocalChecked(), Number::New(isolate, pInstrument->MinLimitOrderVolume));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "VolumeMultiple").ToLocalChecked(), Number::New(isolate, pInstrument->VolumeMultiple));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "PriceTick").ToLocalChecked(), Number::New(isolate, pInstrument->PriceTick));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "CreateDate").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->CreateDate).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "OpenDate").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->OpenDate).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ExpireDate").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->ExpireDate).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "StartDelivDate").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->StartDelivDate).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "EndDelivDate").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->EndDelivDate).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstLifePhase").ToLocalChecked(), Number::New(isolate, pInstrument->InstLifePhase));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "IsTrading").ToLocalChecked(), Number::New(isolate, pInstrument->IsTrading));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "PositionType").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pInstrument->PositionType).c_str()).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "PositionDateType").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pInstrument->PositionDateType).c_str()).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "LongMarginRatio").ToLocalChecked(), Number::New(isolate, pInstrument->LongMarginRatio));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ShortMarginRatio").ToLocalChecked(), Number::New(isolate, pInstrument->ShortMarginRatio));
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "MaxMarginSideAlgorithm").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pInstrument->MaxMarginSideAlgorithm).c_str()).ToLocalChecked());
+	}
+    
+	*cbArray = Number::New(isolate, data->nRequestID);
+	*(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    *(cbArray + 2) = jsonRtn;
+    *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
+	return;
+}
+
 void WrapTrader::pkg_cb_rqdepthmarketdata(CbRtnField *data, Local<Value> *cbArray)
 {
     Isolate *isolate = Isolate::GetCurrent();
@@ -1610,28 +1700,30 @@ void WrapTrader::pkg_cb_rqdepthmarketdata(CbRtnField *data, Local<Value> *cbArra
     return;
 }
 
-void WrapTrader::pkg_cb_rqsettlementinfo(CbRtnField* data, Local<Value>*cbArray) {
+void WrapTrader::pkg_cb_rqsettlementinfo(CbRtnField *data, Local<Value> *cbArray)
+{
     Isolate *isolate = Isolate::GetCurrent();
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
 
-    Local<Object> jsonRtn = Object::New(isolate);
-    if(data->rtnField!=NULL){
-	    CThostFtdcSettlementInfoField *pSettlementInfo = static_cast<CThostFtdcSettlementInfoField*>(data->rtnField);
-		jsonRtn = Object::New(isolate);
-		jsonRtn->Set(context, String::NewFromUtf8(isolate, "TradingDay").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->TradingDay).ToLocalChecked());
-		jsonRtn->Set(context, String::NewFromUtf8(isolate, "SettlementID").ToLocalChecked(), Int32::New(isolate, pSettlementInfo->SettlementID));
-		jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->BrokerID).ToLocalChecked());
-		jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->InvestorID).ToLocalChecked());
-		jsonRtn->Set(context, String::NewFromUtf8(isolate, "SequenceNo").ToLocalChecked(), Int32::New(isolate, pSettlementInfo->SequenceNo));
-	    jsonRtn->Set(context, String::NewFromUtf8(isolate, "Content").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->Content).ToLocalChecked());
-	}
-    
-	*cbArray = Int32::New(isolate, data->nRequestID);
-	*(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    Local<Object> jsonRtn;
+    if (data->rtnField != NULL)
+    {
+        CThostFtdcSettlementInfoField *pSettlementInfo = static_cast<CThostFtdcSettlementInfoField *>(data->rtnField);
+        jsonRtn = Object::New(isolate);
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "TradingDay").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->TradingDay).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "SettlementID").ToLocalChecked(), Int32::New(isolate, pSettlementInfo->SettlementID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->BrokerID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->InvestorID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "SequenceNo").ToLocalChecked(), Int32::New(isolate, pSettlementInfo->SequenceNo));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "Content").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->Content).ToLocalChecked());
+    }
+
+    *cbArray = Int32::New(isolate, data->nRequestID);
+    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
     *(cbArray + 2) = jsonRtn;
-	*(cbArray + 3) = pkg_rspinfo(data->rspInfo);
-	return;
+    *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
+    return;
 }
 
 void WrapTrader::pkg_cb_rsperror(CbRtnField *data, Local<Value> *cbArray)
