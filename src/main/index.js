@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, ipcRenderer } from 'electron'
-import  { receiveData }  from '../ctp/dataStruct'
+import  { SPreceiveData }  from '../ctp/dataStruct'
 import '../renderer/store'
 import path from 'path';
 import net from 'net';
@@ -132,7 +132,7 @@ ipcMain.on('start-receive', (event, args) =>{
 
   // 接收数据
 
-  const decodeMsg = new cppmsg.msg(receiveData)
+  const decodeMsg = new cppmsg.msg(SPreceiveData)
   let cacheArr = [];
   function parseReceiveData(data){
     let flag = 0 

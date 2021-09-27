@@ -1,4 +1,4 @@
-const receiveData = [
+const SPreceiveData = [
     ['TradingDay', 'string', 9],//交易日
     ['InstrumentID', 'string', 31],//合约代码
     ['ExchangeID', 'string', 9], //交易所代码
@@ -30,4 +30,4 @@ const receiveData = [
     ['AveragePrice', 'double'],//当日均价
     ['ActionDay', 'string', 16]]) //业务日期
 
-export  { receiveData }
+export  { SPreceiveData }
