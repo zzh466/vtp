@@ -1,10 +1,10 @@
 import { app, BrowserWindow, ipcMain, ipcRenderer } from 'electron'
-import  { receiveData }  from '../ctp/dataStruct'
+import  { SPreceiveData }  from '../ctp/dataStruct'
 import '../renderer/store'
 import path from 'path';
 import net from 'net';
 import cppmsg from 'cppmsg';
-
+import { Buffer } from 'buffer';
 
 
 /**
@@ -132,30 +132,41 @@ ipcMain.on('start-receive', (event, args) =>{
 
   // 接收数据
 
-  const decodeMsg = new cppmsg.msg(receiveData)
-  
+  const decodeMsg = new cppmsg.msg(SPreceiveData)
+  let cacheArr = [];
+  function parseReceiveData(data){
+    let flag = 0 
+    while(flag < data.length){
+      const parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
+      const {InstrumentID } = parseData; 
+      const win = opedwindow.find(({id}) => InstrumentID === id);
+      // console.log(data.length, InstrumentID, UpdateTime)
+      if(win && win.sender){ 
+        // console.log(InstrumentID, UpdateTime, data.length)  
+        
+          win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
+      }
+      flag = flag + 416;
+    }
+  }
   tcp_client.on('data',function(data){
    
     if(data.length % 416 === 0){
-        
-        let flag = 0;
-       
-      
-        while(flag < data.length){
-          const parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
-          const {InstrumentID, UpdateTime } = parseData; 
-        
-         
-          const win = opedwindow.find(({id}) => InstrumentID === id);
-          // console.log(data.length, InstrumentID, UpdateTime)
-          if(win && win.sender){ 
-            // console.log(InstrumentID, UpdateTime, data.length)  
-            console.log('eee----',  InstrumentID, UpdateTime)
-              win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
-          }
-          flag = flag + 416;
-        }
-      
+      parseReceiveData(data);
+    }else {
+      //建立缓冲区 解析分片发送数据
+      cacheArr.push(data);
+      const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+      if(length === 9056){
+        //删除连接成功的无用报文
+        cacheArr =[];
+        return;
+      }
+      console.log.apply(console, cacheArr.map(a => a.length))
+      if(length % 416 === 0){
+        parseReceiveData(Buffer.concat(cacheArr, length));
+        cacheArr =[]
+      }
     }
     // event.sender.send('receive-tarde-data', decodeMsg.decodeMsg(data.slice(8)))
   })

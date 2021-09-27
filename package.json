@@ -24,7 +24,7 @@
     "productName": "vtp",
     "appId": "xinqi",
     "directories": {
-      "output": "build"
+      "output": "electron-build"
     },
     "files": [
       "dist/electron/**/*"
@@ -45,13 +45,13 @@
       ]
     },
     "mac": {
-      "icon": "build/icons/icon.icns"
+      "icon": "electron-build/icons/icon.icns"
     },
     "win": {
-      "icon": "build/icons/icon.ico"
+      "icon": "electron-build/icons/icon.ico"
     },
     "linux": {
-      "icon": "build/icons"
+      "icon": "electron-build/icons"
     }
   },
   "dependencies": {
@@ -61,7 +61,8 @@
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
     "vuex-electron": "^1.0.0",
-    "cppmsg": "^1.2.1"
+    "cppmsg": "^1.2.1",
+    "echarts": "^5.2.1"
   },
   "devDependencies": {
     "ajv": "^6.5.0",
