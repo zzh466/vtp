@@ -13,7 +13,10 @@
         <div class="doc">
           <div class="title">Getting Started</div>
             <p v-for='ins in InstrumentIDs' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
-          <button @click="open">Start</button><br><br>
+             <p v-for='ins in ids' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
+          <button @click="open">商品</button>
+          <button @click="open1">郑商所</button>
+          <br><br>
         </div>
         <div class="doc">
           <div class="title alt">Other Documentation</div>
@@ -49,6 +52,11 @@
         
       }
     },
+    data(){
+      return {
+        ids: ['SF201','SF205','SM201','SM205']
+      }
+    },
     methods: {
       start(ins) {
         ipcRenderer.send('open-window', ins);
@@ -56,7 +64,10 @@
         this.$store.dispatch('updateIns', ins);
       },
       open () {
-         ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18198, instrumentIDs: this.InstrumentIDs});
+         ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18198, instrumentIDs: this.InstrumentIDs, type: 'SP',  iCmdID: 101});
+      },
+      open1(){
+        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18188, instrumentIDs: this.ids, type: 'ZCS', iCmdID: 101});
       }
     }
   }

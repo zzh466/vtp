@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, ipcRenderer } from 'electron'
-import  { SPreceiveData }  from '../ctp/dataStruct'
+import  { receiveData }  from '../ctp/dataStruct'
 import '../renderer/store'
 import path from 'path';
 import net from 'net';
@@ -78,16 +78,17 @@ ipcMain.on('open-window', (evnt, insId) => {
 })
 
 
-let tcp_client = null;
+let tcp_client_list = [];
 app.on('ready', createWindow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-  if(tcp_client) {
-    tcp_client.destroy()
-  }
+ 
+    tcp_client_list.forEach(e => e.destroy());
+    tcp_client_list = []
+ 
 })
 
 app.on('activate', () => {
@@ -103,8 +104,9 @@ ipcMain.on('register-event',  (event, args) =>{
   
 })
 ipcMain.on('start-receive', (event, args) =>{
-  const {host, port, instrumentIDs } = args
-  tcp_client = new net.Socket();
+  const {host, port, instrumentIDs, type,  iCmdID, size = 36} = args
+  const tcp_client = new net.Socket();
+  tcp_client_list.push(tcp_client)
   tcp_client.connect({host, port},function(){
     console.log('connected to Server');
     
@@ -115,29 +117,40 @@ ipcMain.on('start-receive', (event, args) =>{
       ['Stru_ReqSubscribe', 'object', subscribe]
     ])
     instrumentIDs.forEach((InstrumentID, index) => {
-      console.log(instrumentIDs, InstrumentID)
+     
       tcp_client.write(msg.encodeMsg2({
-        size: 36,
-        iCmdID: 101,
+        size,
+        iCmdID,
         Stru_ReqSubscribe: {
           RequestID: index + 2,
           InstrumentID: InstrumentID
         }
       }))
-    });
-    
+    })
 
     console.log('success')
   })
+  const decodeMsg = new cppmsg.msg(receiveData['SP'])
 
-  // 接收数据
-
-  const decodeMsg = new cppmsg.msg(SPreceiveData)
+  const decodeKey = new cppmsg.msg([
+    ['key', 'uint8'],
+  ])
   let cacheArr = [];
   function parseReceiveData(data){
     let flag = 0 
     while(flag < data.length){
-      const parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
+      let parseData;
+      if(type === 'ZCS'){
+        
+        const key = decodeKey.decodeMsg(data.slice(8, 9)).key;
+        console.log(key)
+        // for(let i = 1; i<416 ; i++){
+        //   data[i] = data[i] ^ key;
+        // }
+      }
+      parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
+      
+      console.log(parseData)
       const {InstrumentID } = parseData; 
       const win = opedwindow.find(({id}) => InstrumentID === id);
       // console.log(data.length, InstrumentID, UpdateTime)
@@ -150,11 +163,11 @@ ipcMain.on('start-receive', (event, args) =>{
     }
   }
   tcp_client.on('data',function(data){
-   
     if(data.length % 416 === 0){
       parseReceiveData(data);
     }else {
       //建立缓冲区 解析分片发送数据
+   
       cacheArr.push(data);
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
       if(length === 9056){
@@ -162,7 +175,6 @@ ipcMain.on('start-receive', (event, args) =>{
         cacheArr =[];
         return;
       }
-      console.log.apply(console, cacheArr.map(a => a.length))
       if(length % 416 === 0){
         parseReceiveData(Buffer.concat(cacheArr, length));
         cacheArr =[]
@@ -178,6 +190,10 @@ ipcMain.on('start-receive', (event, args) =>{
   tcp_client.on('error', function () {
     console.log('tcp_client error!');
   })
+
+  // 接收数据
+
+  
   // let a =0
   // setInterval(() => {
   //   console.log(a, opedwindow)
