@@ -461,6 +461,13 @@ void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
         return;
     }
     String::Utf8Value investorId_(isolate, investorId->ToString(context).ToLocalChecked());
+    Local<Value> userId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "UserID").ToLocalChecked()).ToLocalChecked();
+    if (userId->IsUndefined())
+    {
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->UserID").ToLocalChecked()));
+        return;
+    }
+    String::Utf8Value userId_(isolate, userId->ToString(context).ToLocalChecked());
     Local<Value> instrumentId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked()).ToLocalChecked();
     if (instrumentId->IsUndefined())
     {
@@ -580,6 +587,7 @@ void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
     }*/
     strcpy(req.BrokerID, ((std::string)*brokerId_).c_str());
     strcpy(req.InvestorID, ((std::string)*investorId_).c_str());
+    strcpy(req.UserID, ((std::string)*userId_).c_str());
     strcpy(req.InstrumentID, ((std::string)*instrumentId_).c_str());
     req.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
     //req.OrderPriceType = ((std::string)*priceType_)[0];
@@ -1350,11 +1358,12 @@ void WrapTrader::pkg_cb_rtnorder(CbRtnField *data, Local<Value> *cbArray)
     Isolate *isolate = Isolate::GetCurrent();
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
-
+    
+    Local<Object> jsonRtn = Object::New(isolate);
     if (data->rtnField)
     {
         CThostFtdcOrderField *pOrder = static_cast<CThostFtdcOrderField *>(data->rtnField);
-        Local<Object> jsonRtn = Object::New(isolate);
+        jsonRtn = Object::New(isolate);
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->BrokerID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->InvestorID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->InstrumentID).ToLocalChecked());
@@ -1412,12 +1421,9 @@ void WrapTrader::pkg_cb_rtnorder(CbRtnField *data, Local<Value> *cbArray)
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "RelativeOrderSysID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->RelativeOrderSysID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "ZCETotalTradedVolume").ToLocalChecked(), Number::New(isolate, pOrder->ZCETotalTradedVolume));
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "IsSwapOrder").ToLocalChecked(), Number::New(isolate, pOrder->IsSwapOrder));
-        *cbArray = jsonRtn;
     }
-    else
-    {
-        *cbArray = Local<Value>::New(isolate, Undefined(isolate));
-    }
+
+    *cbArray = jsonRtn;
     return;
 }
 
@@ -1426,13 +1432,12 @@ void WrapTrader::pkg_cb_rqtrade(CbRtnField *data, Local<Value> *cbArray)
     Isolate *isolate = Isolate::GetCurrent();
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
-
-    *cbArray = Number::New(isolate, data->nRequestID);
-    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    
+    Local<Object> jsonRtn = Object::New(isolate);
     if (data->rtnField)
     {
         CThostFtdcTradeField *pTrade = static_cast<CThostFtdcTradeField *>(data->rtnField);
-        Local<Object> jsonRtn = Object::New(isolate);
+        jsonRtn = Object::New(isolate);
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->BrokerID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InvestorID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InstrumentID).ToLocalChecked());
@@ -1463,12 +1468,11 @@ void WrapTrader::pkg_cb_rqtrade(CbRtnField *data, Local<Value> *cbArray)
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "SettlementID").ToLocalChecked(), Number::New(isolate, pTrade->SettlementID));
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerOrderSeq").ToLocalChecked(), Number::New(isolate, pTrade->BrokerOrderSeq));
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "TradeSource").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->TradeSource).c_str()).ToLocalChecked());
-        *(cbArray + 2) = jsonRtn;
     }
-    else
-    {
-        *(cbArray + 2) = Local<Value>::New(isolate, Undefined(isolate));
-    }
+    
+    *cbArray = Number::New(isolate, data->nRequestID);
+    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    *(cbArray + 2) = jsonRtn;
     *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
     return;
 }
@@ -1479,10 +1483,11 @@ void WrapTrader::pkg_cb_rtntrade(CbRtnField *data, Local<Value> *cbArray)
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
 
+    Local<Object> jsonRtn = Object::New(isolate);
     if (data->rtnField)
     {
         CThostFtdcTradeField *pTrade = static_cast<CThostFtdcTradeField *>(data->rtnField);
-        Local<Object> jsonRtn = Object::New(isolate);
+        jsonRtn = Object::New(isolate);
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->BrokerID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InvestorID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InstrumentID).ToLocalChecked());
@@ -1513,12 +1518,9 @@ void WrapTrader::pkg_cb_rtntrade(CbRtnField *data, Local<Value> *cbArray)
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "SettlementID").ToLocalChecked(), Number::New(isolate, pTrade->SettlementID));
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerOrderSeq").ToLocalChecked(), Number::New(isolate, pTrade->BrokerOrderSeq));
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "TradeSource").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->TradeSource).c_str()).ToLocalChecked());
-        *cbArray = jsonRtn;
     }
-    else
-    {
-        *cbArray = Local<Value>::New(isolate, Undefined(isolate));
-    }
+
+    *cbArray = jsonRtn;
     return;
 }
 

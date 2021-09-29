@@ -455,7 +455,6 @@ void uv_trader::_async(uv_work_t *work)
 		CThostFtdcInputOrderField *_pInputOrder = static_cast<CThostFtdcInputOrderField *>(baton->args);
 		baton->nResult = uv_trader_obj->m_pApi->ReqOrderInsert(_pInputOrder, baton->iRequestID);
 		logger_cout(log.append("invoke ReqOrderInsert,the result:").append(to_string(baton->nResult)).c_str());
-
 		break;
 	}
 	case T_ACTION_RE:
