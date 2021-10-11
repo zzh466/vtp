@@ -64,8 +64,10 @@ ipcMain.on('open-window', (evnt, insId) => {
     childwin.on('close', function(){
       
       const index = opedwindow.findIndex(({id}) => id === insId);
+      const last = opedwindow[index + 1] ||  opedwindow[index - 1] || {}
       opedwindow.splice(index, 1);
       evnt.sender.send(`remove-window`, insId)
+      evnt.sender.send('change-ins', last.id)
     })
     childwin.on('focus', function(){
       evnt.sender.send('change-ins', insId)

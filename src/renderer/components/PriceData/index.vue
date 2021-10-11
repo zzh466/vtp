@@ -12,7 +12,7 @@ import Chart from './chart'
 export default {
   mounted(){
       const chartDom = document.getElementById('can');
-      this.chart = new Chart(chartDom, this.width, this.height, 0.5)
+      this.chart = new Chart(chartDom, this.width, this.height, 0.2)
       console.log(this.$route.query.id)
       ipcRenderer.send('register-event', this.$route.query.id);
       ipcRenderer.on(`receive-${this.$route.query.id}`, (event, arg) => {

@@ -105,9 +105,9 @@ class Chart {
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
         ctx.fillStyle = BUYBACKGROUND;
-        ctx.fillRect(_x, y, buyIndex *10 + 10,this.height);
+        ctx.fillRect(_x, y, (buyIndex-start) *10 + 10,this.height);
         ctx.fillStyle = ASKBACKGROUND;
-        ctx.fillRect(_x + askIndex *10, y, this.width- _x - askIndex *10 , this.height);
+        ctx.fillRect(_x + (askIndex-start) *10, y, this.width- _x - askIndex *10 , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * 10;
@@ -246,6 +246,7 @@ class Chart {
     render(arg){
      
         if(this.data.length === 0) {
+            console.log(arg.LastPrice)
             this.initData(arg.LastPrice);
             this.renderPrice();
         }
