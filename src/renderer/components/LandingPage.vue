@@ -14,8 +14,11 @@
           <div class="title">Getting Started</div>
             <p v-for='ins in InstrumentIDs' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
              <p v-for='ins in ids' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
+               <p v-for='ins in gz' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
           <button @click="open">商品</button>
           <button @click="open1">郑商所</button>
+           <button @click="open2">股指</button>
+           <button @click="stop">停止</button>
           <br><br>
         </div>
         <div class="doc">
@@ -54,7 +57,8 @@
     },
     data(){
       return {
-        ids: ['SF201','SF205','SM201','SM205']
+        ids: ['MA201','SF205','SM201','SM205'],
+        gz:['IC2112','IF2112','IC2110','IF2110','IH2110']
       }
     },
     methods: {
@@ -67,7 +71,14 @@
          ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18198, instrumentIDs: this.InstrumentIDs, type: 'SP',  iCmdID: 101});
       },
       open1(){
-        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18188, instrumentIDs: this.ids, type: 'ZCS', iCmdID: 101});
+        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18188, instrumentIDs: this.ids, type: 'SP', iCmdID: 101});
+      },
+      open2(){
+        ipcRenderer.send('start-receive', {host: '117.185.41.78', port: 18198, instrumentIDs: this.gz, type: 'SP', iCmdID: 101});
+      },
+      stop(){
+        ipcRenderer.send('stop-subscrible');
+        this.$store.dispatch('updateIns', '')
       }
     }
   }

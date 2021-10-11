@@ -31,7 +31,7 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     height: 563,
     useContentSize: true,
-    width: 1000,
+    width: 1400,
     title: 'Vtp'
     // webPreferences: {
     //   preload: preloadUrl
@@ -44,7 +44,7 @@ function createWindow () {
     mainWindow = null
   })
 }
-const opedwindow = []
+let opedwindow = []
 ipcMain.on('open-window', (evnt, insId) => {
   const hasInsId = opedwindow.find(({id}) => id === insId)
   if(hasInsId){
@@ -53,7 +53,7 @@ ipcMain.on('open-window', (evnt, insId) => {
     const childwin = new BrowserWindow({
       height: 300,
       useContentSize: true,
-      width: 1200,
+      width: 1300,
       parent: mainWindow,
       title: insId
       // webPreferences: {
@@ -85,12 +85,13 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
- 
-    tcp_client_list.forEach(e => e.destroy());
-    tcp_client_list = []
+  closeALLsubs()
  
 })
-
+function closeALLsubs(){
+  tcp_client_list.forEach(e => e.destroy());
+  tcp_client_list = []
+}
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow()
@@ -101,6 +102,14 @@ ipcMain.on('register-event',  (event, args) =>{
   console.log('register-event',args, opedwindow)
   const win =  opedwindow.find(({id}) => id === args);
   win.sender = event.sender;
+  
+})
+//停止监控
+ipcMain.on('stop-subscrible',  (event, args) =>{
+  console.log('stop-subscrible')
+  opedwindow.forEach(({win}) => win.close())
+  opedwindow=[]
+  closeALLsubs();
   
 })
 ipcMain.on('start-receive', (event, args) =>{
@@ -130,26 +139,21 @@ ipcMain.on('start-receive', (event, args) =>{
 
     console.log('success')
   })
-  const decodeMsg = new cppmsg.msg(receiveData['SP'])
+  const decodeMsg = new cppmsg.msg(receiveData[type])
 
   const decodeKey = new cppmsg.msg([
     ['key', 'uint8'],
+  ])
+  const headMsg = new cppmsg.msg([
+    ['size', 'int32'],
+    ['CmdID', 'int32'],
   ])
   let cacheArr = [];
   function parseReceiveData(data){
     let flag = 0 
     while(flag < data.length){
       let parseData;
-      if(type === 'ZCS'){
-        
-        const key = decodeKey.decodeMsg(data.slice(8, 9)).key;
-        console.log(key)
-        // for(let i = 1; i<416 ; i++){
-        //   data[i] = data[i] ^ key;
-        // }
-      }
       parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
-      
       console.log(parseData)
       const {InstrumentID } = parseData; 
       const win = opedwindow.find(({id}) => InstrumentID === id);
@@ -169,6 +173,7 @@ ipcMain.on('start-receive', (event, args) =>{
       //建立缓冲区 解析分片发送数据
    
       cacheArr.push(data);
+      // console.log.apply(console, cacheArr.map(e => e.length));
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
       if(length === 9056){
         //删除连接成功的无用报文
