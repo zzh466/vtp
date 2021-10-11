@@ -26,15 +26,15 @@ const receiveData = {
         [1,2,3,4,5].reduce((a, b) => a.concat([
             [`BidPrice${b}`, 'double'],
             [`BidVolume${b}`, 'int32'],
-            [`xxxx${b}`, 'int32'],
+            [``, 'int32'],
             [`AskPrice${b}`, 'double'],
             [`AskVolume${b}`, 'int32'],
-            [`yyyyy${b}`, 'int32'],
+            [``, 'int32'],
         ]), [])).concat([
         ['AveragePrice', 'double'],//当日均价
         ['ActionDay', 'string', 16]
     ]), //业务日期
-    ZCS: [
+    GZ: [
         ['InstrumentID', 'string', 31],
         ['LastPrice', 'double'],
         ['Volume', 'int64'], //数量
