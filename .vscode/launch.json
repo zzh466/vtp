@@ -7,7 +7,7 @@
             "request": "launch",
             "preLaunchTask": "npm: rebuildCTP:dev",
             "program": "node",
-            "args": ["${workspaceFolder}/test/ctp/try.js"],
+            "args": ["${workspaceFolder}/test/ctp/reqInsertOrder.js"],
             "cwd": "${workspaceFolder}"
         },
         {

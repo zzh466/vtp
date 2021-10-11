@@ -38,7 +38,7 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     console.log("rspUserLogin: info", JSON.stringify(info));
     login = true;
 
-    // 为空时即查询所有合约信息
+    // 为锟斤拷时锟斤拷锟斤拷询锟斤拷锟叫猴拷约锟斤拷息
     var instrumentID = "";
     trader.reqQryInstrument(instrumentID, function (field) {
         console.log('reqQryInstrument is callback');

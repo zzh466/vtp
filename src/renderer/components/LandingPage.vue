@@ -54,7 +54,7 @@
     },
     data(){
       return {
-        ids: ['SF201','SF205','SM201','SM205']
+        ids: ['SF201','SF205','SM201','SM205','MA201']
       }
     },
     methods: {

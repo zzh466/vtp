@@ -55,21 +55,21 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   var instrumentID = "IC2112";
   var exchangeID = "CFFEX";
   var orderRef = "1632460886";
-  // ÂòÂô·½Ïò TFtdcDirectionType
-  ///Âò #define THOST_FTDC_D_Buy '0'
-  ///Âô #define THOST_FTDC_D_Sell '1'
+  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ TFtdcDirectionType
+  ///ï¿½ï¿½ #define THOST_FTDC_D_Buy '0'
+  ///ï¿½ï¿½ #define THOST_FTDC_D_Sell '1'
   var direction = "1";
-  // Æ½½ñ²ßÂÔ TFtdcOffsetFlagType
-  ///¿ª²Ö #define THOST_FTDC_OF_Open '0'
-  ///Æ½²Ö #define THOST_FTDC_OF_Close '1'
+  // Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ TFtdcOffsetFlagType
+  ///ï¿½ï¿½ï¿½ï¿½ #define THOST_FTDC_OF_Open '0'
+  ///Æ½ï¿½ï¿½ #define THOST_FTDC_OF_Close '1'
   ///Ç¿Æ½ #define THOST_FTDC_OF_ForceClose '2'
-  ///Æ½½ñ #define THOST_FTDC_OF_CloseToday '3'
-  ///Æ½×ò #define THOST_FTDC_OF_CloseYesterday '4'
-  ///Ç¿¼õ #define THOST_FTDC_OF_ForceOff '5'
-  ///±¾µØÇ¿Æ½ #define THOST_FTDC_OF_LocalForceClose '6'
+  ///Æ½ï¿½ï¿½ #define THOST_FTDC_OF_CloseToday '3'
+  ///Æ½ï¿½ï¿½ #define THOST_FTDC_OF_CloseYesterday '4'
+  ///Ç¿ï¿½ï¿½ #define THOST_FTDC_OF_ForceOff '5'
+  ///ï¿½ï¿½ï¿½ï¿½Ç¿Æ½ #define THOST_FTDC_OF_LocalForceClose '6'
   var combOffsetFlag = "0";
   var limitPrice = 6970.4
-  // ÊÖÊý
+  // ï¿½ï¿½ï¿½ï¿½
   var volumeTotalOriginal = 1;
   var requestID = "110";
   var insertOrder = {

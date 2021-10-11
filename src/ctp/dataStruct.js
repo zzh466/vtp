@@ -25,9 +25,11 @@ const receiveData = {
     ].concat(//最后修改毫秒
         [1,2,3,4,5].reduce((a, b) => a.concat([
             [`BidPrice${b}`, 'double'],
-            [`BidVolume${b}`, 'int64'],
+            [`BidVolume${b}`, 'int32'],
+            [`xxxx${b}`, 'int32'],
             [`AskPrice${b}`, 'double'],
-            [`AskVolume${b}`, 'int64']
+            [`AskVolume${b}`, 'int32'],
+            [`yyyyy${b}`, 'int32'],
         ]), [])).concat([
         ['AveragePrice', 'double'],//当日均价
         ['ActionDay', 'string', 16]
@@ -56,6 +58,8 @@ const receiveData = {
         [`AskVolume3`, 'int64'],
         [`AskVolume4`, 'int64'],
         [`AskVolume5`, 'int64'],
+        ['HighestPrice', 'double'],//最高价
+        ['LowestPrice', 'double'],//最低价
         ['UpperLimitPrice', 'double'],//涨停板价
         ['LowerLimitPrice', 'double'],//跌停板价
         ['PreSettlementPrice', 'double'],//上次结算价

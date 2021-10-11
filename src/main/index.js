@@ -135,6 +135,12 @@ ipcMain.on('start-receive', (event, args) =>{
   const decodeKey = new cppmsg.msg([
     ['key', 'uint8'],
   ])
+
+  const decodeHead = new cppmsg.msg([
+    ['size', 'int32'],
+    ['iCmdID', 'int32']
+  ])
+
   let cacheArr = [];
   function parseReceiveData(data){
     let flag = 0 
@@ -142,8 +148,12 @@ ipcMain.on('start-receive', (event, args) =>{
       let parseData;
       if(type === 'ZCS'){
         
+        const head = decodeHead.decodeMsg(data.slice(0, 8));
+        console.log('this is head');
+        console.log(head);
+
         const key = decodeKey.decodeMsg(data.slice(8, 9)).key;
-        console.log(key)
+        //console.log(key)
         // for(let i = 1; i<416 ; i++){
         //   data[i] = data[i] ^ key;
         // }
