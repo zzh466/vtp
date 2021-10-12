@@ -58,6 +58,8 @@ const receiveData = {
         [`AskVolume3`, 'int64'],
         [`AskVolume4`, 'int64'],
         [`AskVolume5`, 'int64'],
+        ['HighestPrice', 'double'],//最高价
+        ['LowestPrice', 'double'],//最低价
         ['UpperLimitPrice', 'double'],//涨停板价
         ['LowerLimitPrice', 'double'],//跌停板价
         ['PreSettlementPrice', 'double'],//上次结算价

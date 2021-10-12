@@ -56,14 +56,14 @@
     }
   },
   "dependencies": {
+    "axios": "^0.21.4",
+    "cppmsg": "^1.2.1",
+    "echarts": "^5.2.1",
     "vue": "^2.5.16",
-    "axios": "^0.18.0",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0",
-    "cppmsg": "^1.2.1",
-    "echarts": "^5.2.1"
+    "vuex-electron": "^1.0.0"
   },
   "devDependencies": {
     "ajv": "^6.5.0",
@@ -77,7 +77,11 @@
     "babel-register": "^6.26.0",
     "cfonts": "^2.1.2",
     "chai": "^4.1.2",
+<<<<<<< HEAD
     "chalk": "^2.4.1",
+=======
+    "chalk": "^2.4.2",
+>>>>>>> 1951df80a8765627829a61ff6cd96d52bbf5aebb
     "copy-webpack-plugin": "^4.5.1",
     "cross-env": "^5.1.6",
     "css-loader": "^0.28.11",
@@ -87,7 +91,10 @@
     "electron-builder": "^20.19.2",
     "electron-debug": "^1.5.0",
     "electron-devtools-installer": "^2.2.4",
+<<<<<<< HEAD
     "electron-rebuild": "^3.2.3",
+=======
+>>>>>>> 1951df80a8765627829a61ff6cd96d52bbf5aebb
     "file-loader": "^1.1.11",
     "html-webpack-plugin": "^3.2.0",
     "inject-loader": "^4.0.1",
