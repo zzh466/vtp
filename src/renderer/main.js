@@ -18,8 +18,7 @@ ipcRenderer.on('change-ins', (event, arg) => {
   window._$store.dispatch('updateIns', arg)
 })
 ipcRenderer.on('remove-window', (event, arg) => {
-  ipcRenderer.removeListener(`receive-${arg}`, (event, arg) => {
-  })
+  // window._$store.dispatch('updateIns', arg)
 })
 /* eslint-disable no-new */
 new Vue({

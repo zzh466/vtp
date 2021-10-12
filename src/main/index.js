@@ -1,12 +1,12 @@
-import { app, BrowserWindow, ipcMain, ipcRenderer } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import  { receiveData }  from '../ctp/dataStruct'
 import '../renderer/store'
 import path from 'path';
 import net from 'net';
 import cppmsg from 'cppmsg';
 import { Buffer } from 'buffer';
-
-
+import Trade from './trade';
+let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -62,7 +62,7 @@ ipcMain.on('open-window', (evnt, insId) => {
     })
     childwin.loadURL(`${winURL}#price?id=${insId}`)
     childwin.on('close', function(){
-      
+      if(COLOSEALL) return;
       const index = opedwindow.findIndex(({id}) => id === insId);
       const last = opedwindow[index + 1] ||  opedwindow[index - 1] || {}
       opedwindow.splice(index, 1);
@@ -109,7 +109,9 @@ ipcMain.on('register-event',  (event, args) =>{
 //停止监控
 ipcMain.on('stop-subscrible',  (event, args) =>{
   console.log('stop-subscrible')
+  COLOSEALL = true;
   opedwindow.forEach(({win}) => win.close())
+  COLOSEALL = false;
   opedwindow=[]
   closeALLsubs();
   
@@ -156,12 +158,12 @@ ipcMain.on('start-receive', (event, args) =>{
     while(flag < data.length){
       let parseData;
       parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
-      console.log(parseData)
+      // console.log(parseData)
       const {InstrumentID } = parseData; 
       const win = opedwindow.find(({id}) => InstrumentID === id);
-      // console.log(data.length, InstrumentID, UpdateTime)
+      console.log(InstrumentID)
       if(win && win.sender){ 
-        // console.log(InstrumentID, UpdateTime, data.length)  
+        console.log(InstrumentID, '11111111111111111111111111111111111')
         
           win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
       }
@@ -169,19 +171,23 @@ ipcMain.on('start-receive', (event, args) =>{
     }
   }
   tcp_client.on('data',function(data){
+    console.log(data.length)
     if(data.length % 416 === 0){
       parseReceiveData(data);
     }else {
       //建立缓冲区 解析分片发送数据
-   
-      cacheArr.push(data);
+      const head  = headMsg.decodeMsg(data.slice(0, 8));
+     
+      if(head.CmdID === 201){
+        return
+      }
+      if(data.length === 0 && head.CmdID !== 11){
+        return
+      }
+      cacheArr.push(data)
       // console.log.apply(console, cacheArr.map(e => e.length));
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
-      if(length === 9056){
-        //删除连接成功的无用报文
-        cacheArr =[];
-        return;
-      }
+     
       if(length % 416 === 0){
         parseReceiveData(Buffer.concat(cacheArr, length));
         cacheArr =[]
