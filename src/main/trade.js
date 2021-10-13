@@ -55,8 +55,8 @@ class Trade {
             trader.on('rqInstrument', function (requestId, isLast, field, info) {
                
                 const {InstrumentID, PriceTick} = field;
-                const {promise} = this.getInstrumentList.find(id=> id===InstrumentID);
-                promise(PriceTick);
+                const {resolve} = this.getInstrumentList.find(id=> id===InstrumentID);
+                resolve(PriceTick);
             })
             
             _trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
@@ -73,7 +73,7 @@ class Trade {
                     // console.log(field);
                 })
                 this.getInstrumentList.push({
-                    pormise: resolve,
+                    resolve,
                     id
                 })
             })
