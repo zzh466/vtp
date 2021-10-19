@@ -53,7 +53,7 @@ class Chart {
         let range = this.range;
         ctx.beginPath();
         ctx.moveTo(X + 50, Y+10);
-        ctx.strokeStyle = '#ffffff'
+        ctx.strokeStyle = FONTCOLOR
         ctx.lineTo(this.width - 19.5,Y+10);
         ctx.stroke();
         this.renderRange(range);
@@ -71,7 +71,7 @@ class Chart {
         range.forEach(e => {
             ctx.fillText(e.toString(), X - 10, _Y + start + 5);
             ctx.beginPath();
-            ctx.strokeStyle = '#ffffff'
+            ctx.strokeStyle = FONTCOLOR
             ctx.moveTo(X, _Y + start);
             ctx.lineTo(X+ 50 , _Y + start);
             ctx.stroke();
@@ -102,12 +102,12 @@ class Chart {
         const _x = X + 50.5;
         const start = this.start;
         ctx.clearRect(_x-2 , y - 5 ,this.width , this.height);
-        const buyIndex = this.buyIndex;
-        const askIndex = this.askIndex;
+        const buyIndex = this.buyIndex - start;
+        const askIndex = this.askIndex - start;
         ctx.fillStyle = BUYBACKGROUND;
-        ctx.fillRect(_x, y, (buyIndex-start) *10 + 10,this.height);
+        ctx.fillRect(_x, y, buyIndex *10 + 10,this.height);
         ctx.fillStyle = ASKBACKGROUND;
-        ctx.fillRect(_x + (askIndex-start) *10, y, this.width- _x - askIndex *10 , this.height);
+        ctx.fillRect(_x + askIndex *10, y, this.width- _x - askIndex *10 , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * 10;
@@ -126,6 +126,7 @@ class Chart {
 
     }
     renderPrice(){
+        this.ctx.clearRect(0 , 0 ,this.width , Y );
         const start = this.start;
         const ctx = this.ctx;
         ctx.fillStyle= FONTCOLOR;
@@ -227,22 +228,53 @@ class Chart {
     }
     getindex(price){
         let index = Math.round((price - this.data[0].price) / this.step);
+        const start = this.start;
         if(index > this.data.length - 6){
             this.pushData(index - this.data.length + 6);
-            this.ctx.clearRect(0 , 0 ,this.width , Y );
             this.renderPrice();
         }
         if(index < 5){
             const count = this.unshiftData(5 - index)
             this.ctx.clearRect(0 , 0 ,this.width , Y );
             this.renderPrice();
-            this.renderPrice();
             index = index + count;
         }
-
+        if(index < start + 5){
+            this.start = start - 5
+        }
+        if(index > start + this.count - 5){
+            this.start = start + 5;
+        }
         return index;
     }
-    
+    renderTime(time){
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.fillStyle = FONTCOLOR;
+        ctx.clearRect(0,0, 50, 20);
+        ctx.fillText(time, 0, 20);
+        ctx.restore();
+    }
+    renderCurrentPirce(price){
+        const ctx =this.ctx;
+        ctx.save();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = FONTCOLOR;
+        if(this.currentPrice !== price){
+            ctx.strokeStyle = '#ffff00';
+        };
+        const x = X + 50 + (this.getindex(price) - this.start) * 10;
+        ctx.clearRect(X,20,this.width,10)
+        ctx.beginPath();
+        ctx.moveTo(x, 21);
+        ctx.lineTo(x+10, 21);
+        ctx.lineTo(x+10, 29);
+        ctx.lineTo(x, 29);
+        ctx.lineTo(x, 21);
+        ctx.stroke()
+        ctx.restore();
+        this.currentPrice = price;
+    }
     render(arg){
      
         if(this.data.length === 0) {
@@ -250,8 +282,9 @@ class Chart {
             this.initData(arg.LastPrice);
             this.renderPrice();
         }
+        this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
-        this.clearData(arg.BidPrice1 || arg.LastPrice, arg.BidPrice5 );
+        this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );
         for(let i = 1; i<= 5; i++){
             const buyPirce = arg[`BidPrice${i}`];
             const buyIndex = this.getindex(buyPirce)
@@ -265,15 +298,12 @@ class Chart {
             askData.type = 'ask';
             if(i === 1) {
                 this.buyIndex = buyIndex;
-                this.askIndex = askIndex
+                this.askIndex = askIndex;
             }
         }
-        
-        
-        this.renderBakcground()
-       
-       
-        this.renderVolume()
+        this.renderBakcground();
+        this.renderVolume();
+        this.renderCurrentPirce(arg.LastPrice);
        
     }
 }

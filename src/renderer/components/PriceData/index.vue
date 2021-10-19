@@ -23,7 +23,7 @@ export default {
       window.onresize =function(e){
         console.log(e)
       }
-      let i = 0
+      // let i = 0
       // setInterval(()=> {
       //    this.chart.render({
       //    LastPrice: 3990,
