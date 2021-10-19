@@ -5,7 +5,7 @@ import path from 'path';
 import net from 'net';
 import cppmsg from 'cppmsg';
 import { Buffer } from 'buffer';
-import Trade from './trade';
+// import Trade from './trade';
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
@@ -29,9 +29,9 @@ function createWindow () {
    */
 
   mainWindow = new BrowserWindow({
-    height: 563,
+    height: 300,
     useContentSize: true,
-    width: 1400,
+    width: 500,
     title: 'Vtp'
     // webPreferences: {
     //   preload: preloadUrl
@@ -44,6 +44,10 @@ function createWindow () {
     mainWindow = null
   })
 }
+
+ipcMain.on('resize-main', _ => {
+  mainWindow.setSize(1400, 500)
+})
 let opedwindow = []
 ipcMain.on('open-window', (evnt, insId) => {
   const hasInsId = opedwindow.find(({id}) => id === insId)

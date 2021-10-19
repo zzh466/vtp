@@ -55,7 +55,9 @@ class Trade {
             trader.on('rqInstrument', function (requestId, isLast, field, info) {
                
                 const {InstrumentID, PriceTick} = field;
-                const {resolve} = this.getInstrumentList.find(id=> id===InstrumentID);
+                const item = this.getInstrumentList.find(id=> id===InstrumentID);
+                const { resolve } = item;
+                item.PriceTick = PriceTick;
                 resolve(PriceTick);
             })
             
@@ -68,6 +70,11 @@ class Trade {
     getInstrument(id){
         return new Promise(resolve => {
             this.login.then(() => {
+                const item = this.getInstrumentList.find(id=> id===InstrumentID);
+                if(item && item.PriceTick) {
+                    resolve(item.PriceTick);
+                    return;
+                }
                 trader.reqQryInstrument(id, function (field) {
                     // console.log('reqQryInstrument is callback');
                     // console.log(field);
