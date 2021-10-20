@@ -53,6 +53,7 @@ class Trade {
             });
             
             _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
+               
                 const {InstrumentID, PriceTick} = field;
                 const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
                 const { resolve } = item;

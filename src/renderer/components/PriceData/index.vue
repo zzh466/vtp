@@ -1,6 +1,6 @@
 <template>
   <div class="price-body"> 
-    <canvas id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
+    <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
   </div>
 </template>
 
@@ -22,7 +22,8 @@ export default {
         console.log(e)
       }
       ipcRenderer.invoke('get-pirceTick', id).then(tick => {
-        this.chart = new Chart(chartDom, this.width, this.height, tick);
+        console.log(tick)
+        this.chart = new Chart(chartDom, this.width, this.height,tick, {width: 15});
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           this.chart.render(arg)
         })
@@ -37,6 +38,9 @@ export default {
     }
   },
   methods: {
+    move(e){
+      console.log(e)
+    }
     // init(data){
     //   const {LastPrice} = data;
     //   const xdata = this.intiXAxis(LastPrice, 0.5);
@@ -87,5 +91,7 @@ export default {
 .price-body {
   background-color: #000;
   padding: 5px;
+  position: relative;
 }
+
 </style>

@@ -51,6 +51,7 @@ ipcMain.on('resize-main', (evnt, {width, height}) => {
 })
 let opedwindow = []
 ipcMain.on('open-window', (evnt, insId) => {
+  COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
   if(hasInsId){
     hasInsId.win.show()
@@ -117,7 +118,7 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
   console.log('stop-subscrible')
   COLOSEALL = true;
   opedwindow.forEach(({win}) => win.close())
-  COLOSEALL = false;
+ 
   opedwindow=[]
   closeALLsubs();
   

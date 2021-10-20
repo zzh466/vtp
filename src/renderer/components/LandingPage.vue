@@ -52,7 +52,7 @@
     },
     data(){
       return {
-        ids: ['MA201','SF205','SM201','SM205'],
+        ids: ['AP201','AP203','SM205','SM201'],
         gz:['IC2112','IF2112','IC2110','IF2110','IH2110']
       }
     },
@@ -72,10 +72,10 @@
         this.$store.dispatch('updateIns', ins);
       },
       open () {
-         ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18198, instrumentIDs: this.InstrumentIDs, type: 'SP',  iCmdID: 101});
+         ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18199, instrumentIDs: this.InstrumentIDs, type: 'SP',  iCmdID: 101});
       },
       open1(){
-        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18188, instrumentIDs: this.ids, type: 'SP', iCmdID: 101});
+        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 19188, instrumentIDs: this.ids, type: 'SP', iCmdID: 101});
       },
       open2(){
         ipcRenderer.send('start-receive', {host: '117.185.41.78', port: 18198, instrumentIDs: this.gz, type: 'SP', iCmdID: 101});

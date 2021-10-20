@@ -12,23 +12,23 @@ const BUYBACKGROUND = '#322810'
 const ASKBACKGROUND = '#103210'
 const FONTCOLOR = '#7f7f7f'
 class Chart {
-    constructor(dom, width, height, step = 0.2){
+    constructor(dom, width, height, step = 0.2, config ={}){
         this.ctx = dom.getContext('2d');
-        
+        this.stepwidth = config.width || 10;
+        this.stepHeight = config.height || 30;
         this.width = width;
         this.height = height;
         this.step = step;
         this.data = [];
         this.start = 0;
-        this.count = Math.floor((width - 200) / 20 ) * 2;
+        this.count = Math.floor((width - 200) / (this.stepwidth * 2) ) * 2;
         const decimal = (this.step.toString().split(1) || []).length;
         this.decimal = decimal;
         this.range =[10, 20, 30, 50, 100, 200];
         this.init();
     }
 
-    static getHeight(range, value){
-        let stepHeight = 30;
+    static getHeight(range, value, stepHeight){
         let start = 0;
         let before = 0;
         for(let i= 0; i < range.length; i++ ){
@@ -36,7 +36,7 @@ class Chart {
                 start = start + ((value-before) / (range[i]-before)) * stepHeight; 
                 break
             }else {
-                start = start + 30;
+                start = start + stepHeight;
                 before = range[i];
             }
         }
@@ -66,6 +66,7 @@ class Chart {
         ctx.fillStyle= FONTCOLOR;
         let start = 35
         const _Y = Y + 30;
+        let stepHeight = this.stepHeight;
         ctx.save();
         ctx.setLineDash([1, 1])
         range.forEach(e => {
@@ -75,7 +76,7 @@ class Chart {
             ctx.moveTo(X, _Y + start);
             ctx.lineTo(X+ 50 , _Y + start);
             ctx.stroke();
-            start = start + 30;
+            start = start + stepHeight;
         });
         ctx.restore()
     }
@@ -102,15 +103,16 @@ class Chart {
         const _x = X + 50.5;
         const start = this.start;
         ctx.clearRect(_x-2 , y - 5 ,this.width , this.height);
+        const stepwidth = this.stepwidth;
         const buyIndex = this.buyIndex - start;
         const askIndex = this.askIndex - start;
         ctx.fillStyle = BUYBACKGROUND;
-        ctx.fillRect(_x, y, buyIndex *10 + 10,this.height);
+        ctx.fillRect(_x, y, buyIndex *stepwidth + stepwidth,this.height);
         ctx.fillStyle = ASKBACKGROUND;
-        ctx.fillRect(_x + askIndex *10, y, this.width- _x - askIndex *10 , this.height);
+        ctx.fillRect(_x + askIndex *stepwidth, y, this.width- _x - askIndex *stepwidth , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
             const { price } = this.data[i];
-            const  x = X + 50 + (i - start) * 10;
+            const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
             if(price % (this.step * 10) ===0){
                 ctx.save();
@@ -132,9 +134,10 @@ class Chart {
         ctx.fillStyle= FONTCOLOR;
         ctx.textAlign = 'left'
         ctx.clearRect(X , 0 ,this.width ,30);
+        const stepwidth = this.stepwidth;
         for(let i = start; (i-start) <= this.count; i ++ ){
             const { price } = this.data[i];
-            const  x = X + 50 + (i - start) * 10;
+            const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
             if(price % (this.step * 10) ===0){
                 ctx.fillText(price, x , 20);
@@ -164,7 +167,7 @@ class Chart {
         const _x = X + 50.5;
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
-       
+        const stepwidth = this.stepwidth;
         for(let i = this.start; (i-this.start)  <= this.count; i ++ ){
             const { volum, type} = this.data[i];
             if(i> buyIndex && i<askIndex){
@@ -175,9 +178,9 @@ class Chart {
                     continue;
                 }
                 ctx.fillStyle= VALUECOLOR[type]; 
-                const  x = _x + (i-this.start) * 10;
-                const height = Chart.getHeight(this.range, volum); 
-                ctx.fillRect(x,y,9,height);
+                const  x = _x + (i-this.start) * stepwidth;
+                const height = Chart.getHeight(this.range, volum, this.stepHeight); 
+                ctx.fillRect(x,y,stepwidth -1,height);
                 if(i === buyIndex || i === this.askIndex){
                     ctx.font= '12px sans-serif';
                     ctx.fillStyle= FONTCOLOR;
@@ -263,12 +266,13 @@ class Chart {
         if(this.currentPrice !== price){
             ctx.strokeStyle = '#ffff00';
         };
-        const x = X + 50 + (this.getindex(price) - this.start) * 10;
+        const stepwidth = this.stepwidth;
+        const x = X + 50 + (this.getindex(price) - this.start) * stepwidth;
         ctx.clearRect(X,20,this.width,10)
         ctx.beginPath();
         ctx.moveTo(x, 21);
-        ctx.lineTo(x+10, 21);
-        ctx.lineTo(x+10, 29);
+        ctx.lineTo(x+stepwidth, 21);
+        ctx.lineTo(x+stepwidth, 29);
         ctx.lineTo(x, 29);
         ctx.lineTo(x, 21);
         ctx.stroke()
