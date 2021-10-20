@@ -20,7 +20,7 @@ export default {
         this.chart.render(arg)
       })
      
-      window.onresize =function(e){
+      window.onkeydown =function(e){
         console.log(e)
       }
       // let i = 0

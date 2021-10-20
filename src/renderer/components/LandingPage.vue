@@ -34,7 +34,7 @@
 <script>
   import SystemInformation from './LandingPage/SystemInformation'
   import { ipcRenderer } from 'electron';
-
+  import request from '../utils/request';
 
   export default {
     name: 'landing-page',
@@ -50,16 +50,19 @@
          return this.$store.state.PriceData.activeIns
       }
     },
-    mounted() {
-      if(this.activeIns){
-        
-      }
-    },
     data(){
       return {
         ids: ['MA201','SF205','SM201','SM205'],
         gz:['IC2112','IF2112','IC2110','IF2110','IH2110']
       }
+    },
+    mounted(){
+      request({
+        url: 'user/config',
+        type: 'GET'
+      }).then(res => {
+        console.log(res)
+      })
     },
     methods: {
       start(ins) {

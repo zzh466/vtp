@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import  { receiveData }  from '../ctp/dataStruct'
 import '../renderer/store'
-import path from 'path';
+
 import net from 'net';
 import cppmsg from 'cppmsg';
 import { Buffer } from 'buffer';
@@ -20,9 +20,6 @@ const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
 
-const preloadUrl = process.env.NODE_ENV === 'development'
-? path.join('D://my-project','static', 'preload.js')
-: `file://${__static}/preload.js`
 function createWindow () {
   /**
    * Initial window options
@@ -32,10 +29,13 @@ function createWindow () {
     height: 300,
     useContentSize: true,
     width: 500,
-    title: 'Vtp'
-    // webPreferences: {
-    //   preload: preloadUrl
-    // }
+    title: 'Vtp',
+   
+    webPreferences: {
+      webSecurity: false,
+      nodeIntegration: true,
+      contextIsolation: false
+    }
   })
 
   mainWindow.loadURL(winURL)
@@ -45,8 +45,8 @@ function createWindow () {
   })
 }
 
-ipcMain.on('resize-main', _ => {
-  mainWindow.setSize(1400, 500)
+ipcMain.on('resize-main', (evnt, {width, height}) => {
+  mainWindow.setSize(width, height)
 })
 let opedwindow = []
 ipcMain.on('open-window', (evnt, insId) => {
@@ -59,10 +59,11 @@ ipcMain.on('open-window', (evnt, insId) => {
       useContentSize: true,
       width: 1300,
       parent: mainWindow,
-      title: insId
-      // webPreferences: {
-      //   preload: preloadUrl
-      // }
+      title: insId,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
     })
     childwin.loadURL(`${winURL}#price?id=${insId}`)
     childwin.on('close', function(){
