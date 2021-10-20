@@ -63,6 +63,7 @@
       }).then(res => {
         console.log(res)
       })
+      ipcRenderer.send('trade-login', {})
     },
     methods: {
       start(ins) {

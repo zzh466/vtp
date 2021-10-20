@@ -20,7 +20,9 @@
   import request from '../../utils/request';
   export default {
     data () {
-     
+      if (process.env.NODE_ENV === 'development'){
+         this.$router.push('main');
+      }
       return {
         form: {
           userNm: '',

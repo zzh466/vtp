@@ -12,45 +12,22 @@ import Chart from './chart'
 export default {
   mounted(){
       const chartDom = document.getElementById('can');
-      this.chart = new Chart(chartDom, this.width, this.height, 0.2)
-      console.log(this.$route.query.id)
-      ipcRenderer.send('register-event', this.$route.query.id);
-      ipcRenderer.on(`receive-${this.$route.query.id}`, (event, arg) => {
-       
-        this.chart.render(arg)
-      })
+      
+      console.log(this.$route.query.id);
+      const id = this.$route.query.id;
+      ipcRenderer.send('register-event', id);
+    
      
       window.onkeydown =function(e){
         console.log(e)
       }
-      // let i = 0
-      // setInterval(()=> {
-      //    this.chart.render({
-      //    LastPrice: 3990,
-      //   [`BidPrice1`]: 3989.6,
-      //   [`BidPrice2`]:3989.2,
-      //   [`BidPrice3`]:3989.0,
-      //   [`BidPrice4`]:3988.8,
-      //   [`BidPrice5`]:3988.6 - i*0.4,
-      //   [`BidVolume1`]: 80,
-      //   [`BidVolume2`]: 10,
-      //   [`BidVolume3`]: 21,
-      //   [`BidVolume4`]: 1,
-      //   [`BidVolume5`]: 3,
-      //   [`AskPrice1`]: 3990.2,
-      //   [`AskPrice2`]:  3990.4,
-      //   [`AskPrice3`]: 3990.8,
-      //   [`AskPrice4`]: 3991.2,
-      //   [`AskPrice5`]:  3991.4,
-      //   [`AskVolume1`]: 5,
-      //   [`AskVolume2`]: 30,
-      //   [`AskVolume3`]: 20,
-      //   [`AskVolume4`]: 4, 
-         
-      //   [`AskVolume5`]: 2
-      //  });
-      //  i++
-      // }, 500)
+      ipcRenderer.invoke('get-pirceTick', id).then(tick => {
+        this.chart = new Chart(chartDom, this.width, this.height, tick);
+        ipcRenderer.on(`receive-${id}`, (event, arg) => {
+          this.chart.render(arg)
+        })
+      })
+
   },
   data () {
     return {

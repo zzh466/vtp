@@ -1,5 +1,5 @@
 
-var ctp = require('../../build/Debug/ctp.node');
+var ctp = require('../../build/Release/ctp.node');
 ctp.settings({ log: true });
 
 // simnow hanzhe
@@ -26,13 +26,13 @@ class Trade {
         this.login = new Promise((resolve, reject) => {
             _trader.on("connect", function (result) {
                 console.log("in js code: ----> on connected , result=", result);
-                trader.reqAuthenticate(m_BrokerId, m_AccountId, m_AuthCode, m_AppId, function (result) {
+                _trader.reqAuthenticate(m_BrokerId, m_AccountId, m_AuthCode, m_AppId, function (result) {
                     console.log("in js code: reqAuthenticate result=", result);
                 });
             });
             _trader.on("rspAuthenticate", function (result) {
                 console.log("in js code: ----> on rspAuthenticate , result=", result);
-                trader.reqUserLogin(m_BrokerId, m_AccountId, m_PassWord, function (result) {
+                _trader.reqUserLogin(m_BrokerId, m_AccountId, m_PassWord, function (result) {
                     console.log("in js code: reqUserlogin result=", result);
                 });
             })
@@ -52,10 +52,9 @@ class Trade {
                 reject()
             });
             
-            trader.on('rqInstrument', function (requestId, isLast, field, info) {
-               
+            _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
                 const {InstrumentID, PriceTick} = field;
-                const item = this.getInstrumentList.find(id=> id===InstrumentID);
+                const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
                 const { resolve } = item;
                 item.PriceTick = PriceTick;
                 resolve(PriceTick);
@@ -70,12 +69,12 @@ class Trade {
     getInstrument(id){
         return new Promise(resolve => {
             this.login.then(() => {
-                const item = this.getInstrumentList.find(id=> id===InstrumentID);
+                const item = this.getInstrumentList.find(({id}) => id===id);
                 if(item && item.PriceTick) {
                     resolve(item.PriceTick);
                     return;
                 }
-                trader.reqQryInstrument(id, function (field) {
+                this.trader.reqQryInstrument(id, function (field) {
                     // console.log('reqQryInstrument is callback');
                     // console.log(field);
                 })

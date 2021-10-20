@@ -5,7 +5,7 @@ import '../renderer/store'
 import net from 'net';
 import cppmsg from 'cppmsg';
 import { Buffer } from 'buffer';
-// import Trade from './trade';
+import Trade from './trade';
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
@@ -16,6 +16,7 @@ if (process.env.NODE_ENV !== 'development') {
 }
 
 let mainWindow;
+let trade;
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
@@ -120,6 +121,14 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
   opedwindow=[]
   closeALLsubs();
   
+})
+ipcMain.on('trade-login', (evnt, args) => {
+  trade = new Trade(args);
+})
+
+ipcMain.handle('get-pirceTick', async (event, arg) => {
+  const result = await trade.getInstrument(arg)
+  return result
 })
 ipcMain.on('start-receive', (event, args) =>{
   const {host, port, instrumentIDs, type,  iCmdID, size = 36} = args
