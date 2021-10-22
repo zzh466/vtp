@@ -59,7 +59,7 @@ ipcMain.on('open-window', (evnt, insId) => {
     const childwin = new BrowserWindow({
       height: 300,
       useContentSize: true,
-      width: 1300,
+      width: 1500,
       parent: mainWindow,
       title: insId,
       webPreferences: {
@@ -113,7 +113,7 @@ ipcMain.on('register-event',  (event, args) =>{
   win.sender = event.sender;
   
 })
-//停止监控
+//停止订阅
 ipcMain.on('stop-subscrible',  (event, args) =>{
   console.log('stop-subscrible')
   COLOSEALL = true;
@@ -123,6 +123,7 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
   closeALLsubs();
   
 })
+//交易相关
 ipcMain.on('trade-login', (evnt, args) => {
   trade = new Trade(args);
 })
@@ -131,6 +132,12 @@ ipcMain.handle('get-pirceTick', async (event, arg) => {
   const result = await trade.getInstrument(arg)
   return result
 })
+
+ipcMain.on('trade', (evnt, args) => {
+  trade.trade(args);
+})
+
+//行情相关
 ipcMain.on('start-receive', (event, args) =>{
   const {host, port, instrumentIDs, type,  iCmdID, size = 36} = args
   const tcp_client = new net.Socket();
@@ -176,9 +183,9 @@ ipcMain.on('start-receive', (event, args) =>{
       // console.log(parseData)
       const {InstrumentID } = parseData; 
       const win = opedwindow.find(({id}) => InstrumentID === id);
-      console.log(InstrumentID)
+      // console.log(InstrumentID)
       if(win && win.sender){ 
-        console.log(InstrumentID, '11111111111111111111111111111111111')
+        // console.log(InstrumentID, '11111111111111111111111111111111111')
         
           win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
       }
@@ -186,7 +193,7 @@ ipcMain.on('start-receive', (event, args) =>{
     }
   }
   tcp_client.on('data',function(data){
-    console.log(data.length)
+    // console.log(data.length)
     if(data.length % 416 === 0){
       parseReceiveData(data);
     }else {

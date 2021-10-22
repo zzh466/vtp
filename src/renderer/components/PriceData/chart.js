@@ -21,7 +21,7 @@ class Chart {
         this.step = step;
         this.data = [];
         this.start = 0;
-        this.count = Math.floor((width - 200) / (this.stepwidth * 2) ) * 2;
+        this.count = Math.floor((width - 150) / (this.stepwidth * 2) ) * 2;
         const decimal = (this.step.toString().split(1) || []).length;
         this.decimal = decimal;
         this.range =[10, 20, 30, 50, 100, 200];
@@ -46,7 +46,7 @@ class Chart {
         const ctx= this.ctx;
         ctx.beginPath();
         ctx.strokeStyle = '#00ff00'
-        ctx.moveTo(X, Y + 30);
+        ctx.moveTo(X, Y + this.stepHeight);
         ctx.lineTo(X,270.5);
         ctx.stroke();
        
@@ -65,8 +65,9 @@ class Chart {
         ctx.font= '12px sans-serif';
         ctx.fillStyle= FONTCOLOR;
         let start = 35
-        const _Y = Y + 30;
+       
         let stepHeight = this.stepHeight;
+        const _Y = Y + stepHeight;
         ctx.save();
         ctx.setLineDash([1, 1])
         range.forEach(e => {
@@ -99,7 +100,7 @@ class Chart {
     }
     renderBakcground(){
         const ctx = this.ctx;
-        const y = Y + 30;
+        const y = Y + this.stepHeight;
         const _x = X + 50.5;
         const start = this.start;
         ctx.clearRect(_x-2 , y - 5 ,this.width , this.height);
@@ -128,12 +129,12 @@ class Chart {
 
     }
     renderPrice(){
-        this.ctx.clearRect(0 , 0 ,this.width , Y );
+        this.ctx.clearRect(100 , 0 ,this.width , Y );
         const start = this.start;
         const ctx = this.ctx;
         ctx.fillStyle= FONTCOLOR;
         ctx.textAlign = 'left'
-        ctx.clearRect(X , 0 ,this.width ,30);
+        ctx.clearRect(X , 0 ,this.width ,this.stepHeight);
         const stepwidth = this.stepwidth;
         for(let i = start; (i-start) <= this.count; i ++ ){
             const { price } = this.data[i];
@@ -163,7 +164,8 @@ class Chart {
     }
     renderVolume(){
         const ctx = this.ctx;
-        const y = Y + 30;
+
+        const y = Y + this.stepHeight;
         const _x = X + 50.5;
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
