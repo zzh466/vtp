@@ -68,7 +68,7 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   ///ǿ�� #define THOST_FTDC_OF_ForceOff '5'
   ///����ǿƽ #define THOST_FTDC_OF_LocalForceClose '6'
   var combOffsetFlag = "0";
-  var limitPrice = 6970.4
+  var limitPrice = 9970.4
   // ����
   var volumeTotalOriginal = 1;
   var requestID = "110";
@@ -105,10 +105,10 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     "MacAddress": "",
   };
 
-  // trader.reqOrderInsert(insertOrder, function (field) {
-  //   console.log('ReqOrderInsert is callback');
-  //   console.log(field);
-  // })
+  trader.reqOrderInsert(insertOrder, function (field) {
+    console.log('ReqOrderInsert is callback');
+    console.log(field);
+  })
 });
 
 trader.on('rtnOrder', function (field) {

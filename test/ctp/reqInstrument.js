@@ -39,7 +39,7 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     login = true;
 
     // Ϊ��ʱ����ѯ���к�Լ��Ϣ
-    var instrumentID = "";
+    var instrumentID = "IC2111";
     trader.reqQryInstrument(instrumentID, function (field) {
         console.log('reqQryInstrument is callback');
         console.log(field);
