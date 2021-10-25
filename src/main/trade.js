@@ -26,8 +26,8 @@ class Trade {
         const _trader = ctp.createTrader();
         this.trader = _trader;
         this.getInstrumentList = [];
-        this.requestID = 100;
-        this.orderRef = 188888;
+        this.requestID = Math.floor(Math.random() * 100) + 1;
+        this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
         this.login = new Promise((resolve, reject) => {
             _trader.on("connect", function (result) {
@@ -100,7 +100,7 @@ class Trade {
                     resolve,
                     id: insId
                 })
-                this.trader.reqQryInstrument(id, function (field) {
+                this.trader.reqQryInstrument(insId, function (field) {
                     // console.log('reqQryInstrument is callback');
                     // console.log(field);
                 })
