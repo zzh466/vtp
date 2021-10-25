@@ -87,25 +87,24 @@ class Trade {
             
         })
     }
-    getInstrument(id){
+    getInstrument(insId){
         return new Promise(resolve => {
             this.login.then(() => {
-                const item = this.getInstrumentList.find(({id}) => id===id);
-                console.log(item)
+                const item = this.getInstrumentList.find(({id}) => id===insId);
                 if(item && item.field.PriceTick) {
-                   
                     item.resolve = null;
                     resolve(item.field.PriceTick);
                     return;
                 }
+                this.getInstrumentList.push({
+                    resolve,
+                    id: insId
+                })
                 this.trader.reqQryInstrument(id, function (field) {
                     // console.log('reqQryInstrument is callback');
                     // console.log(field);
                 })
-                this.getInstrumentList.push({
-                    resolve,
-                    id
-                })
+             
             })
            
         })
@@ -114,7 +113,7 @@ class Trade {
         this.emitter.on(event, fn.bind(this));
     }
     trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag}){
-        console.log(this.getInstrumentList)
+        console.log(this.getInstrumentList, instrumentID)
         const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
 
         var insertOrder = {

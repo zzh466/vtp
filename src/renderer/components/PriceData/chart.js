@@ -129,12 +129,11 @@ class Chart {
 
     }
     renderPrice(){
-        this.ctx.clearRect(100 , 0 ,this.width , Y );
         const start = this.start;
         const ctx = this.ctx;
         ctx.fillStyle= FONTCOLOR;
         ctx.textAlign = 'left'
-        ctx.clearRect(X , 0 ,this.width ,this.stepHeight);
+        ctx.clearRect(100 , 0 ,this.width ,Y);
         const stepwidth = this.stepwidth;
         for(let i = start; (i-start) <= this.count; i ++ ){
             const { price } = this.data[i];
