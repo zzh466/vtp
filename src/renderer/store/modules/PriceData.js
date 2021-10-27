@@ -1,6 +1,6 @@
 const state = {
     priceData: 0,
-    InstrumentIDs: ['j2201','j2110','j2111','j2112','j2202','j2203','j2205','lh2111','lh2201','jm2201','jm2110','jm2111','jm2112','jm2202','jm2203','jm2205'],
+    InstrumentIDs: ['j2201','j2202','j2203','j2205','lh2111','lh2201','jm2201','jm2205', 'pg2111', 'pg2112'],
     activeIns: ''
   }
   
@@ -11,6 +11,11 @@ const state = {
     'changeactive'(state, data) {
       state.activeIns  = data;
    },
+   removeactive(state, data) {
+    if(state.activeIns  === data){
+      state.activeIns = ''
+    }
+    },
   }
   const actions = {
     'updateData' ({ commit }, data) {    
@@ -20,6 +25,9 @@ const state = {
  
       commit('changeactive', data)
     },
+    removeIns({commit}, data){
+      commit('removeactive', data)
+    }
   }
   
   export default {

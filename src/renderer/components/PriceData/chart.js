@@ -5,7 +5,11 @@ const Y = 20.5;
 
 const VALUECOLOR = {
     buy: '#ffc8e6',
-    ask: '#b4dcc8'
+    ask: '#b4dcc8',
+    deficit: '#0000ff',
+    profit: '#ff0000',
+    hold: '#00ff00'
+
 }
 
 const BUYBACKGROUND = '#322810'
@@ -25,6 +29,8 @@ class Chart {
         const decimal = (this.step.toString().split(1) || []).length;
         this.decimal = decimal;
         this.range =[10, 20, 30, 50, 100, 200];
+        this.placeOrder=[];
+        this.traded ={};
         this.init();
     }
 
@@ -134,6 +140,7 @@ class Chart {
         ctx.fillStyle= FONTCOLOR;
         ctx.textAlign = 'left'
         ctx.clearRect(100 , 0 ,this.width ,Y);
+        ctx.clearRect(100 , Y+10 ,this.width ,Y+6);
         const stepwidth = this.stepwidth;
         for(let i = start; (i-start) <= this.count; i ++ ){
             const { price } = this.data[i];
@@ -143,7 +150,7 @@ class Chart {
                 ctx.fillText(price, x , 20);
                 ctx.beginPath();
                 ctx.moveTo(x, y );
-                ctx.lineTo(x, y + 10);
+                ctx.lineTo(x, y + 6);
                 ctx.stroke();
                 ctx.save();
                 ctx.beginPath();
@@ -155,7 +162,7 @@ class Chart {
             }else{
                 ctx.beginPath();
                 ctx.moveTo(x, y);
-                ctx.lineTo(x, y + 5);
+                ctx.lineTo(x, y + 3);
                 ctx.stroke();
             }
             
@@ -164,7 +171,7 @@ class Chart {
     renderVolume(){
         const ctx = this.ctx;
 
-        const y = Y + this.stepHeight;
+        const y = Y + 30;
         const _x = X + 50.5;
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
@@ -230,8 +237,11 @@ class Chart {
 
         return count
     }
-    getindex(price){
+    getindex(price, pure){
         let index = Math.round((price - this.data[0].price) / this.step);
+        if(pure){
+            return index;
+        }
         const start = this.start;
         if(index > this.data.length - 6){
             this.pushData(index - this.data.length + 6);
@@ -239,7 +249,7 @@ class Chart {
         }
         if(index < 5){
             const count = this.unshiftData(5 - index)
-            this.ctx.clearRect(0 , 0 ,this.width , Y );
+           
             this.renderPrice();
             index = index + count;
         }
@@ -280,6 +290,80 @@ class Chart {
         ctx.restore();
         this.currentPrice = price;
     }
+    renderPlaceOrder(){
+        if(this.data.length===0) return;
+        const pricearray = this.placeOrder.reduce((a, b) => {
+            const {LimitPrice, VolumeTotalOriginal} =b;
+            const item = a.find(({price})=> price===LimitPrice)
+            if(item){
+                item.volume = item.volume + VolumeTotalOriginal
+            }else{
+                a.push({
+                    price: LimitPrice,
+                    volume: VolumeTotalOriginal
+                })
+            }
+            return a;
+        },[])
+        const ctx =this.ctx;
+        ctx.save();
+        
+        const y = Y + 30;
+        const _x = X + 50.5;
+        const {stepwidth, stepHeight, range} = this;
+        pricearray.forEach(({price, volume}) => {
+            const index = this.getindex(price, true);
+            const  x = _x + (index-this.start) * stepwidth;
+            const height = Chart.getHeight(range, volume, stepHeight); 
+            ctx.fillStyle = 'red';
+            ctx.fillRect(x,y,stepwidth -1,height);
+
+        })
+        // console.log(this.placeOrder, pricearray)
+        ctx.restore()
+    }
+    renderTradeOrder(){
+        const _x = X + 50;
+        const _y = Y + 17;
+        const {price, direction} = this.traded;
+        const {ctx , width, start, stepwidth} = this;
+        if(!this.data.length)return;
+        ctx.clearRect(0, _y - 1 , width, 10)
+        if(direction && price.length){
+            ctx.save();
+            const average = price.reduce((a,b)=> a + parseFloat(b), 0) / price.length;
+            const index = this.getindex(average, true)- start;
+            let cindex;
+            if(direction === '0'){
+                cindex = this.buyIndex;
+            }else{
+                cindex = this.askIndex;
+            }
+            cindex = cindex - start;
+            let begin, end, _direction;
+            if(index <= cindex){
+                begin = index;
+                end = cindex;
+                _direction = '0';
+            }else{
+                begin = cindex;
+                end = index;
+                _direction = '1';
+            };
+            let color
+            if(_direction === direction){
+                color = VALUECOLOR.profit;
+            }else{
+                color = VALUECOLOR.deficit;
+            }
+            if(begin === end){
+                color = VALUECOLOR.hold;
+            }
+            ctx.fillStyle = color;
+            ctx.fillRect(_x + begin * stepwidth, _y , (end - begin + 1) * stepwidth, 7);
+            ctx.restore()
+        }
+    }
     render(arg){
      
         if(this.data.length === 0) {
@@ -309,6 +393,8 @@ class Chart {
         this.renderBakcground();
         this.renderVolume();
         this.renderCurrentPirce(arg.LastPrice);
+        this.renderPlaceOrder();
+        this.renderTradeOrder();
        
     }
 }

@@ -49,10 +49,16 @@ function createWindow () {
 ipcMain.on('resize-main', (evnt, {width, height}) => {
   mainWindow.setSize(width, height)
 })
-let opedwindow = []
-ipcMain.on('open-window', (evnt, insId) => {
+let opedwindow = [];
+function findedopened(insId){
+  const win = opedwindow.find(({id}) => id === insId);
+  BrowserWindow.getAllWindows();
+  return win;
+}
+ipcMain.on('open-window', (evnt, {id: insId, title}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
+ 
   if(hasInsId){
     hasInsId.win.show()
   }else {
@@ -61,7 +67,7 @@ ipcMain.on('open-window', (evnt, insId) => {
       useContentSize: true,
       width: 1500,
       parent: mainWindow,
-      title: insId,
+      title: title,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
@@ -70,15 +76,20 @@ ipcMain.on('open-window', (evnt, insId) => {
     childwin.loadURL(`${winURL}#price?id=${insId}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
+     
       const index = opedwindow.findIndex(({id}) => id === insId);
-      const last = opedwindow[index + 1] ||  opedwindow[index - 1] || {}
       opedwindow.splice(index, 1);
       evnt.sender.send(`remove-window`, insId)
-      evnt.sender.send('change-ins', last.id)
+      
     })
     childwin.on('focus', function(){
-      evnt.sender.send('change-ins', insId)
+     
+      const index = opedwindow.findIndex(({id}) => id === insId);
+      if(index > -1){
+        evnt.sender.send('change-ins', insId)
+      }
     })
+   
     opedwindow.push({
       id: insId,
       win: childwin
@@ -86,6 +97,10 @@ ipcMain.on('open-window', (evnt, insId) => {
   }
 })
 
+ipcMain.on('change-title', (event, {id, title})=>{
+  const win = findedopened(id);
+  win.win.setTitle(title);
+})
 
 let tcp_client_list = [];
 app.on('ready', createWindow)
@@ -106,12 +121,25 @@ app.on('activate', () => {
     createWindow()
   }
 })
+const orderMap = {};
+const tradeMap = [];
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
-  console.log('register-event',args, opedwindow)
-  const win =  opedwindow.find(({id}) => id === args);
+  const win =  findedopened(args);
+  console.log(win.setTitle)
   win.sender = event.sender;
-  
+  for(let key in orderMap){
+    const value = orderMap[key];
+    if(value.InstrumentID === args && value.OrderStatus === '3'){
+      win.sender.send('place-order',value);
+    }
+  }
+  tradeMap.forEach(field=>{
+    if(field.InstrumentID === args){
+      win.sender.send('trade-order',field);
+    }
+  })
+
 })
 //停止订阅
 ipcMain.on('stop-subscrible',  (event, args) =>{
@@ -124,8 +152,65 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
   
 })
 //交易相关
-ipcMain.on('trade-login', (evnt, args) => {
+ipcMain.on('trade-login', (event, args) => {
   trade = new Trade(args);
+ 
+  function getorderKey(obj){
+    const {FrontID, SessionID,  OrderRef} = obj;
+    const frontId = FrontID.toString();
+    const sessionId = SessionID.toString();
+    const orderRef = OrderRef.trim();
+    return frontId + sessionId + orderRef;
+  }
+  trade.on('rtnTrade', function(field){
+    console.log('emmit---rtnTrade', field);
+    const win = findedopened(field.InstrumentID);
+    tradeMap.push(field);
+    if(win  && win.sender){
+       win.sender.send('trade-order', field)
+    }
+   
+    
+  })
+  trade.on('rtnOrder', function(field){
+    const key = getorderKey(field);
+    const old = orderMap[key] || {}
+    const orderStatus = old.OrderStatus;
+    orderMap[key] = Object.assign(old, field)
+    switch(field.OrderStatus){
+      case 'a':
+        event.sender.send('receive-order', orderMap[key])
+        break
+      case "3":
+        if(orderStatus !== '3'){
+          const {InstrumentID } = field; 
+          const win = findedopened(InstrumentID);
+          // console.log(InstrumentID)
+          if(win && win.sender){ 
+            console.log(InstrumentID)
+            win.sender.send('place-order', orderMap[key]);
+          }
+        }
+        break
+      case "5":
+      case "0":
+      case "2":
+        const {InstrumentID } = field; 
+        const win = findedopened(InstrumentID);
+        orderMap[key].VolumeTotalOriginal = - field.VolumeTraded;
+        console.log(InstrumentID)
+        if(win && win.sender){ 
+          console.log(InstrumentID)
+          win.sender.send('place-order', orderMap[key]);
+        }
+        break
+      default:
+
+    }
+   
+    console.log('emmit---rtnOrder', field)
+    event.sender.send('receive-order', orderMap);
+  })
 })
 
 ipcMain.handle('get-pirceTick', async (event, arg) => {
@@ -182,7 +267,7 @@ ipcMain.on('start-receive', (event, args) =>{
       parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
       // console.log(parseData)
       const {InstrumentID } = parseData; 
-      const win = opedwindow.find(({id}) => InstrumentID === id);
+      const win = findedopened(InstrumentID);
       // console.log(InstrumentID)
       if(win && win.sender){ 
         // console.log(InstrumentID, '11111111111111111111111111111111111')
@@ -193,7 +278,6 @@ ipcMain.on('start-receive', (event, args) =>{
     }
   }
   tcp_client.on('data',function(data){
-    // console.log(data.length)
     if(data.length % 416 === 0){
       parseReceiveData(data);
     }else {

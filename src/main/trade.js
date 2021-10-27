@@ -24,7 +24,7 @@ class Trade {
         this.m_UserId = m_UserId;
         this.m_InvestorId = m_InvestorId;
         const _trader = ctp.createTrader();
-        this.trader = _trader;
+        this._trader = _trader;
         this.getInstrumentList = [];
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
@@ -68,15 +68,17 @@ class Trade {
                 resolve(PriceTick);
             })
 
-            _trader.on('rtnOrder', function (field) {
-                console.log('rtnOrder');
-                console.log(field);
-              });
+            // _trader.on('rtnOrder',  (field) => {
+            //     console.log('rtnOrder ---- receive' );
+            //     this.emitter.emit('rtnOrder', field);
+               
+            //   });
               
-            _trader.on('rtnTrade', function (field) {
-                console.log('rtnTrade');
-                console.log(field);
-              })
+            // _trader.on('rtnTrade',  (field) => {
+            //     console.log('rtnTrade ---- receive' );
+            //     this.emitter.emit('rtnTrade', field)
+                
+            //   })
               
             _trader.on('errInsert', function(a,b){
                 console.log(a,b)
@@ -100,7 +102,7 @@ class Trade {
                     resolve,
                     id: insId
                 })
-                this.trader.reqQryInstrument(insId, function (field) {
+                this._trader.reqQryInstrument(insId, function (field) {
                     // console.log('reqQryInstrument is callback');
                     // console.log(field);
                 })
@@ -110,6 +112,11 @@ class Trade {
         })
     }
     on(event, fn){
+        const _trader = this._trader;
+        _trader.on(event, field => {
+            console.log(`${event} ---- receive`);
+            this.emitter.emit(event, field);
+        })
         this.emitter.on(event, fn.bind(this));
     }
     trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag}){
@@ -151,7 +158,7 @@ class Trade {
           this.requestID++;
           this.orderRef++;
           console.log(insertOrder);
-          this.trader.reqOrderInsert(insertOrder, function (field) {
+          this._trader.reqOrderInsert(insertOrder, function (field) {
             console.log('ReqOrderInsert is callback');
             console.log(field);
           })
