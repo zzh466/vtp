@@ -9,7 +9,7 @@
 import { ipcRenderer } from 'electron';
 import Chart from './chart'
 import Gen from './hotkey';
-
+import {getWinName} from '../../utils/utils'
 export default {
   watch:{
     traded(val) {
@@ -43,6 +43,14 @@ export default {
       this.chart.renderTradeOrder();
       return results;
 
+    },
+    config: {
+      deep: true,
+      handler({volume, type, closeType}) {
+        const id = this.$route.query.id;
+        const title =getWinName(id, volume, type, closeType);
+        ipcRenderer.send('change-title', {id, title});
+      }
     }
   },
   mounted(){
@@ -93,7 +101,11 @@ export default {
       showbar: false,
       left: 0,
       stepwidth: 15,
-      volume: 1,
+      config: {
+        volume: 1,
+        type: '1',
+        closeType: '0'
+      },
       traded: []
     }
   },
@@ -120,7 +132,7 @@ export default {
         direction = '0'
       }
       const  limitPrice = +this.chart.data[index + start].price;
-      let volumeTotalOriginal = this.volume;
+      let volumeTotalOriginal = this.config.volume;
       this.putOrder(limitPrice, direction,volumeTotalOriginal)
 
     },
@@ -134,13 +146,18 @@ export default {
           combOffsetFlag = '1';
         }
         if(volumeTotalOriginal> traded.price.length){
-          this.volume = traded.price.length;
+          volumeTotalOriginal = traded.price.length;
         }
       }
       console.log('tarde')
       ipcRenderer.send('trade', {limitPrice, direction, volumeTotalOriginal, instrumentID, combOffsetFlag})
+    },
+    changeConfig(key, val){
+      const value = this.config[key];
+      if(value !== val){
+        this.config[key] = val;
+      }
     }
-
     // init(data){
     //   const {LastPrice} = data;
     //   const xdata = this.intiXAxis(LastPrice, 0.5);

@@ -32,7 +32,7 @@
   import SystemInformation from './LandingPage/SystemInformation'
   import { ipcRenderer } from 'electron';
   import request from '../utils/request';
-
+  import {getWinName} from '../utils/utils'
   export default {
     name: 'landing-page',
     components: { SystemInformation },
@@ -69,7 +69,7 @@
     },
     methods: {
       start(ins) {
-        ipcRenderer.send('open-window', ins);
+        ipcRenderer.send('open-window', {id:ins, title: getWinName(ins)});
     
         this.$store.dispatch('updateIns', ins);
       },

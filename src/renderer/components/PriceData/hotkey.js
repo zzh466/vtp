@@ -6,13 +6,14 @@ export default function generate(hotKey){
      return function(e, vue){
          console.log(e);
          const chart = vue.chart;
-         if(!chart.data.length)return;
+        //  
          const {keyCode} = e;
          const haskey = hotKey.find(key => key.length && key[1] === keyCode.toString());
          console.log(haskey)
          if(haskey){
              switch(haskey[2]){
                  case '0':
+                    if(!chart.data.length)return;
                      const direction = haskey[3];
                      const overprice = haskey[4];
                      let price;
@@ -25,8 +26,14 @@ export default function generate(hotKey){
                      }
                 
                      vue.putOrder(price, direction);
-                    return 
-                     
+                    break;
+                case '3':
+                     const volume = haskey[5];
+                     vue.changeConfig('volume', parseInt(volume));
+                     break
+                case  '6':
+                     const type = haskey[7];
+                     vue.changeConfig('type', type);
              }
          }
      }

@@ -49,10 +49,16 @@ function createWindow () {
 ipcMain.on('resize-main', (evnt, {width, height}) => {
   mainWindow.setSize(width, height)
 })
-let opedwindow = []
-ipcMain.on('open-window', (evnt, insId) => {
+let opedwindow = [];
+function findedopened(insId){
+  const win = opedwindow.find(({id}) => id === insId);
+  BrowserWindow.getAllWindows();
+  return win;
+}
+ipcMain.on('open-window', (evnt, {id: insId, title}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
+ 
   if(hasInsId){
     hasInsId.win.show()
   }else {
@@ -61,7 +67,7 @@ ipcMain.on('open-window', (evnt, insId) => {
       useContentSize: true,
       width: 1500,
       parent: mainWindow,
-      title: insId,
+      title: title,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
@@ -83,6 +89,7 @@ ipcMain.on('open-window', (evnt, insId) => {
         evnt.sender.send('change-ins', insId)
       }
     })
+   
     opedwindow.push({
       id: insId,
       win: childwin
@@ -90,6 +97,10 @@ ipcMain.on('open-window', (evnt, insId) => {
   }
 })
 
+ipcMain.on('change-title', (event, {id, title})=>{
+  const win = findedopened(id);
+  win.win.setTitle(title);
+})
 
 let tcp_client_list = [];
 app.on('ready', createWindow)
@@ -114,8 +125,8 @@ const orderMap = {};
 const tradeMap = [];
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
-  console.log('register-event',args, opedwindow)
-  const win =  opedwindow.find(({id}) => id === args);
+  const win =  findedopened(args);
+  console.log(win.setTitle)
   win.sender = event.sender;
   for(let key in orderMap){
     const value = orderMap[key];
@@ -153,7 +164,7 @@ ipcMain.on('trade-login', (event, args) => {
   }
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade', field);
-    const win = opedwindow.find(({id}) => field.InstrumentID === id);
+    const win = findedopened(field.InstrumentID);
     tradeMap.push(field);
     if(win  && win.sender){
        win.sender.send('trade-order', field)
@@ -173,7 +184,7 @@ ipcMain.on('trade-login', (event, args) => {
       case "3":
         if(orderStatus !== '3'){
           const {InstrumentID } = field; 
-          const win = opedwindow.find(({id}) => InstrumentID === id);
+          const win = findedopened(InstrumentID);
           // console.log(InstrumentID)
           if(win && win.sender){ 
             console.log(InstrumentID)
@@ -185,7 +196,7 @@ ipcMain.on('trade-login', (event, args) => {
       case "0":
       case "2":
         const {InstrumentID } = field; 
-        const win = opedwindow.find(({id}) => InstrumentID === id);
+        const win = findedopened(InstrumentID);
         orderMap[key].VolumeTotalOriginal = - field.VolumeTraded;
         console.log(InstrumentID)
         if(win && win.sender){ 
@@ -256,7 +267,7 @@ ipcMain.on('start-receive', (event, args) =>{
       parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
       // console.log(parseData)
       const {InstrumentID } = parseData; 
-      const win = opedwindow.find(({id}) => InstrumentID === id);
+      const win = findedopened(InstrumentID);
       // console.log(InstrumentID)
       if(win && win.sender){ 
         // console.log(InstrumentID, '11111111111111111111111111111111111')
