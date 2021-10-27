@@ -50,10 +50,10 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   console.log("rspUserLogin: info", JSON.stringify(info));
   login = true;
 
-  // var instrumentID = "j2201";
-  // var exchangeID = "DCE";
-  var instrumentID = "IC2112";
-  var exchangeID = "CFFEX";
+  var instrumentID = "j2201";
+  var exchangeID = "DCE";
+  // var instrumentID = "IC2112";
+  // var exchangeID = "CFFEX";
   var orderRef = "1632460886";
   // �������� TFtdcDirectionType
   ///�� #define THOST_FTDC_D_Buy '0'
@@ -68,7 +68,7 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   ///ǿ�� #define THOST_FTDC_OF_ForceOff '5'
   ///����ǿƽ #define THOST_FTDC_OF_LocalForceClose '6'
   var combOffsetFlag = "0";
-  var limitPrice = 9970.4
+  var limitPrice = 6970.4
   // ����
   var volumeTotalOriginal = 1;
   var requestID = "110";
@@ -104,6 +104,9 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     "IPAddress": "",
     "MacAddress": "",
   };
+
+
+  console.log("--------------------------------------");
 
   trader.reqOrderInsert(insertOrder, function (field) {
     console.log('ReqOrderInsert is callback');

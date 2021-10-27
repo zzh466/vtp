@@ -4,7 +4,7 @@
 #include <node.h>
 
 #define MSG_MAX_COUNT 200
-///////////////////////////////内部使用
+///////////////////////////////鍐呴儴浣跨敤
 #define T_CONNECT_RE 1
 #define T_AUTHENTICATE_RE 17
 #define T_LOGIN_RE 2
@@ -22,10 +22,9 @@
 #define T_SUBSCRIBE_MARKET_DATA_RE 14
 #define T_UNSUBSCRIBE_MARKET_DATA_RE 15
 #define T_DISCONNECT_RE 16
-///////////////////////////////外部使用
+///////////////////////////////澶栭儴浣跨敤
 #define T_ON_CONNECT 1
 #define T_ON_DISCONNECTED 2
-#define T_ON_RSPAUTHENTICATE 24
 #define T_ON_RSPUSERLOGIN 3
 #define T_ON_RSPUSERLOGOUT 4
 #define T_ON_RSPINFOCONFIRM 5
@@ -47,6 +46,8 @@
 #define T_ON_RSPSUBMARKETDATA 21
 #define T_ON_RSPUNSUBMARKETDATA 22
 #define T_ON_RTNDEPTHMARKETDATA 23
+#define T_ON_RSPAUTHENTICATE 24
+#define T_ON_RQSETTLEMENTINFOCONFIRM 25
 
 struct UVConnectField
 {
@@ -65,14 +66,14 @@ struct LookupCtpApiBaton
 	int fun;
 	int iRequestID;
 	int nResult;
-	int uuid; //回调标识
+	int uuid; //鍥炶皟鏍囪瘑
 	int nCount;
 };
 
 struct CbRtnField
 {
 	uv_work_t work;
-	int eFlag; //事件标识
+	int eFlag; //浜嬩欢鏍囪瘑
 	int nRequestID;
 	int nReason;
 	void *rtnField;

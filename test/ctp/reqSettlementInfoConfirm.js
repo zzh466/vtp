@@ -38,24 +38,25 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     console.log("rspUserLogin: info", JSON.stringify(info));
     login = true;
 
-    // 为空时查询所有
-    var instrumentID = "IC2111";
-    trader.reqQryInstrument(instrumentID, function (field) {
-        console.log('reqQryInstrument is callback');
-        console.log(field);
-    })
+    trader.reqSettlementInfoConfirm(m_BrokerId, m_AccountId, function (requestid, isLast, field, info) {
+        console.log('reqSettlementInfoConfirm is callback');
+        console.log("reqSettlementInfoConfirm: requestId", requestId);
+        console.log("reqSettlementInfoConfirm: isLast", isLast);
+        console.log("reqSettlementInfoConfirm: field", JSON.stringify(field));
+        console.log("reqSettlementInfoConfirm: info", JSON.stringify(info));
+    });
 });
 
 trader.on('rspError', function (requestId, isLast, field) {
     console.log(JSON.stringify(field));
 });
 
-trader.on('rqInstrument', function (requestId, isLast, field, info) {
-    console.log('rqInstrument');
+trader.on('rqSettlementInfoConfirm', function (requestId, isLast, field, info) {
+    console.log('rqSettlementInfoConfirm');
     console.log(JSON.stringify(requestId));
     console.log(JSON.stringify(isLast));
-    console.log("rqInstrument: field", JSON.stringify(field));
-    console.log("rqInstrument: info", JSON.stringify(info));
+    console.log("rqSettlementInfoConfirm: field", JSON.stringify(field));
+    console.log("rqSettlementInfoConfirm: info", JSON.stringify(info));
 })
 
 trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
