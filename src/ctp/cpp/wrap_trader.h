@@ -36,27 +36,27 @@ public:
 
 	static void ReqUserLogin(const FunctionCallbackInfo<Value> &args);
 	static void ReqUserLogout(const FunctionCallbackInfo<Value> &args);
-	///Í¶×ÊÕß½áËã½á¹ûÈ·ÈÏ
-	//static void ReqSettlementInfoConfirm(const FunctionCallbackInfo<Value>& args);
-	///ÇëÇó²éÑ¯ºÏÔ¼
+	///Í¶ï¿½ï¿½ï¿½ß½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½
+	static void ReqSettlementInfoConfirm(const FunctionCallbackInfo<Value>& args);
+	///ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½Ô¼
 	static void ReqQryInstrument(const FunctionCallbackInfo<Value>& args);
-	///ÇëÇó²éÑ¯×Ê½ðÕË»§
+	///ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ï¿½Ê½ï¿½ï¿½Ë»ï¿½
 	static void ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args);
-	///ÇëÇó²éÑ¯Í¶×ÊÕß³Ö²Ö
+	///ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯Í¶ï¿½ï¿½ï¿½ß³Ö²ï¿½
 	//static void ReqQryInvestorPosition(const FunctionCallbackInfo<Value>& args);
-	///³Ö²ÖÃ÷Ï¸
+	///ï¿½Ö²ï¿½ï¿½ï¿½Ï¸
 	//static void ReqQryInvestorPositionDetail(const FunctionCallbackInfo<Value>& args);
-	///±¨µ¥Â¼ÈëÇëÇó
+	///ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	static void ReqOrderInsert(const FunctionCallbackInfo<Value> &args);
-	///±¨µ¥²Ù×÷ÇëÇó
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	static void ReqOrderAction(const FunctionCallbackInfo<Value> &args);
-	///ÇëÇó²éÑ¯ºÏÔ¼±£Ö¤½ðÂÊ
+	///ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½Ô¼ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½
 	//static void ReqQryInstrumentMarginRate(const FunctionCallbackInfo<Value>& args);
-	///ÇëÇó²éÑ¯ÐÐÇé
+	///ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½
 	static void ReqQryDepthMarketData(const FunctionCallbackInfo<Value> &args);
-	///ÇëÇó²éÑ¯Í¶×ÊÕß½áËã½á¹û
+	///ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯Í¶ï¿½ï¿½ï¿½ß½ï¿½ï¿½ï¿½ï¿½ï¿½
 	static void ReqQrySettlementInfo(const FunctionCallbackInfo<Value>& args);
-	///É¾³ý½Ó¿Ú¶ÔÏó
+	///É¾ï¿½ï¿½ï¿½Ó¿Ú¶ï¿½ï¿½ï¿½
 	static void Disposed(const FunctionCallbackInfo<Value> &args);
 
 private:
@@ -79,6 +79,7 @@ private:
 	static void pkg_cb_rqtradingaccount(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqinstrument(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rqdepthmarketdata(CbRtnField *data, Local<Value> *cbArray);
+	static void pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqsettlementinfo(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rsperror(CbRtnField *data, Local<Value> *cbArray);
 	static Local<Value> pkg_rspinfo(void *vpRspInfo);

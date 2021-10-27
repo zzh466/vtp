@@ -142,7 +142,11 @@ void uv_trader::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettl
 	memcpy(_pQrySettlementInfo, pQrySettlementInfo, sizeof(CThostFtdcQrySettlementInfoField));
 	this->invoke(_pQrySettlementInfo, T_SETTLEMENTINFO_RE, callback, uuid);
 }
-
+void uv_trader::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, void(*callback)(int, void*), int uuid) {
+	CThostFtdcSettlementInfoConfirmField* _pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
+	memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
+	this->invoke(_pSettlementInfoConfirm, T_CONFIRM_RE, callback, uuid);
+}
 void uv_trader::OnFrontConnected()
 {
 	std::string log = "uv_trader OnFrontConnected";
@@ -223,6 +227,19 @@ void uv_trader::OnErrRtnOrderInsert(CThostFtdcInputOrderField *pInputOrder, CTho
 	std::string log = "uv_trader OnErrRtnOrderInsert";
 	logger_cout(log.c_str());
 	on_invoke(T_ON_ERRINSERT, _pInputOrder, pRspInfo, 0, 0);
+}
+
+void uv_trader::OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
+	CThostFtdcSettlementInfoConfirmField *_pSettlementInfoConfirm;
+	if(pSettlementInfoConfirm)
+	{
+		_pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
+		memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
+	}
+	std::string log = "uv_trader OnRspSettlementInfoConfirm";
+	logger_cout(log.c_str());
+	on_invoke(T_ON_RQSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
 }
 
 void uv_trader::OnRspOrderAction(CThostFtdcInputOrderActionField *pInputOrderAction, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
