@@ -119,6 +119,11 @@ class Trade {
         })
         this.emitter.on(event, fn.bind(this));
     }
+    getKey(key){
+        const value = this[key];
+        this[key]++;
+        return value.toString();
+    }
     trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag}){
         console.log(this.getInstrumentList, instrumentID)
         const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
@@ -127,7 +132,7 @@ class Trade {
             "BrokerID": this.m_BrokerId,
             "InvestorID": this.m_InvestorId,
             "InstrumentID": instrumentID,
-            "OrderRef": this.orderRef.toString(),
+            "OrderRef": this.getKey('orderRef'),
             "UserID": this.m_UserId,
             //"OrderPriceType": "",
             "Direction": direction,
@@ -144,7 +149,7 @@ class Trade {
             //"ForceCloseReason": "",
             //"IsAutoSuspend": "",
             //"BusinessUnit": "",
-            "RequestID": this.requestID.toString(),
+            "RequestID": this.getKey('requestID'),
             //"UserForceClose": "",
             //"IsSwapOrder": "",
             "ExchangeID": exchangeID,
@@ -155,13 +160,35 @@ class Trade {
             "IPAddress": "",
             "MacAddress": "",
           };
-          this.requestID++;
-          this.orderRef++;
           console.log(insertOrder);
           this._trader.reqOrderInsert(insertOrder, function (field) {
             console.log('ReqOrderInsert is callback');
             console.log(field);
           })
+    }
+    cancel(arr){
+        arr.forEach(({OrderRef, FontID, SessionID, ExchangeID, OrderSysID, InstrumentID}) => {
+            const cancelOrder = {
+                "RequestID": this.getKey('requestID'),
+                "BrokerID": this.m_BrokerId,
+                "InvestorID": this.m_InvestorId,
+                OrderActionRef: this.requestID.toString(),
+                OrderRef,
+                FontID,
+                SessionID,
+                ExchangeID,
+                OrderSysID,
+                ActionFlag: '0',
+                VolumeChange: 0,
+                UserID: this.m_UserId,
+                InstrumentID
+            }
+            console.log(cancelOrder);
+            this._trader.reqOrderAction(cancelOrder, function(field){
+                console.log('reqOrderAction is callback');
+                console.log(field);
+            })
+        });
     }
 }
 

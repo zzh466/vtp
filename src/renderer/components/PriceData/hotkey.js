@@ -1,3 +1,4 @@
+import { ipcRenderer } from "electron";
 export default function generate(hotKey){
      hotKey = hotKey.split(';').map(e => {
          return e.split(',')
@@ -18,10 +19,10 @@ export default function generate(hotKey){
                      const overprice = haskey[4];
                      let price;
                      if(direction === '0'){
-                         price = chart.data[chart.buyIndex].price + parseInt(overprice) * chart.step;
+                         price = parseFloat(chart.data[chart.buyIndex].price) + parseInt(overprice) * chart.step;
 
                      }else{
-                        price = chart.data[chart.askIndex].price - parseInt(overprice) * chart.step;
+                        price = parseFloat(chart.data[chart.askIndex].price) - parseInt(overprice) * chart.step;
 
                      }
                 
@@ -34,6 +35,13 @@ export default function generate(hotKey){
                 case  '6':
                      const type = haskey[7];
                      vue.changeConfig('type', type);
+                     break;
+                case '2':
+                    ipcRenderer.send('cancel-order');
+                     break;
+                case '8':
+                    ipcRenderer.send('cancel-order', vue.$route.qurey.id);
+                    break
              }
          }
      }

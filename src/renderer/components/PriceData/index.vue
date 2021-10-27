@@ -136,11 +136,11 @@ export default {
       this.putOrder(limitPrice, direction,volumeTotalOriginal)
 
     },
-    putOrder(limitPrice, direction, volumeTotalOriginal = this.volume){
+    putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume){
        const instrumentID = this.$route.query.id;
       let combOffsetFlag = '0'
       const {traded } = this.chart;
-
+      limitPrice = parseFloat(limitPrice)
       if(traded.direction && traded.price.length){
         if(direction !== traded.direction){
           combOffsetFlag = '1';

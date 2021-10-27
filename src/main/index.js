@@ -222,6 +222,17 @@ ipcMain.on('trade', (evnt, args) => {
   trade.trade(args);
 })
 
+ipcMain.on('cancel-order', (evnt, args) => {
+  const arr = [];
+ for(let key in orderMap){
+   const item = orderMap[key];
+   if(item.OrderStatus === '3' && !args || args === item.InstrumentID){
+     arr.push(item)
+   }
+ }
+ trade.cancel(arr);
+})
+
 //行情相关
 ipcMain.on('start-receive', (event, args) =>{
   const {host, port, instrumentIDs, type,  iCmdID, size = 36} = args
