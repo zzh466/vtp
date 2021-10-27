@@ -8,25 +8,79 @@
 <script>
 import { ipcRenderer } from 'electron';
 import Chart from './chart'
-
+import Gen from './hotkey';
 
 export default {
+  watch:{
+    traded(val) {
+      const buy = [], ask =[];
+      val.forEach(({Direction, Volume, Price}) => {
+        let same = buy, other=ask;
+        if(Direction === '1'){
+            same = ask;
+            other = buy;
+        }
+        while(Volume){
+          if(other.length){
+            other.shift();
+          }else{
+            same.push(Price)
+          }
+          Volume--
+        }
+      })
+      let direction = '0', price = buy;
+      if(ask.length){
+        direction = '1'
+        price=ask;
+      }
+      const results =  {
+        direction,
+        price
+      }
+      console.log(results)
+      this.chart.traded = results;
+      this.chart.renderTradeOrder();
+      return results;
+
+    }
+  },
   mounted(){
       const chartDom = document.getElementById('can');
       
-      console.log(this.$route.query.id);
+      console.log(this.$store.state.user);
       const id = this.$route.query.id;
       ipcRenderer.send('register-event', id);
     
+      const func = Gen(this.$store.state.user.hotKey)
      
-      window.onkeydown =function(e){
-        console.log(e)
+      window.onkeydown =(e)=>{
+        func(e, this);
       }
-      ipcRenderer.invoke('get-pirceTick', id).then(tick => {
-        console.log(tick)
-        this.chart = new Chart(chartDom, this.width, this.height,tick, {width: this.stepwidth});
-        ipcRenderer.on(`receive-${id}`, (event, arg) => {
-          this.chart.render(arg)
+      const p = new Promise(a => {
+         ipcRenderer.invoke('get-pirceTick', id).then(tick => {
+          console.log(tick)
+          this.chart = new Chart(chartDom, this.width, this.height,tick, {width: this.stepwidth});
+          a();
+          ipcRenderer.on(`receive-${id}`, (event, arg) => {
+            this.chart.render(arg)
+          })
+        })
+      })
+     
+      ipcRenderer.on('place-order', (_, field) => {
+       
+        p.then(()=>{
+           this.chart.placeOrder.push(field);
+            this.chart.renderPlaceOrder(field);
+        })
+      })
+      ipcRenderer.on('trade-order', (_, field) => {
+        
+        p.then(()=>{
+           
+           this.traded.push(field);
+           console.log(this.traded)
         })
       })
 
@@ -40,7 +94,7 @@ export default {
       left: 0,
       stepwidth: 15,
       volume: 1,
-      
+      traded: []
     }
   },
   methods: {
@@ -51,7 +105,7 @@ export default {
         this.showbar = true;
         this.left = x - (x-105)%this.stepwidth;
       }else {
-        this.showbar = false
+        this.showbar = false;
       }
     },
     mouseTrade(){
@@ -66,13 +120,27 @@ export default {
         direction = '0'
       }
       const  limitPrice = +this.chart.data[index + start].price;
-      const volumeTotalOriginal = this.volume;
-      const instrumentID = this.$route.query.id;
-      const combOffsetFlag = '0'
+      let volumeTotalOriginal = this.volume;
+      this.putOrder(limitPrice, direction,volumeTotalOriginal)
+
+    },
+    putOrder(limitPrice, direction, volumeTotalOriginal = this.volume){
+       const instrumentID = this.$route.query.id;
+      let combOffsetFlag = '0'
+      const {traded } = this.chart;
+
+      if(traded.direction && traded.price.length){
+        if(direction !== traded.direction){
+          combOffsetFlag = '1';
+        }
+        if(volumeTotalOriginal> traded.price.length){
+          this.volume = traded.price.length;
+        }
+      }
       console.log('tarde')
       ipcRenderer.send('trade', {limitPrice, direction, volumeTotalOriginal, instrumentID, combOffsetFlag})
-
     }
+
     // init(data){
     //   const {LastPrice} = data;
     //   const xdata = this.intiXAxis(LastPrice, 0.5);

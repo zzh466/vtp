@@ -22,7 +22,7 @@ ipcRenderer.on('change-ins', (event, arg) => {
   window._$store.dispatch('updateIns', arg)
 })
 ipcRenderer.on('remove-window', (event, arg) => {
-  // window._$store.dispatch('updateIns', arg)
+  window._$store.dispatch('removeIns', arg)
 })
 /* eslint-disable no-new */
 Vue.use(ElementUI);

@@ -3,10 +3,7 @@
     <img id="logo" src="~@/assets/logo.png" alt="electron-vue">
     <main>
       <div class="left-side">
-        <span class="title">
-          Welcome to your new project! 
-        </span>
-        <system-information></system-information>
+        <div v-for="(value, key) in orders" :key="key">{{value.InstrumentID}}</div>
       </div>
 
       <div class="right-side">
@@ -48,12 +45,14 @@
       },
       activeIns() {
          return this.$store.state.PriceData.activeIns
-      }
+      },
+
     },
     data(){
       return {
         ids: ['AP201','AP203','SM205','SM201'],
-        gz:['IC2112','IF2112','IC2111','IF2111','IH2111']
+        gz:['IC2112','IF2112','IC2111','IF2111','IH2111'],
+        orders: {}
       }
     },
     mounted(){
@@ -63,7 +62,10 @@
       }).then(res => {
         console.log(res)
       })
-      ipcRenderer.send('trade-login', {})
+      ipcRenderer.send('trade-login', {});
+      ipcRenderer.on('receive-order', (event, orders) =>{
+        this.orders = orders
+      })
     },
     methods: {
       start(ins) {

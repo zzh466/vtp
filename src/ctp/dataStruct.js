@@ -11,7 +11,8 @@ const receiveData = {
         ['OpenPrice', 'double'], //今开盘
         ['HighestPrice', 'double'], //最高价
         ['LowestPrice', 'double'], //最低价
-        ['Volume', 'int64'], //数量
+        ['Volume', 'int32'],
+        ['', 'int32'], //数量
         ['Turnover', 'double'], //成交金额
         ['OpenInterest', 'double'],//持仓量
         ['ClosePrice', 'double'], //今收盘
