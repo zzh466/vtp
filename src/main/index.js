@@ -163,7 +163,7 @@ ipcMain.on('trade-login', (event, args) => {
     return frontId + sessionId + orderRef;
   }
   trade.on('rtnTrade', function(field){
-    console.log('emmit---rtnTrade', field);
+    // console.log('emmit---rtnTrade', field);
     const win = findedopened(field.InstrumentID);
     tradeMap.push(field);
     if(win  && win.sender){
@@ -227,6 +227,7 @@ ipcMain.on('cancel-order', (evnt, args) => {
  for(let key in orderMap){
    const item = orderMap[key];
    if(item.OrderStatus === '3' && !args || args === item.InstrumentID){
+    //  console.log(item)
      arr.push(item)
    }
  }

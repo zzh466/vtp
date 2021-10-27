@@ -167,14 +167,14 @@ class Trade {
           })
     }
     cancel(arr){
-        arr.forEach(({OrderRef, FontID, SessionID, ExchangeID, OrderSysID, InstrumentID}) => {
+        arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID}) => {
             const cancelOrder = {
                 "RequestID": this.getKey('requestID'),
                 "BrokerID": this.m_BrokerId,
                 "InvestorID": this.m_InvestorId,
                 OrderActionRef: this.requestID.toString(),
                 OrderRef,
-                FontID,
+                FrontID,
                 SessionID,
                 ExchangeID,
                 OrderSysID,
