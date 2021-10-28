@@ -651,6 +651,13 @@ void WrapTrader::ReqOrderAction(const FunctionCallbackInfo<Value> &args)
         return;
     }
     String::Utf8Value brokerId_(isolate, vbrokerId->ToString(context).ToLocalChecked());
+    Local<Value> vUserId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "UserID").ToLocalChecked()).ToLocalChecked();
+    if (vUserId->IsUndefined())
+    {
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->InvestorID").ToLocalChecked()));
+        return;
+    }
+    String::Utf8Value userId_(isolate, vUserId->ToString(context).ToLocalChecked());
     Local<Value> vinvestorId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked()).ToLocalChecked();
     if (vinvestorId->IsUndefined())
     {
@@ -671,7 +678,7 @@ void WrapTrader::ReqOrderAction(const FunctionCallbackInfo<Value> &args)
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->actionFlag").ToLocalChecked()));
         return;
     }
-    int32_t actionFlag = vactionFlag.As<Number>()->Value();
+    String::Utf8Value actionFlag_(isolate, vactionFlag->ToString(context).ToLocalChecked());
 
     CThostFtdcInputOrderActionField req;
     memset(&req, 0, sizeof(req));
@@ -684,14 +691,14 @@ void WrapTrader::ReqOrderAction(const FunctionCallbackInfo<Value> &args)
         strcpy(req.OrderRef, ((std::string)*orderRef_).c_str());
         log.append((std::string)*orderRef_).append("|");
     }
-    Local<Value> vfrontId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "FrontId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> vfrontId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "FrontID").ToLocalChecked()).ToLocalChecked();
     if (!vfrontId->IsUndefined())
     {
         int32_t frontId = vfrontId.As<Number>()->Value();
         req.FrontID = frontId;
         log.append(to_string(frontId)).append("|");
     }
-    Local<Value> vsessionId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "SessionId").ToLocalChecked()).ToLocalChecked();
+    Local<Value> vsessionId = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "SessionID").ToLocalChecked()).ToLocalChecked();
     if (!vsessionId->IsUndefined())
     {
         int32_t sessionId = vsessionId.As<Number>()->Value();
@@ -706,7 +713,7 @@ void WrapTrader::ReqOrderAction(const FunctionCallbackInfo<Value> &args)
         log.append((std::string)*exchangeID_).append("|");
     }
     Local<Value> vorderSysID = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "OrderSysID").ToLocalChecked()).ToLocalChecked();
-    if (vorderSysID->IsUndefined())
+    if (!vorderSysID->IsUndefined())
     {
         String::Utf8Value orderSysID_(isolate, vorderSysID->ToString(context).ToLocalChecked());
         strcpy(req.OrderSysID, ((std::string)*orderSysID_).c_str());
@@ -714,10 +721,11 @@ void WrapTrader::ReqOrderAction(const FunctionCallbackInfo<Value> &args)
     }
 
     strcpy(req.BrokerID, ((std::string)*brokerId_).c_str());
+    strcpy(req.UserID, ((std::string)*userId_).c_str());
     strcpy(req.InvestorID, ((std::string)*investorId_).c_str());
-    req.ActionFlag = actionFlag;
+    req.ActionFlag = ((std::string)*actionFlag_)[0];
     strcpy(req.InstrumentID, ((std::string)*instrumentId_).c_str());
-    logger_cout(log.append((std::string)*brokerId_).append("|").append((std::string)*investorId_).append("|").append((std::string)*instrumentId_).append("|").append(to_string(actionFlag)).append("|").c_str());
+    logger_cout(log.append((std::string)*brokerId_).append("|").append((std::string)*investorId_).append("|").append((std::string)*instrumentId_).append("|").append((std::string)*actionFlag_).append("|").c_str());
 
     obj->uvTrader->ReqOrderAction(&req, FunRtnCallback, uuid);
     return;
