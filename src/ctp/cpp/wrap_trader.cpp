@@ -1,4 +1,5 @@
 #include <node.h>
+#include <nan.h>
 #include "wrap_trader.h"
 #include <cstring>
 
@@ -17,6 +18,33 @@ using v8::Null;
 using v8::Object;
 using v8::String;
 using v8::Value;
+
+
+char* utf8ToGBK(char* strUTF) {
+  int size;
+  size = MultiByteToWideChar(CP_UTF8,0,strUTF,-1,NULL,0); 
+  wchar_t* strUnicode = new wchar_t[size];
+  MultiByteToWideChar (CP_UTF8,0,strUTF,-1,strUnicode,size);
+
+  size= WideCharToMultiByte(CP_ACP,0,strUnicode,-1,NULL,0,NULL,NULL);
+  char *strGBK = new char[size];
+  WideCharToMultiByte(CP_ACP,0,strUnicode,-1,strGBK,size,NULL,NULL); 
+  delete []strUnicode;
+  return strGBK;
+}
+
+char* gbkToUTF8(char* strGBK) {
+    int size;
+    size = MultiByteToWideChar(CP_ACP, 0, strGBK, -1, NULL, 0);
+    wchar_t* strUnicode = new wchar_t[size];
+    MultiByteToWideChar(CP_ACP, 0, strGBK, -1, strUnicode, size);
+
+    size = WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, NULL, 0, NULL, NULL);
+    char *strUTF = new char[size];
+    WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, strUTF, size, NULL, NULL);
+    delete []strUnicode;
+    return strUTF;
+}
 
 void logger_cout(const char *content)
 {
@@ -1657,7 +1685,7 @@ void WrapTrader::pkg_cb_rqinstrument(CbRtnField *data, Local<Value> *cbArray) {
         jsonRtn = Object::New(isolate);
 		jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->InstrumentID).ToLocalChecked());
 		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ExchangeID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->ExchangeID).ToLocalChecked());
-		jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentName").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->InstrumentName).ToLocalChecked());
+		jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentName").ToLocalChecked(), String::NewFromUtf8(isolate, gbkToUTF8(pInstrument->InstrumentName)).ToLocalChecked());
 		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ExchangeInstID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->ExchangeInstID).ToLocalChecked());
 		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ProductID").ToLocalChecked(), String::NewFromUtf8(isolate, pInstrument->ProductID).ToLocalChecked());
 		jsonRtn->Set(context, String::NewFromUtf8(isolate, "ProductClass").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pInstrument->ProductClass).c_str()).ToLocalChecked());
@@ -1830,7 +1858,7 @@ Local<Value> WrapTrader::pkg_rspinfo(void *vpRspInfo)
         CThostFtdcRspInfoField *pRspInfo = static_cast<CThostFtdcRspInfoField *>(vpRspInfo);
         Local<Object> jsonInfo = Object::New(isolate);
         jsonInfo->Set(context, String::NewFromUtf8(isolate, "ErrorID").ToLocalChecked(), Number::New(isolate, pRspInfo->ErrorID));
-        jsonInfo->Set(context, String::NewFromUtf8(isolate, "ErrorMsg").ToLocalChecked(), String::NewFromUtf8(isolate, pRspInfo->ErrorMsg).ToLocalChecked());
+        jsonInfo->Set(context, String::NewFromUtf8(isolate, "ErrorMsg").ToLocalChecked(), String::NewFromUtf8(isolate, gbkToUTF8(pRspInfo->ErrorMsg)).ToLocalChecked());
         return jsonInfo;
     }
     else
