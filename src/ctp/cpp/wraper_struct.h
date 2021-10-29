@@ -6,7 +6,6 @@
 #define MSG_MAX_COUNT 200
 ///////////////////////////////内部使用
 #define T_CONNECT_RE 1
-#define T_AUTHENTICATE_RE 17
 #define T_LOGIN_RE 2
 #define T_LOGOUT_RE 3
 #define T_CONFIRM_RE 4
@@ -22,6 +21,8 @@
 #define T_SUBSCRIBE_MARKET_DATA_RE 14
 #define T_UNSUBSCRIBE_MARKET_DATA_RE 15
 #define T_DISCONNECT_RE 16
+#define T_AUTHENTICATE_RE 17
+#define T_INSTRUMENTCOMMISSIONRATE_RE 18
 ///////////////////////////////外部使用
 #define T_ON_CONNECT 1
 #define T_ON_DISCONNECTED 2
@@ -48,6 +49,7 @@
 #define T_ON_RTNDEPTHMARKETDATA 23
 #define T_ON_RSPAUTHENTICATE 24
 #define T_ON_RQSETTLEMENTINFOCONFIRM 25
+#define T_ON_RQINSTRUMENTCOMMISSIONRATE 26
 
 struct UVConnectField
 {

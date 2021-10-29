@@ -29,34 +29,28 @@ public:
 	static void Init(Isolate *isolate);
 	static void NewInstance(const FunctionCallbackInfo<Value> &args);
 	static void GetTradingDay(const FunctionCallbackInfo<Value> &args);
+	///注册事件
 	static void On(const FunctionCallbackInfo<Value> &args);
+	///连接前置机
 	static void Connect(const FunctionCallbackInfo<Value> &args);
-
 	static void ReqAuthenticate(const FunctionCallbackInfo<Value> &args);
-
+	///用户登录请求
 	static void ReqUserLogin(const FunctionCallbackInfo<Value> &args);
+	///登出请求
 	static void ReqUserLogout(const FunctionCallbackInfo<Value> &args);
-	///Ͷ���߽�����ȷ��
+	///投资者结算结果确认
 	static void ReqSettlementInfoConfirm(const FunctionCallbackInfo<Value>& args);
-	///�����ѯ��Լ
+	///请求查询合约
 	static void ReqQryInstrument(const FunctionCallbackInfo<Value>& args);
-	///�����ѯ�ʽ��˻�
 	static void ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args);
-	///�����ѯͶ���ֲ߳�
 	//static void ReqQryInvestorPosition(const FunctionCallbackInfo<Value>& args);
-	///�ֲ���ϸ
-	//static void ReqQryInvestorPositionDetail(const FunctionCallbackInfo<Value>& args);
-	///����¼������
+	static void ReqQryInvestorPositionDetail(const FunctionCallbackInfo<Value>& args);
 	static void ReqOrderInsert(const FunctionCallbackInfo<Value> &args);
-	///������������
 	static void ReqOrderAction(const FunctionCallbackInfo<Value> &args);
-	///�����ѯ��Լ��֤����
 	//static void ReqQryInstrumentMarginRate(const FunctionCallbackInfo<Value>& args);
-	///�����ѯ����
 	static void ReqQryDepthMarketData(const FunctionCallbackInfo<Value> &args);
-	///�����ѯͶ���߽�����
 	static void ReqQrySettlementInfo(const FunctionCallbackInfo<Value>& args);
-	///ɾ���ӿڶ���
+	static void ReqQryInstrumentCommissionRate(const FunctionCallbackInfo<Value>& args);
 	static void Disposed(const FunctionCallbackInfo<Value> &args);
 
 private:
@@ -75,12 +69,13 @@ private:
 	static void pkg_cb_rqtrade(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rtntrade(CbRtnField *data, Local<Value> *cbArray);
 	//static void pkg_cb_rqinvestorposition(CbRtnField* data, Local<Value>*cbArray);
-	//static void pkg_cb_rqinvestorpositiondetail(CbRtnField* data, Local<Value>*cbArray);
+	static void pkg_cb_rqinvestorpositiondetail(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rqtradingaccount(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqinstrument(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rqdepthmarketdata(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqsettlementinfo(CbRtnField* data, Local<Value>*cbArray);
+	static void pkg_cb_rqinstrumentcommissionrate(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rsperror(CbRtnField *data, Local<Value> *cbArray);
 	static Local<Value> pkg_rspinfo(void *vpRspInfo);
 
