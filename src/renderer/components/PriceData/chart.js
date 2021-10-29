@@ -118,6 +118,10 @@ class Chart {
         ctx.fillStyle = ASKBACKGROUND;
         ctx.fillRect(_x + askIndex *stepwidth, y, this.width- _x - askIndex *stepwidth , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
+            if(!this.data[i]){
+                console.log(i, 'background');
+                continue;
+            }
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
@@ -143,20 +147,19 @@ class Chart {
         ctx.clearRect(100 , Y+10 ,this.width ,Y+6);
         const stepwidth = this.stepwidth;
         for(let i = start; (i-start) <= this.count; i ++ ){
+            if(!this.data[i]){
+                console.log(i, 'pirce');
+                continue;
+            }
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
             if(price % (this.step * 10) ===0){
+                ctx.save();
                 ctx.fillText(price, x , 20);
                 ctx.beginPath();
                 ctx.moveTo(x, y );
                 ctx.lineTo(x, y + 6);
-                ctx.stroke();
-                ctx.save();
-                ctx.beginPath();
-                ctx.moveTo(x, y + 20);                
-                ctx.setLineDash([1, 2])
-                ctx.lineTo(x, this.height);
                 ctx.stroke();
                 ctx.restore()
             }else{
@@ -165,7 +168,7 @@ class Chart {
                 ctx.lineTo(x, y + 3);
                 ctx.stroke();
             }
-            
+             
         }
     }
     renderVolume(){
@@ -201,8 +204,8 @@ class Chart {
         }
     }
     clearData(startPrice, endPrice){
-        const start = this.getindex(startPrice);
-        const end = this.getindex(endPrice);
+        const start = this.getindex(startPrice, true);
+        const end = this.getindex(endPrice, true);
         for(let i = start; i <= end; i++){
             this.data[i].volum = 0;
         }
@@ -238,6 +241,7 @@ class Chart {
         return count
     }
     getindex(price, pure){
+        // console.log(price, pure);
         let index = Math.round((price - this.data[0].price) / this.step);
         if(pure){
             return index;
@@ -278,7 +282,7 @@ class Chart {
             ctx.strokeStyle = '#ffff00';
         };
         const stepwidth = this.stepwidth;
-        const x = X + 50 + (this.getindex(price) - this.start) * stepwidth;
+        const x = X + 50 + (this.getindex(price, true) - this.start) * stepwidth;
         ctx.clearRect(X,20,this.width,10)
         ctx.beginPath();
         ctx.moveTo(x, 21);
@@ -293,14 +297,14 @@ class Chart {
     renderPlaceOrder(){
         if(this.data.length===0) return;
         const pricearray = this.placeOrder.reduce((a, b) => {
-            const {LimitPrice, VolumeTotalOriginal} =b;
+            const {LimitPrice, volume} =b;
             const item = a.find(({price})=> price===LimitPrice)
             if(item){
-                item.volume = item.volume + VolumeTotalOriginal
+                item.volume = item.volume + volume
             }else{
                 a.push({
                     price: LimitPrice,
-                    volume: VolumeTotalOriginal
+                    volume: volume
                 })
             }
             return a;
@@ -308,7 +312,7 @@ class Chart {
         const ctx =this.ctx;
         ctx.save();
         
-        const y = Y + 30;
+        const y = Y + 29;
         const _x = X + 50.5;
         const {stepwidth, stepHeight, range} = this;
         pricearray.forEach(({price, volume}) => {
@@ -361,6 +365,8 @@ class Chart {
             }
             ctx.fillStyle = color;
             ctx.fillRect(_x + begin * stepwidth, _y , (end - begin + 1) * stepwidth, 7);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(price.length, _x+cindex * stepwidth + 5, _y + 8)
             ctx.restore()
         }
     }

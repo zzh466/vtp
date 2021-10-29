@@ -60,10 +60,10 @@ export default {
       const id = this.$route.query.id;
       ipcRenderer.send('register-event', id);
     
-      const func = Gen(this.$store.state.user.hotKey)
+       this.func = Gen(this.$store.state.user.hotKey)
      
       window.onkeydown =(e)=>{
-        func(e, this);
+        this.func(e, this);
       }
       const p = new Promise(a => {
          ipcRenderer.invoke('get-pirceTick', id).then(tick => {
@@ -79,8 +79,11 @@ export default {
       ipcRenderer.on('place-order', (_, field) => {
        
         p.then(()=>{
-           this.chart.placeOrder.push(field);
-            this.chart.renderPlaceOrder(field);
+          console.log(field, 82)
+          this.chart.placeOrder.push(field);
+          this.chart.renderBakcground();
+          this.chart.renderVolume();  
+          this.chart.renderPlaceOrder();
         })
       })
       ipcRenderer.on('trade-order', (_, field) => {
@@ -88,7 +91,7 @@ export default {
         p.then(()=>{
            
            this.traded.push(field);
-           console.log(this.traded)
+           console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
         })
       })
 
