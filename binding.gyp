@@ -12,7 +12,7 @@
         "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/thosttraderapi_se.lib",
         "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/thostmduserapi_se.lib"
       ],
-      "include_dirs": ["ctp_20210406tradeapi_v6.6.1/"],
+      "include_dirs": ["ctp_20210406tradeapi_v6.6.1/","<!(node -e \"require('nan')\")"],
       "copies": [
               {
                 "destination": "<(module_root_dir)/build/Release/",
