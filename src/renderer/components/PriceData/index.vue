@@ -60,10 +60,10 @@ export default {
       const id = this.$route.query.id;
       ipcRenderer.send('register-event', id);
     
-      const func = Gen(this.$store.state.user.hotKey)
+       this.func = Gen(this.$store.state.user.hotKey)
      
       window.onkeydown =(e)=>{
-        func(e, this);
+        this.func(e, this);
       }
       const p = new Promise(a => {
          ipcRenderer.invoke('get-pirceTick', id).then(tick => {

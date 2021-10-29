@@ -52,7 +52,13 @@
         ids: ['AP201','AP203','SM205','SM201'],
         gz:['IC2112','IF2112','IC2111','IF2111','IH2111'],
         orders: {},
-        loading: ['order', 'trade']
+        loading: ['order', 'trade'],
+        orderColumns: [{
+          label: '日期',
+          prop: '',
+        },{
+          label: ''
+        }]
       }
     },
     mounted(){
