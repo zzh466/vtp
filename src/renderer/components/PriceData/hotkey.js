@@ -1,4 +1,8 @@
 import { ipcRenderer } from "electron";
+function fixPirce(price, step){
+    const times = Math.pow(10, step);
+    return Math.round(price * times) / times;
+}
 export default function generate(hotKey){
      hotKey = hotKey.split(';').map(e => {
          return e.split(',')
@@ -26,7 +30,7 @@ export default function generate(hotKey){
 
                      }
                 
-                     vue.putOrder(price, direction);
+                     vue.putOrder(fixPirce(price, vue.chart.decimal), direction);
                     break;
                 case '3':
                      const volume = haskey[5];

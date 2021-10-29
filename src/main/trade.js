@@ -113,9 +113,9 @@ class Trade {
     }
     on(event, fn){
         const _trader = this._trader;
-        _trader.on(event, field => {
+        _trader.on(event, (...args) => {
             console.log(`${event} ---- receive`);
-            this.emitter.emit(event, field);
+            this.emitter.emit(event, ...args);
         })
         this.emitter.on(event, fn.bind(this));
     }

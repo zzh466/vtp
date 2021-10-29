@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, Notification } from 'electron'
 import  { receiveData }  from '../ctp/dataStruct'
 import '../renderer/store'
 
@@ -17,6 +17,7 @@ if (process.env.NODE_ENV !== 'development') {
 
 let mainWindow;
 let trade;
+let STARTTRADE = false;
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
@@ -126,7 +127,6 @@ const tradeMap = [];
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
   const win =  findedopened(args);
-  console.log(win.setTitle)
   win.sender = event.sender;
   for(let key in orderMap){
     const value = orderMap[key];
@@ -162,53 +162,93 @@ ipcMain.on('trade-login', (event, args) => {
     const orderRef = OrderRef.trim();
     return frontId + sessionId + orderRef;
   }
+  let TRADETIME = setTimeout(() => {
+    console.log('123134123123333')
+    event.sender.send('finish-loading', 'trade')
+  }, 2000)
   trade.on('rtnTrade', function(field){
     // console.log('emmit---rtnTrade', field);
-    const win = findedopened(field.InstrumentID);
+    const { Volume, Price, InstrumentID} = field
+    const win = findedopened(InstrumentID);
     tradeMap.push(field);
     if(win  && win.sender){
        win.sender.send('trade-order', field)
     }
+    if(STARTTRADE){
+      const not =new Notification({
+        title: `${field.InstrumentID} ${Price}  成交 ${Volume}手`,
+        silent: false
+      })
+      not.show();
+      setTimeout(()=> {
+        not.close();
+      }, 2000)
+
+    }else{
+      clearTimeout(TRADETIME)
+      TRADETIME = setTimeout(() => {
+        event.sender.send('receive-trade', tradeMap);
+        event.sender.send('finish-loading', 'trade')
+      }, 2000)
+      return
+    }
    
+   
+    event.sender.send('receive-trade', tradeMap);
     
   })
+  let ORDERTIME =  setTimeout(() => {
+    event.sender.send('finish-loading', 'order')
+  }, 2000);
   trade.on('rtnOrder', function(field){
     const key = getorderKey(field);
     const old = orderMap[key] || {}
     const orderStatus = old.OrderStatus;
-    orderMap[key] = Object.assign(old, field)
+
+    orderMap[key] = Object.assign(old, field);
+    let send = false;
     switch(field.OrderStatus){
       case 'a':
-        event.sender.send('receive-order', orderMap[key])
+        // event.sender.send('receive-order', orderMap[key])
         break
       case "3":
         if(orderStatus !== '3'){
-          const {InstrumentID } = field; 
-          const win = findedopened(InstrumentID);
-          // console.log(InstrumentID)
-          if(win && win.sender){ 
-            console.log(InstrumentID)
-            win.sender.send('place-order', orderMap[key]);
-          }
+          send = true;
+          orderMap[key].volume = field.VolumeTotalOriginal
         }
         break
       case "5":
+        send = true;
+        orderMap[key].volume = -field.VolumeTotalOriginal;
+        break;
       case "0":
-      case "2":
-        const {InstrumentID } = field; 
-        const win = findedopened(InstrumentID);
-        orderMap[key].VolumeTotalOriginal = - field.VolumeTraded;
-        console.log(InstrumentID)
-        if(win && win.sender){ 
-          console.log(InstrumentID)
-          win.sender.send('place-order', orderMap[key]);
+      case "1":
+        if(orderStatus !== 'a'){
+          orderMap[key].volume =  - field.VolumeTraded
+          send = true
         }
         break
       default:
 
     }
-   
-    console.log('emmit---rtnOrder', field)
+    if(send){
+      const {InstrumentID } = field; 
+      const win = findedopened(InstrumentID);
+      // console.log(InstrumentID)
+      if(win && win.sender){ 
+        console.log(InstrumentID)
+        win.sender.send('place-order', orderMap[key]);
+      }
+    }
+    // console.log('emmit---rtnOrder', field)
+    if(!STARTTRADE){
+      clearTimeout(ORDERTIME)
+      ORDERTIME = setTimeout(() => {
+        event.sender.send('receive-order', orderMap);
+        event.sender.send('finish-loading', 'order')
+      }, 2000)
+      return
+    }
     event.sender.send('receive-order', orderMap);
   })
 })
@@ -219,6 +259,7 @@ ipcMain.handle('get-pirceTick', async (event, arg) => {
 })
 
 ipcMain.on('trade', (evnt, args) => {
+  STARTTRADE = true;
   trade.trade(args);
 })
 
@@ -299,7 +340,7 @@ ipcMain.on('start-receive', (event, args) =>{
       if(head.CmdID === 201){
         return
       }
-      if(data.length === 0 && head.CmdID !== 11){
+      if(data.length !== 0 && head.CmdID !== 11){
         return
       }
       cacheArr.push(data)
