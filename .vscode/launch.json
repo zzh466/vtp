@@ -7,7 +7,10 @@
             "request": "launch",
             "preLaunchTask": "npm: rebuildCTP:dev",
             "program": "node",
-            "args": ["${workspaceFolder}/test/ctp/reqInstrument.js"],
+            // "args": ["${workspaceFolder}/test/ctp/reqInstrument.js"],
+            // "args": ["${workspaceFolder}/test/ctp/reqInsertOrder.js"],
+            // "args": ["${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js"],
+            "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
             "cwd": "${workspaceFolder}"
         },
         {
@@ -15,7 +18,8 @@
             "type": "node",
             "request": "launch",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/test/ctp/try.js",
+            // "program": "${workspaceFolder}/test/ctp/try.js",
+            "program": "${workspaceFolder}/test/ctp/reqInsertOrder.js",
             "preLaunchTask": "npm: rebuildCTP:dev"
         }
     ]

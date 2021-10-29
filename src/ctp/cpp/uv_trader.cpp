@@ -137,16 +137,33 @@ void uv_trader::ReqQryDepthMarketData(CThostFtdcQryDepthMarketDataField *pQryDep
 	this->invoke(_pQryDepthMarketData, T_DEPTHMARKETDATA_RE, callback, uuid);
 }
 
-void uv_trader::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettlementInfo, void(*callback)(int, void*), int uuid) {
+void uv_trader::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettlementInfo, void(*callback)(int, void*), int uuid)
+{
 	CThostFtdcQrySettlementInfoField *_pQrySettlementInfo = new CThostFtdcQrySettlementInfoField();
 	memcpy(_pQrySettlementInfo, pQrySettlementInfo, sizeof(CThostFtdcQrySettlementInfoField));
 	this->invoke(_pQrySettlementInfo, T_SETTLEMENTINFO_RE, callback, uuid);
 }
-void uv_trader::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, void(*callback)(int, void*), int uuid) {
+
+void uv_trader::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, void(*callback)(int, void*), int uuid)
+{
 	CThostFtdcSettlementInfoConfirmField* _pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
 	memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
 	this->invoke(_pSettlementInfoConfirm, T_CONFIRM_RE, callback, uuid);
 }
+
+void uv_trader::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, void(*callback)(int, void*),int uuid)
+{
+	CThostFtdcQryInstrumentCommissionRateField* _pQryInstrumentCommissionRate = new CThostFtdcQryInstrumentCommissionRateField();
+	memcpy(_pQryInstrumentCommissionRate, pQryInstrumentCommissionRate, sizeof(CThostFtdcQryInstrumentCommissionRateField));
+	this->invoke(_pQryInstrumentCommissionRate, T_INSTRUMENTCOMMISSIONRATE_RE, callback, uuid);
+}
+
+void uv_trader::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionDetailField *pQryInvestorPositionDetail, void(*callback)(int, void*), int uuid) {
+	CThostFtdcQryInvestorPositionDetailField *_pQryInvestorPositionDetail = new CThostFtdcQryInvestorPositionDetailField();
+	memcpy(_pQryInvestorPositionDetail, pQryInvestorPositionDetail, sizeof(CThostFtdcQryInvestorPositionDetailField));
+	this->invoke(_pQryInvestorPositionDetail, T_INVESTORPOSITIONDETAIL_RE, callback, uuid);
+}
+
 void uv_trader::OnFrontConnected()
 {
 	std::string log = "uv_trader OnFrontConnected";
@@ -333,7 +350,8 @@ void uv_trader::OnRspQryTradingAccount(CThostFtdcTradingAccountField *pTradingAc
 	on_invoke(T_ON_RQTRADINGACCOUNT, _pTradingAccount, pRspInfo, nRequestID, bIsLast);
 }
 
-void uv_trader::OnRspQryInstrument(CThostFtdcInstrumentField *pInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+void uv_trader::OnRspQryInstrument(CThostFtdcInstrumentField *pInstrument, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
 	CThostFtdcInstrumentField *_pInstrument = NULL;
 	if (pInstrument) {
 		_pInstrument = new CThostFtdcInstrumentField();
@@ -357,7 +375,8 @@ void uv_trader::OnRspQryDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMa
 	on_invoke(T_ON_RQDEPTHMARKETDATA, _pDepthMarketData, pRspInfo, nRequestID, bIsLast);
 }
 
-void uv_trader::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *pSettlementInfo, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+void uv_trader::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *pSettlementInfo, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
 	CThostFtdcSettlementInfoField* _pSettlementInfo = NULL;
 	if (pSettlementInfo) {
 		_pSettlementInfo = new CThostFtdcSettlementInfoField();
@@ -366,6 +385,30 @@ void uv_trader::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *pSettlemen
 	std::string log = "uv_trader OnRspQrySettlementInfo------>";
 	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
 	on_invoke(T_ON_RQSETTLEMENTINFO, _pSettlementInfo, pRspInfo, nRequestID, bIsLast);
+}
+
+void uv_trader::OnRspQryInstrumentCommissionRate(CThostFtdcInstrumentCommissionRateField *pInstrumentCommissionRate, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
+	CThostFtdcInstrumentCommissionRateField* _pInstrumentCommissionRate = NULL;
+	if (pInstrumentCommissionRate) {
+		_pInstrumentCommissionRate = new CThostFtdcInstrumentCommissionRateField();
+		memcpy(_pInstrumentCommissionRate, pInstrumentCommissionRate, sizeof(CThostFtdcInstrumentCommissionRateField));
+	}
+	std::string log = "uv_trader OnRspQryInstrumentCommissionRate------>";
+	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
+	on_invoke(T_ON_RQINSTRUMENTCOMMISSIONRATE, _pInstrumentCommissionRate, pRspInfo, nRequestID, bIsLast);
+}
+
+void uv_trader::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailField *pInvestorPositionDetail, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
+	CThostFtdcInvestorPositionDetailField* _pInvestorPositionDetail = NULL;
+	if (pInvestorPositionDetail){
+		_pInvestorPositionDetail = new CThostFtdcInvestorPositionDetailField();
+		memcpy(_pInvestorPositionDetail, pInvestorPositionDetail, sizeof(CThostFtdcInvestorPositionDetailField));
+	}
+	std::string log = "uv_trader OnRspQryInvestorPositionDetail------>";
+	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
+	on_invoke(T_ON_RQINVESTORPOSITIONDETAIL, _pInvestorPositionDetail, pRspInfo, nRequestID, bIsLast);
 }
 
 void uv_trader::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
@@ -503,6 +546,13 @@ void uv_trader::_async(uv_work_t *work)
 		CThostFtdcQrySettlementInfoField *_pQrySettlementInfo = static_cast<CThostFtdcQrySettlementInfoField *>(baton->args);
 		baton->nResult = uv_trader_obj->m_pApi->ReqQrySettlementInfo(_pQrySettlementInfo, baton->iRequestID);
 		logger_cout(log.append("invoke ReqQrySettlementInfo,the result:").append(to_string(baton->nResult)).c_str());
+		break;
+	}
+	case T_INSTRUMENTCOMMISSIONRATE_RE:
+	{
+		CThostFtdcQryInstrumentCommissionRateField *_pQryInstrumentCommissionRate = static_cast<CThostFtdcQryInstrumentCommissionRateField *>(baton->args);
+		baton->nResult = uv_trader_obj->m_pApi->ReqQryInstrumentCommissionRate(_pQryInstrumentCommissionRate, baton->iRequestID);
+		logger_cout(log.append("invoke ReqQryInstrumentCommissionRate,the result:").append(to_string(baton->nResult)).c_str());
 		break;
 	}
 	default:
