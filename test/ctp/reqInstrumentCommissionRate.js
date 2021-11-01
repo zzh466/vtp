@@ -38,10 +38,8 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     console.log("rspUserLogin: info", JSON.stringify(info));
     login = true;
 
-    // 为空时查询所有
-    var instrumentID = "IC2112";
     trader.reqQryInstrumentCommissionRate(m_BrokerId, m_InvestorId, function (field) {
-        console.log('reqQryInstrument is callback');
+        console.log('reqQryInstrumentCommissionRate is callback');
         console.log(field);
     })
 });
