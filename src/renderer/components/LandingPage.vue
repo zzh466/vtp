@@ -2,21 +2,35 @@
   <div id="wrapper" v-loading='loading.length'  element-loading-text="正在获取账号信息">
     <main>
       <div class="left-side">
-        <div v-for="(value, key) in orders" :key="key">{{value.InstrumentID}}{{value.OrderStatus}}</div>
+          <div class="doc"> 
+              <p v-for='ins in InstrumentIDs' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
+              <p v-for='ins in ids' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
+              <p v-for='ins in gz' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
+              <button @click="open">商品</button>
+              <button @click="open1">郑商所</button>
+              <button @click="open2">股指</button>
+              <button @click="stop">停止</button>
+              <br><br>
+           </div>
       </div>
 
       <div class="right-side">
-        <div class="doc">
-          <div class="title">Getting Started</div>
-            <p v-for='ins in InstrumentIDs' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
-             <p v-for='ins in ids' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
-               <p v-for='ins in gz' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
-          <button @click="open">商品</button>
-          <button @click="open1">郑商所</button>
-           <button @click="open2">股指</button>
-           <button @click="stop">停止</button>
-          <br><br>
-        </div>
+        <el-table :data='orderData'>
+          <el-table-column
+            v-for="column in orderColumns"
+            :key='column.prop'
+            :label="column.label"
+            :prop="column.prop"
+            
+            row-key='key'>
+            <template v-if="column.render || column.component" scope="scope">
+              <div v-if='column.render'>{{column.render(scope)}}</div>
+              <component v-if='column.component' :is='column.component' :data='scope'></component>
+            </template>
+          </el-table-column>
+        </el-table>
+
+       
         <div class="doc">
           <div class="title alt">Other Documentation</div>
           <button class="alt" @click="open('https://electron.atom.io/docs/')">Electron</button>
@@ -45,7 +59,16 @@
       activeIns() {
          return this.$store.state.PriceData.activeIns
       },
-
+      orderData(){
+        
+        const arr = []
+        for(let key in this.orders){
+          this.orders[key].key =key;
+          arr.unshift(this.orders[key])
+        }
+        console.log(arr)
+        return arr;
+      }
     },
     data(){
       return {
@@ -54,11 +77,37 @@
         orders: {},
         loading: ['order', 'trade'],
         orderColumns: [{
-          label: '日期',
-          prop: '',
+          label: '合约',
+          prop: 'InstrumentID',
         },{
-          label: ''
-        }]
+          label: '日期',
+          prop:'InsertDate'
+        },{
+          label: '时间',
+          prop: 'InsertTime'
+        },{
+          label: '方向',
+          prop: 'Direction'
+        },{
+          label: '开平',
+          prop: 'CombOffsetFlag'
+        },{
+          label: '手数',
+            prop: 'VolumeTotalOriginal'
+        },{
+          label: '报价',
+          prop: 'LimitPrice'
+        },{
+          label: '状态',
+          prop: 'OrderStatus'
+        },{
+           label: '成交均价',
+            prop: 'price'
+        },{
+           label: '详细信息',
+            prop: 'StatusMsg'
+        }],
+        traders: []
       }
     },
     mounted(){
@@ -71,10 +120,18 @@
       });
       ipcRenderer.send('trade-login', {});
       ipcRenderer.on('receive-order', (event, orders) =>{
+    
         this.orders = orders;
       });
+       ipcRenderer.on('receive-trader', (event, trader) =>{
+        if(Array.isArray(trader)){
+          this.traders = trader 
+        }else {
+          this.traders.push(trader)
+        }
+      });
       ipcRenderer.on('finish-loading', (event, arg) =>{
-        console.log(arg)
+        
         this.finishLoading(arg);
       });
       
@@ -98,9 +155,10 @@
         this.$store.dispatch('updateIns', '')
       },
       finishLoading(tag){
+        console.log(tag)
         const index = this.loading.indexOf(tag);
         if(index > -1) {
-          this.loading.splice(tag, 1)
+          this.loading.splice(index, 1)
         }
       }
     }
@@ -119,12 +177,6 @@
   body { font-family: 'Source Sans Pro', sans-serif; }
 
   #wrapper {
-    background:
-      radial-gradient(
-        ellipse at top left,
-        rgba(255, 255, 255, 1) 40%,
-        rgba(229, 229, 229, .9) 100%
-      );
     height: 100vh;
     padding: 60px 80px;
     width: 100vw;

@@ -163,7 +163,6 @@ ipcMain.on('trade-login', (event, args) => {
     return frontId + sessionId + orderRef;
   }
   let TRADETIME = setTimeout(() => {
-    console.log('123134123123333')
     event.sender.send('finish-loading', 'trade')
   }, 2000)
   trade.on('rtnTrade', function(field){
