@@ -164,6 +164,13 @@ void uv_trader::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionDetail
 	this->invoke(_pQryInvestorPositionDetail, T_INVESTORPOSITIONDETAIL_RE, callback, uuid);
 }
 
+void uv_trader::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, void(*callback)(int, void*), int uuid)
+{
+	CThostFtdcQrySettlementInfoConfirmField *_pQrySettlementInfoConfirm = new CThostFtdcQrySettlementInfoConfirmField();
+	memcpy(_pQrySettlementInfoConfirm, pQrySettlementInfoConfirm, sizeof(CThostFtdcQrySettlementInfoConfirmField));
+	this->invoke(_pQrySettlementInfoConfirm, T_QCONFIRM_RE, callback, uuid);
+}
+
 void uv_trader::OnFrontConnected()
 {
 	std::string log = "uv_trader OnFrontConnected";
@@ -256,7 +263,7 @@ void uv_trader::OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField 
 	}
 	std::string log = "uv_trader OnRspSettlementInfoConfirm";
 	logger_cout(log.c_str());
-	on_invoke(T_ON_RQSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
+	on_invoke(T_ON_RSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
 }
 
 void uv_trader::OnRspOrderAction(CThostFtdcInputOrderActionField *pInputOrderAction, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
@@ -411,6 +418,18 @@ void uv_trader::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailF
 	on_invoke(T_ON_RQINVESTORPOSITIONDETAIL, _pInvestorPositionDetail, pRspInfo, nRequestID, bIsLast);
 }
 
+void uv_trader::OnRspQrySettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
+	CThostFtdcSettlementInfoConfirmField* _pSettlementInfoConfirm = NULL;
+	if (pSettlementInfoConfirm){
+		_pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
+		memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
+	}
+	std::string log = "uv_trader OnRspQrySettlementInfoConfirm------>";
+	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
+	on_invoke(T_ON_RQSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
+}
+
 void uv_trader::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
 	CThostFtdcRspInfoField *_pRspInfo = NULL;
@@ -553,6 +572,13 @@ void uv_trader::_async(uv_work_t *work)
 		CThostFtdcQryInstrumentCommissionRateField *_pQryInstrumentCommissionRate = static_cast<CThostFtdcQryInstrumentCommissionRateField *>(baton->args);
 		baton->nResult = uv_trader_obj->m_pApi->ReqQryInstrumentCommissionRate(_pQryInstrumentCommissionRate, baton->iRequestID);
 		logger_cout(log.append("invoke ReqQryInstrumentCommissionRate,the result:").append(to_string(baton->nResult)).c_str());
+		break;
+	}
+	case T_QCONFIRM_RE:
+	{
+		CThostFtdcQrySettlementInfoConfirmField *_pQrySettlementInfoConfirm = static_cast<CThostFtdcQrySettlementInfoConfirmField *>(baton->args);
+		baton->nResult = uv_trader_obj->m_pApi->ReqQrySettlementInfoConfirm(_pQrySettlementInfoConfirm, baton->iRequestID);
+		logger_cout(log.append("invoke ReqQrySettlementInfoConfirm,the result:").append(to_string(baton->nResult)).c_str());
 		break;
 	}
 	default:

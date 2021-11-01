@@ -51,6 +51,7 @@ public:
 	static void ReqQryDepthMarketData(const FunctionCallbackInfo<Value> &args);
 	static void ReqQrySettlementInfo(const FunctionCallbackInfo<Value>& args);
 	static void ReqQryInstrumentCommissionRate(const FunctionCallbackInfo<Value>& args);
+	static void ReqQrySettlementInfoConfirm(const FunctionCallbackInfo<Value>& args);
 	static void Disposed(const FunctionCallbackInfo<Value> &args);
 
 private:
@@ -73,9 +74,10 @@ private:
 	static void pkg_cb_rqtradingaccount(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqinstrument(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rqdepthmarketdata(CbRtnField *data, Local<Value> *cbArray);
-	static void pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray);
+	static void pkg_cb_rsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqsettlementinfo(CbRtnField* data, Local<Value>*cbArray);
 	static void pkg_cb_rqinstrumentcommissionrate(CbRtnField *data, Local<Value> *cbArray);
+	static void pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rsperror(CbRtnField *data, Local<Value> *cbArray);
 	static Local<Value> pkg_rspinfo(void *vpRspInfo);
 

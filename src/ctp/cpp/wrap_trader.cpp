@@ -96,6 +96,7 @@ void WrapTrader::Init(Isolate *isolate)
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqSettlementInfoConfirm", ReqSettlementInfoConfirm);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryInstrumentCommissionRate", ReqQryInstrumentCommissionRate);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryInvestorPositionDetail", ReqQryInvestorPositionDetail);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "reqQrySettlementInfoConfirm", ReqQrySettlementInfoConfirm);
 
     constructor.Reset(isolate, tpl->GetFunction(context).ToLocalChecked());
 }
@@ -159,8 +160,9 @@ void WrapTrader::initEventMap()
     event_map["rqInstrument"] = T_ON_RQINSTRUMENT;
     event_map["rqDdpthmarketData"] = T_ON_RQDEPTHMARKETDATA;
     event_map["rqSettlementInfo"] = T_ON_RQSETTLEMENTINFO;
-    event_map["rqSettlementInfoConfirm"] = T_ON_RQSETTLEMENTINFOCONFIRM;
+    event_map["rSettlementInfoConfirm"] = T_ON_RSETTLEMENTINFOCONFIRM;
     event_map["rqInstrumentCommissionRate"] = T_ON_RQINSTRUMENTCOMMISSIONRATE;
+    event_map["rqSettlementInfoConfirm"] = T_ON_RQSETTLEMENTINFOCONFIRM;
     event_map["rspError"] = T_ON_RSPERROR;
 }
 
@@ -940,6 +942,42 @@ void WrapTrader::ReqQryInvestorPositionDetail(const FunctionCallbackInfo<Value> 
     return;
 }
 
+void WrapTrader::ReqQrySettlementInfoConfirm(const FunctionCallbackInfo<Value> &args)
+{
+    Isolate *isolate = args.GetIsolate();
+    Local<Context> context = isolate->GetCurrentContext();
+    std::string log = "wrap_trader ReqQryInvestorPositionDetail------>";
+
+    if (args[0]->IsUndefined() || args[1]->IsUndefined())
+    {
+        std::string _head = std::string(log);
+        logger_cout(_head.append(" Wrong arguments").c_str());
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
+        return;
+    }
+
+    int uuid = -1;
+    int funIndex = 2;
+    if (!args[funIndex]->IsUndefined() && args[funIndex]->IsFunction())
+    {
+        uuid = ++s_uuid;
+        fun_rtncb_map[uuid].Reset(isolate, Local<Function>::Cast(args[funIndex]));
+        std::string _head = std::string(log);
+        logger_cout(_head.append(" uuid is ").append(to_string(uuid)).c_str());
+    }
+    String::Utf8Value brokerIDUtf8(isolate, args[0]->ToString(context).ToLocalChecked());
+    String::Utf8Value investorIDUtf8(isolate, args[1]->ToString(context).ToLocalChecked());
+
+    CThostFtdcQrySettlementInfoConfirmField req = {0};
+    strcpy(req.BrokerID, ((std::string)*brokerIDUtf8).c_str());
+    strcpy(req.InvestorID, ((std::string)*investorIDUtf8).c_str());
+    logger_cout(log.append(" ").append((std::string)*brokerIDUtf8).append("|").append(" ").append((std::string)*investorIDUtf8).append("|").c_str());
+
+    WrapTrader *obj = ObjectWrap::Unwrap<WrapTrader>(args.Holder());
+    obj->uvTrader->ReqQrySettlementInfoConfirm(&req, FunRtnCallback, uuid);
+    return;
+}
+
 void WrapTrader::Disposed(const FunctionCallbackInfo<Value> &args)
 {
     Isolate *isolate = args.GetIsolate();
@@ -1144,10 +1182,10 @@ void WrapTrader::FunCallback(CbRtnField *data)
 
         break;
     }
-    case T_ON_RQSETTLEMENTINFOCONFIRM:
+    case T_ON_RSETTLEMENTINFOCONFIRM:
     {
         Local<Value> argv[4];
-        pkg_cb_rqsettlementinfoconfirm(data, argv);
+        pkg_cb_rsettlementinfoconfirm(data, argv);
         Local<Function> fn = Local<Function>::New(isolate, cIt->second);
         fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
         break;
@@ -1156,6 +1194,14 @@ void WrapTrader::FunCallback(CbRtnField *data)
     {
         Local<Value> argv[4];
         pkg_cb_rqinstrumentcommissionrate(data, argv);
+        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+        break;
+    }
+    case T_ON_RQSETTLEMENTINFOCONFIRM:
+    {
+        Local<Value> argv[4];
+        pkg_cb_rqsettlementinfoconfirm(data, argv);
         Local<Function> fn = Local<Function>::New(isolate, cIt->second);
         fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
         break;
@@ -1892,7 +1938,7 @@ void WrapTrader::pkg_cb_rqsettlementinfo(CbRtnField *data, Local<Value> *cbArray
     return;
 }
 
-void WrapTrader::pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray)
+void WrapTrader::pkg_cb_rsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray)
 {
     Isolate *isolate = Isolate::GetCurrent();
     HandleScope scope(isolate);
@@ -1991,6 +2037,33 @@ void WrapTrader::pkg_cb_rqinvestorpositiondetail(CbRtnField* data, Local<Value>*
 	}
     
     *cbArray = Number::New(isolate, data->nRequestID);
+    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    *(cbArray + 2) = jsonRtn;
+    *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
+    return;
+}
+
+void WrapTrader::pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray)
+{
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    Local<Context> context = isolate->GetCurrentContext();
+    
+    Local<Object> jsonRtn = Object::New(isolate);
+    if (data->rtnField)
+    {
+        CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm = static_cast<CThostFtdcSettlementInfoConfirmField *>(data->rtnField);
+        jsonRtn = Object::New(isolate);
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->BrokerID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->InvestorID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ConfirmDate").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->ConfirmDate).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ConfirmTime").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->ConfirmTime).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "SettlementID").ToLocalChecked(), Number::New(isolate, pSettlementInfoConfirm->SettlementID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "AccountID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->AccountID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "CurrencyID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->CurrencyID).ToLocalChecked());
+    }
+    
+    *cbArray = Int32::New(isolate, data->nRequestID);
     *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
     *(cbArray + 2) = jsonRtn;
     *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
