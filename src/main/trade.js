@@ -103,12 +103,11 @@ class Trade {
         a.valueOf = undefined
         this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
            
-            if(!field){
-                console.log('^^^^^^^^^^^^^^^^^^^^^^^2222',  isLast, field);
+            if(!field.ConfirmTime)    
                 this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
-                console.log('settlementinfo return val is '+result);
+                    this.emitter.emit('settlement-info', _,info)
                 });
-            }
+            
         });
     }
     getInstrument(insId){
@@ -145,25 +144,26 @@ class Trade {
     //ctp除了order trade其他的on必须等待一个完成后再调用另一个
     chainOn(event, func,fn){
         this.login.then(()=>{
+           
             const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
-            _trader.on(event, function(requestId, isLast, field, info){
-                if(isLast && tasks.length > 1){
-                    tasks.shift();
-                    let _func = tasks[0].func;
-                    //ctp一秒只能发一个请求
-                    setTimeout(()=> {
-                        _trader[_func](m_BrokerId, m_InvestorId, function (field) {
-                            console.log(`${_func} is callback`);
-                            console.log(arguments);
-                        })
-                    }, 1000)
-                   
+            console.log(`${event} ---- register`, tasks);
+            _trader.on(event, (requestId, isLast, field, info) =>{
+
+                if(isLast){
+                    this.next()
+                    if(!tasks.length){
+                        tasks.push(setTimeout(()=>{
+                            this.next()
+                        }, 1000))
+                    }
+                 
                 }
+                
                 console.log(`${event} ---- receive`);
-                console.log('^^^^^^^^^^^^^^^^^^^^^^^', field, typeof (field), typeof (field) === 'undefined');
                 fn.call(this,isLast,field)
             })
             if(!tasks.length){
+               
                 _trader[func](m_BrokerId, m_InvestorId, function (field) {
                     console.log(`${func} is callback`);
                     console.log(arguments);
@@ -176,6 +176,20 @@ class Trade {
             
         })
         
+    }
+    next(){
+        const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
+        tasks.shift();
+       if(tasks.length){
+            let _func = tasks[0].func;
+            //ctp一秒只能发一个请求
+            setTimeout(()=> {
+                _trader[_func](m_BrokerId, m_InvestorId, function (field) {
+                    console.log(`${_func} is callback`);
+                    console.log(arguments);
+                })
+            }, 1000)
+       }
     }
     emitterOn(event, fn){
         this.emitter.on(event, fn.bind(this));

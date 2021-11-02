@@ -15,25 +15,42 @@
       </div>
 
       <div class="right-side">
-
-        <el-table :data='orderData'   height="250" size='mini'
-          border>
-          <el-table-column
-            v-for="column in orderColumns"
-            :key='column.prop'
-            :label="column.label"
-            :prop="column.prop"
-            :width="column.width"
-            row-key='key'>
-            <template v-if="column.render || column.component" scope="scope">
-              <div v-if='column.render'>{{column.render(scope.row)}}</div>
-              <component v-if='column.component' :is='column.component' :data='scope.row'></component>
-            </template>
-          </el-table-column>
-        </el-table>
-
+        <div>
+          <div class="label">下单信息：</div>
+          <el-table :data='orderData'   height="250" size='mini'
+            border>
+            <el-table-column
+              v-for="column in orderColumns"
+              :key='column.prop'
+              :label="column.label"
+              :prop="column.prop"
+              :width="column.width"
+              row-key='key'>
+              <template v-if="column.render || column.component" scope="scope">
+                <div v-if='column.render'>{{column.render(scope.row)}}</div>
+                <component v-if='column.component' :is='column.component' :data='scope.row'></component>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <div>
+           <div class="label">回合信息：</div>
+          <Round :tableData='traders' :rates='rates'></Round>
+        </div>
       </div>
     </main>
+    <el-dialog
+      title="结算单确认"
+      :visible.sync="dialogVisible"
+      width="800px"
+      center>
+      <div class="confirm-info" v-html="confirmInfo.join('')">
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" @click="confirm">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -42,6 +59,7 @@
   import { ipcRenderer } from 'electron';
   import request from '../utils/request';
   import {getWinName, Direction, CombOffsetFlag} from '../utils/utils';
+  import Round from './LandingPage/round.vue';
   const StatusMsg = {
     props: ['data'],
     template: `<el-popover
@@ -56,7 +74,7 @@
 
   export default {
     name: 'landing-page',
-    components: { Status, StatusMsg },
+    components: { Status, StatusMsg, Round },
     computed: {
       priceData(){
         return this.$store.state.PriceData.priceData;
@@ -76,18 +94,17 @@
         }
         console.log(arr)
         return arr;
-      },
-      tradeData(){
-
       }
     },
     data(){
       const _this = this;
       return {
+        dialogVisible: false,
         ids: ['AP201','AP203','SM205','SM201'],
         gz:['IC2112','IF2112','IC2111','IF2111','IH2111'],
         orders: {},
         loading: ['order', 'trade', 'config', 'rate'],
+        loading: [],
         orderColumns: [{
           label: '合约',
           prop: 'InstrumentID',
@@ -156,7 +173,9 @@
             component: 'StatusMsg',
             width: '100'
         }],
-        traders: []
+        traders: [],
+        confirmInfo: [],
+        rates: []
       }
     },
     mounted(){
@@ -173,7 +192,6 @@
         this.orders = orders;
       });
        ipcRenderer.on('receive-trade', (event, trader) =>{
-
         if(Array.isArray(trader)){
           this.traders = trader 
         }else {
@@ -181,14 +199,16 @@
         }
       });
        ipcRenderer.on('receive-rate', (event, rates) =>{
+         console.log(rates)
           this.rates = rates;
       });
       ipcRenderer.on('finish-loading', (event, arg) =>{
         
         this.finishLoading(arg);
       });
-      ipcRenderer.on('confirm-settlement', (event, arg)=>{
-        
+      ipcRenderer.on('receive-info', (event, arg)=>{
+        this.confirmInfo =  arg.map(({Content}) => Content)
+        this.dialogVisible = true;
       })
       setTimeout(()=>{
         if(this.loading.length !== 0){
@@ -224,7 +244,17 @@
         if(index > -1) {
           this.loading.splice(index, 1)
         }
+      },
+      cancel(){
+        this.dialogVisible = false;
+        ipcRenderer.send('close-main');
+      },
+      confirm(){
+        this.dialogVisible = false;
+         ipcRenderer.send('confirm-settlement');
+        
       }
+      
     }
   }
 </script>
@@ -256,8 +286,14 @@
     display: flex;
     justify-content: space-between;
   }
-
-
+  .label {
+    margin: 10px 0;
+  }
+  .confirm-info{
+    height: 400px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
   .left-side {
     display: flex;
     flex-direction: column;

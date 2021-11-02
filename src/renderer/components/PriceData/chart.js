@@ -119,7 +119,7 @@ class Chart {
         ctx.fillRect(_x + askIndex *stepwidth, y, this.width- _x - askIndex *stepwidth , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
             if(!this.data[i]){
-                console.log(i, 'background');
+                console.log(i, JSON.parse(JSON.stringify(this.data)))
                 continue;
             }
             const { price } = this.data[i];
@@ -148,7 +148,7 @@ class Chart {
         const stepwidth = this.stepwidth;
         for(let i = start; (i-start) <= this.count; i ++ ){
             if(!this.data[i]){
-                console.log(i, 'pirce');
+                console.log(i, JSON.parse(JSON.stringify(this.data)))
                 continue;
             }
             const { price } = this.data[i];
@@ -180,6 +180,10 @@ class Chart {
         const askIndex = this.askIndex;
         const stepwidth = this.stepwidth;
         for(let i = this.start; (i-this.start)  <= this.count; i ++ ){
+            if(!this.data[i]){
+                console.log(i, JSON.parse(JSON.stringify(this.data)))
+                continue;
+            }
             const { volum, type} = this.data[i];
             if(i> buyIndex && i<askIndex){
                 continue
@@ -206,7 +210,11 @@ class Chart {
     clearData(startPrice, endPrice){
         const start = this.getindex(startPrice, true);
         const end = this.getindex(endPrice, true);
-        for(let i = start; i <= end; i++){
+        for(let i = start; i < end; i++){
+            if(!this.data[i]){
+                console.log(i, JSON.parse(JSON.stringify(this.data)))
+                continue;
+            }
             this.data[i].volum = 0;
         }
     }

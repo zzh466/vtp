@@ -45,6 +45,9 @@ function createWindow () {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+  if (process.env.NODE_ENV !== 'development') {
+    mainWindow.removeMenu()
+  }
 }
 
 ipcMain.on('resize-main', (evnt, {width, height}) => {
@@ -93,7 +96,9 @@ ipcMain.on('open-window', (evnt, {id: insId, title}) => {
         evnt.sender.send('change-ins', insId)
       }
     })
-   
+    if (process.env.NODE_ENV !== 'development') {
+      childwin.removeMenu()
+    }
     opedwindow.push({
       id: insId,
       win: childwin
@@ -161,7 +166,9 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-trade', tradeMap);
     event.sender.send('finish-loading', 'trade')
     event.sender.send('receive-order', orderMap);
-    event.sender.send('finish-loading', 'order')
+    event.sender.send('receive-order', orderMap);
+    event.sender.send('receive-rate', rateMap)
+    return
   }
   trade = new Trade(args);
  
@@ -173,11 +180,12 @@ ipcMain.on('trade-login', (event, args) => {
     return frontId + sessionId + orderRef;
   }
   let TRADETIME = setTimeout(() => {
+    event.sender.send('receive-trade', tradeMap);
     event.sender.send('finish-loading', 'trade')
     TRADETIME= null;
   }, 2000)
   trade.on('rtnTrade', function(field){
-    // console.log('emmit---rtnTrade', field);
+    console.log('emmit---rtnTrade', field);
     const { Volume, Price, InstrumentID} = field
     const win = findedopened(InstrumentID);
     tradeMap.push(field);
@@ -262,31 +270,35 @@ ipcMain.on('trade-login', (event, args) => {
     }
     event.sender.send('receive-order', orderMap);
   })
-//   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
-//     const { OpenPrice, OpenDate, TradingDay} = field;
-//     if(OpenDate ===TradingDay) return;  
-//     field.Price = OpenPrice;
-//     tradeMap.push(field);
-//     if(isLast && !TRADETIME){
-//       event.sender.send('receive-trade', tradeMap);
-//     }
-//   })
+  trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
+    const { OpenPrice, OpenDate, TradingDay} = field;
+    if(OpenDate ===TradingDay) return;  
+    field.Price = OpenPrice;
+    tradeMap.push(field);
+    if(isLast && !TRADETIME){
+      event.sender.send('receive-trade', tradeMap);
+    }
+  })
 
-//   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
-//     console.log('rqInstrumentCommissionRate is callback');
-//     console.log("rqInstrumentCommissionRate: isLast", isLast);
-//     rateMap.push(field)
-//     if(isLast){
-//       event.sender.send('finish-loading', 'rate')
-//       event.sender.send('receive-rate', rateMap);
-//     }
-//     console.log("rqInstrumentCommissionRate: field", JSON.stringify(field));
-// });
+  trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
+    console.log('rqInstrumentCommissionRate is callback');
+    console.log("rqInstrumentCommissionRate: isLast", isLast);
+    rateMap.push(field)
+    if(isLast){
+      event.sender.send('finish-loading', 'rate')
+      event.sender.send('receive-rate', rateMap);
+    }
+});
   trade.emitterOn('error', msg =>{
     event.sender.send('error-msg', msg);
   })
-  trade.emitterOn('settlement-info', info =>{
-    event.sender.send('confirm-settlement', msg);
+  const settlementInfo = []
+  trade.emitterOn('settlement-info', (islast, info) =>{
+    settlementInfo.push(info)
+    if(islast){
+      console.log('111111111111111111111111', event.sender.send)
+      event.sender.send('receive-info', settlementInfo);
+    }
   })
 })
 
