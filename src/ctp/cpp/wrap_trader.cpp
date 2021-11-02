@@ -1928,7 +1928,7 @@ void WrapTrader::pkg_cb_rqsettlementinfo(CbRtnField *data, Local<Value> *cbArray
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->BrokerID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->InvestorID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "SequenceNo").ToLocalChecked(), Int32::New(isolate, pSettlementInfo->SequenceNo));
-        jsonRtn->Set(context, String::NewFromUtf8(isolate, "Content").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfo->Content).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "Content").ToLocalChecked(), String::NewFromUtf8(isolate, gbkToUTF8(pSettlementInfo->Content)).ToLocalChecked());
     }
 
     *cbArray = Number::New(isolate, data->nRequestID);

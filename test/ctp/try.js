@@ -56,22 +56,22 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   console.log("rspUserLogin: field", JSON.stringify(field));
   console.log("rspUserLogin: info", JSON.stringify(info));
   login = true;
-  // trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function (result, iRequestID) {
-  //   console.log('settlementinfo return val is ' + result);
-  // });
+  trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function (result, iRequestID) {
+    console.log('settlementinfo return val is ' + result);
+  });
 
-  var instrumentID = "";
-    trader.reqQryInstrument(instrumentID, function (field) {
-      console.log('reqQryInstrument is callback');
-      console.log(field);
-    })
+  // var instrumentID = "";
+  //   trader.reqQryInstrument(instrumentID, function (field) {
+  //     console.log('reqQryInstrument is callback');
+  //     console.log(field);
+  //   })
 });
 
 var t_bInsertOrder = false;
 trader.on('rqSettlementInfo', function (requestId, isLast, field, info) {
   console.log("rqSettlementInfo: requestId", requestId);
   console.log("rqSettlementInfo: isLast", isLast);
-  //console.log("rqSettlementInfo: field", JSON.stringify(field));
+  console.log("rqSettlementInfo: field", JSON.stringify(field));
   console.log('rqsettlementinfo callback');
 
   if (!t_bInsertOrder) {
@@ -125,27 +125,27 @@ trader.on('rqSettlementInfo', function (requestId, isLast, field, info) {
   }
 });
 
-trader.on('rtnOrder', function (field) {
-  console.log('rtnOrder');
-  console.log(field);
-});
+// trader.on('rtnOrder', function (field) {
+//   console.log('rtnOrder');
+//   console.log(field);
+// });
 
-trader.on('rtnTrade', function (field) {
-  console.log('rtnTrade');
-  console.log(field);
-})
+// trader.on('rtnTrade', function (field) {
+//   console.log('rtnTrade');
+//   console.log(field);
+// })
 
 trader.on('rspError', function (requestId, isLast, field) {
   console.log(JSON.stringify(field));
 });
 
-trader.on('rqInstrument', function (requestId, isLast, field, info) {
-  console.log('rqInstrument');
-  console.log(JSON.stringify(requestId));
-  console.log(JSON.stringify(isLast));
-  console.log("rqInstrument: field", JSON.stringify(field));
-  console.log("rqInstrument: info", JSON.stringify(info));
-})
+// trader.on('rqInstrument', function (requestId, isLast, field, info) {
+//   console.log('rqInstrument');
+//   console.log(JSON.stringify(requestId));
+//   console.log(JSON.stringify(isLast));
+//   console.log("rqInstrument: field", JSON.stringify(field));
+//   console.log("rqInstrument: info", JSON.stringify(info));
+// })
 
 trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
   console.log("in js code:", 'connect return val is ' + result);
