@@ -1,5 +1,5 @@
 var ctp = require('../../build/Debug/ctp.node');
-ctp.settings({ log: true });
+ctp.settings({ log: false });
 
 // simnow hanzhe
 var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
