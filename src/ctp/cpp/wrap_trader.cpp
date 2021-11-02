@@ -2059,8 +2059,8 @@ void WrapTrader::pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "ConfirmDate").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->ConfirmDate).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "ConfirmTime").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->ConfirmTime).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "SettlementID").ToLocalChecked(), Number::New(isolate, pSettlementInfoConfirm->SettlementID));
-        jsonRtn->Set(context, String::NewFromUtf8(isolate, "AccountID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->AccountID).ToLocalChecked());
-        jsonRtn->Set(context, String::NewFromUtf8(isolate, "CurrencyID").ToLocalChecked(), String::NewFromUtf8(isolate, pSettlementInfoConfirm->CurrencyID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "AccountID").ToLocalChecked(), String::NewFromUtf8(isolate, gbkToUTF8(pSettlementInfoConfirm->AccountID)).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "CurrencyID").ToLocalChecked(), String::NewFromUtf8(isolate, gbkToUTF8(pSettlementInfoConfirm->CurrencyID)).ToLocalChecked());
     }
     else {
        jsonRtn = Object::New(isolate);

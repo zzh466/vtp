@@ -12,6 +12,7 @@
             // "args": ["${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
             "args": ["${workspaceFolder}/test/ctp/reqQrySettlementInfoConfirm.js"],
+            // "args": ["${workspaceFolder}/test/ctp/reqSettlementInfoConfirm.js"],
             "cwd": "${workspaceFolder}"
         },
         {
