@@ -22,7 +22,7 @@
     data () {
       if (process.env.NODE_ENV === 'development'){
          this.$router.push('main');
-         ipcRenderer.send('resize-main', {width: 1400, height: 500});
+         ipcRenderer.send('resize-main', {width: 1800, height: 700});
       }
       return {
         form: {

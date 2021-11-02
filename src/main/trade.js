@@ -26,6 +26,7 @@ class Trade {
         const _trader = ctp.createTrader();
         this._trader = _trader;
         this.getInstrumentList = [];
+        this.tasks =[];
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
@@ -43,11 +44,19 @@ class Trade {
                 });
             })
             
-            _trader.on("rspUserLogin", function (requestId, isLast, field, info) {
+            _trader.on("rspUserLogin",  (requestId, isLast, field, info) =>{
                 console.log("rspUserLogin: requestId", requestId);
                 console.log("rspUserLogin: isLast", isLast);
                 console.log("rspUserLogin: field", JSON.stringify(field));
                 console.log("rspUserLogin: info", JSON.stringify(info));
+                if(info.ErrorID){
+                    this.emitter.emit('error', info.ErrorMsg);
+                    reject(info.ErrorMsg)
+                    return
+                }
+               
+                // 拿到计算手续费和持仓
+               
                 resolve()
                 // Ϊ��ʱ����ѯ���к�Լ��Ϣ
                 
@@ -55,6 +64,7 @@ class Trade {
             
             _trader.on('rspError', function (requestId, isLast, field) {
                 console.log(JSON.stringify(field));
+                this.emitter.emit('error',field);
                 reject()
             });
             
@@ -67,7 +77,7 @@ class Trade {
                 item.field = field;
                 resolve(PriceTick);
             })
-
+            
             // _trader.on('rtnOrder',  (field) => {
             //     console.log('rtnOrder ---- receive' );
             //     this.emitter.emit('rtnOrder', field);
@@ -79,15 +89,27 @@ class Trade {
             //     this.emitter.emit('rtnTrade', field)
                 
             //   })
-              
+           
             _trader.on('errInsert', function(a,b){
+                this.emitter.emit('error', a);
                 console.log(a,b)
             })
+         
             _trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
                 console.log("in js code:", 'connect return val is ' + result);
-            });
-            
+            });            
         })
+        let a =  {};
+        a.valueOf = undefined
+        this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
+           
+            if(!field){
+                console.log('^^^^^^^^^^^^^^^^^^^^^^^2222',  isLast, field);
+                this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
+                console.log('settlementinfo return val is '+result);
+                });
+            }
+        });
     }
     getInstrument(insId){
         return new Promise(resolve => {
@@ -112,11 +134,50 @@ class Trade {
         })
     }
     on(event, fn){
+        console.log(`${event} ---- register`);
         const _trader = this._trader;
         _trader.on(event, (...args) => {
             console.log(`${event} ---- receive`);
             this.emitter.emit(event, ...args);
         })
+        this.emitter.on(event, fn.bind(this));
+    }
+    //ctp除了order trade其他的on必须等待一个完成后再调用另一个
+    chainOn(event, func,fn){
+        this.login.then(()=>{
+            const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
+            _trader.on(event, function(requestId, isLast, field, info){
+                if(isLast && tasks.length > 1){
+                    tasks.shift();
+                    let _func = tasks[0].func;
+                    //ctp一秒只能发一个请求
+                    setTimeout(()=> {
+                        _trader[_func](m_BrokerId, m_InvestorId, function (field) {
+                            console.log(`${_func} is callback`);
+                            console.log(arguments);
+                        })
+                    }, 1000)
+                   
+                }
+                console.log(`${event} ---- receive`);
+                console.log('^^^^^^^^^^^^^^^^^^^^^^^', field, typeof (field), typeof (field) === 'undefined');
+                fn.call(this,isLast,field)
+            })
+            if(!tasks.length){
+                _trader[func](m_BrokerId, m_InvestorId, function (field) {
+                    console.log(`${func} is callback`);
+                    console.log(arguments);
+                })
+            }
+            tasks.push({
+            event,
+            func
+            })
+            
+        })
+        
+    }
+    emitterOn(event, fn){
         this.emitter.on(event, fn.bind(this));
     }
     getKey(key){

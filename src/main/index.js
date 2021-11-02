@@ -3,7 +3,7 @@ import  { receiveData }  from '../ctp/dataStruct'
 import '../renderer/store'
 
 import net from 'net';
-import cppmsg from 'cppmsg';
+import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
 let COLOSEALL = false;
@@ -49,6 +49,9 @@ function createWindow () {
 
 ipcMain.on('resize-main', (evnt, {width, height}) => {
   mainWindow.setSize(width, height)
+})
+ipcMain.on('close-main', () => {
+  app.quit();
 })
 let opedwindow = [];
 function findedopened(insId){
@@ -124,6 +127,7 @@ app.on('activate', () => {
 })
 const orderMap = {};
 const tradeMap = [];
+const rateMap =[];
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
   const win =  findedopened(args);
@@ -153,6 +157,12 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
 })
 //交易相关
 ipcMain.on('trade-login', (event, args) => {
+  if(trade){
+    event.sender.send('receive-trade', tradeMap);
+    event.sender.send('finish-loading', 'trade')
+    event.sender.send('receive-order', orderMap);
+    event.sender.send('finish-loading', 'order')
+  }
   trade = new Trade(args);
  
   function getorderKey(obj){
@@ -164,6 +174,7 @@ ipcMain.on('trade-login', (event, args) => {
   }
   let TRADETIME = setTimeout(() => {
     event.sender.send('finish-loading', 'trade')
+    TRADETIME= null;
   }, 2000)
   trade.on('rtnTrade', function(field){
     // console.log('emmit---rtnTrade', field);
@@ -188,6 +199,7 @@ ipcMain.on('trade-login', (event, args) => {
       TRADETIME = setTimeout(() => {
         event.sender.send('receive-trade', tradeMap);
         event.sender.send('finish-loading', 'trade')
+        TRADETIME= null;
       }, 2000)
       return
     }
@@ -250,19 +262,49 @@ ipcMain.on('trade-login', (event, args) => {
     }
     event.sender.send('receive-order', orderMap);
   })
+//   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
+//     const { OpenPrice, OpenDate, TradingDay} = field;
+//     if(OpenDate ===TradingDay) return;  
+//     field.Price = OpenPrice;
+//     tradeMap.push(field);
+//     if(isLast && !TRADETIME){
+//       event.sender.send('receive-trade', tradeMap);
+//     }
+//   })
+
+//   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
+//     console.log('rqInstrumentCommissionRate is callback');
+//     console.log("rqInstrumentCommissionRate: isLast", isLast);
+//     rateMap.push(field)
+//     if(isLast){
+//       event.sender.send('finish-loading', 'rate')
+//       event.sender.send('receive-rate', rateMap);
+//     }
+//     console.log("rqInstrumentCommissionRate: field", JSON.stringify(field));
+// });
+  trade.emitterOn('error', msg =>{
+    event.sender.send('error-msg', msg);
+  })
+  trade.emitterOn('settlement-info', info =>{
+    event.sender.send('confirm-settlement', msg);
+  })
 })
 
 ipcMain.handle('get-pirceTick', async (event, arg) => {
   const result = await trade.getInstrument(arg)
   return result
 })
-
-ipcMain.on('trade', (evnt, args) => {
+ipcMain.on('confirm-settlement', (event)=>{
+  trade.chainOn('rSettlementInfoConfirm', 'reqSettlementInfoConfirm', function(){
+    
+  })
+})
+ipcMain.on('trade', (event, args) => {
   STARTTRADE = true;
   trade.trade(args);
 })
 
-ipcMain.on('cancel-order', (evnt, args) => {
+ipcMain.on('cancel-order', (event, args) => {
   const arr = [];
  for(let key in orderMap){
    const item = orderMap[key];
@@ -329,21 +371,25 @@ ipcMain.on('start-receive', (event, args) =>{
       flag = flag + 416;
     }
   }
+  const HasDATA = false
   tcp_client.on('data',function(data){
     if(data.length % 416 === 0){
       parseReceiveData(data);
     }else {
       //建立缓冲区 解析分片发送数据
       const head  = headMsg.decodeMsg(data.slice(0, 8));
-     
+      console.log(head)
       if(head.CmdID === 201){
         return
       }
-      if(data.length !== 0 && head.CmdID !== 11){
-        return
+      if(head.CmdID === 11 ){
+        cacheArr =[];
       }
+      // if(cacheArr.length !== 0 && head.CmdID !== 11){
+      //   return
+      // }
       cacheArr.push(data)
-      // console.log.apply(console, cacheArr.map(e => e.length));
+      console.log.apply(console, cacheArr.map(e => e.length));
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
      
       if(length % 416 === 0){

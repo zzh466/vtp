@@ -4,7 +4,7 @@ import { ipcRenderer } from 'electron'
 import App from './App'
 import router from './router'
 import store from './store'
-import ElementUI from 'element-ui';
+import ElementUI, {MessageBox} from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 import './element'
 
@@ -23,6 +23,13 @@ ipcRenderer.on('change-ins', (event, arg) => {
 })
 ipcRenderer.on('remove-window', (event, arg) => {
   window._$store.dispatch('removeIns', arg)
+})
+ipcRenderer.on('error-msg', (event, arg) => {
+  MessageBox({
+    type: 'error',
+    title: '错误',
+    message: arg
+  })
 })
 /* eslint-disable no-new */
 Vue.use(ElementUI);
