@@ -29,7 +29,7 @@ class Chart {
         const decimal = (this.step.toString().split(1) || []).length;
         this.decimal = decimal;
         this.range =[10, 20, 30, 50, 100, 200];
-        this.placeOrder=[];
+        this.placeOrder=[];  
         this.traded ={};
         this.init();
     }
@@ -305,14 +305,15 @@ class Chart {
     renderPlaceOrder(){
         if(this.data.length===0) return;
         const pricearray = this.placeOrder.reduce((a, b) => {
-            const {LimitPrice, volume} =b;
+            const {LimitPrice, volume, Direction} =b;
             const item = a.find(({price})=> price===LimitPrice)
             if(item){
                 item.volume = item.volume + volume
             }else{
                 a.push({
                     price: LimitPrice,
-                    volume: volume
+                    volume: volume,
+                    direction: Direction
                 })
             }
             return a;
@@ -323,14 +324,17 @@ class Chart {
         const y = Y + 29;
         const _x = X + 50.5;
         const {stepwidth, stepHeight, range} = this;
-        pricearray.forEach(({price, volume}) => {
+        let _volume = [0, 0];
+        pricearray.forEach(({price, volume, direction}) => {
             const index = this.getindex(price, true);
             const  x = _x + (index-this.start) * stepwidth;
             const height = Chart.getHeight(range, volume, stepHeight); 
             ctx.fillStyle = 'red';
+            _volume[direction] = _volume[direction] + volume;
             ctx.fillRect(x,y,stepwidth -1,height);
 
         })
+        this.holdVolume = _volume;
         // console.log(this.placeOrder, pricearray)
         ctx.restore()
     }

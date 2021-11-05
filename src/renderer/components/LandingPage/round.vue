@@ -1,26 +1,11 @@
 <template>
-  <el-table  :data='traderData'   height="250" size='mini'
-            border>
-    <el-table-column
-        v-for="column in traderColumns"
-        :key='column.prop'
-        :label="column.label"
-        :prop="column.prop"
-        :width="column.width"
-        row-key='key'>
-        <template v-if="column.render || column.component" scope="scope">
-        <div v-if='column.render'>{{column.render(scope.row)}}</div>
-        <component v-if='column.component' :is='column.component' :data='scope.row'></component>
-        </template>
-    </el-table-column>
-  </el-table>
-
+    <Table :tableData='traderData' height="250" :columns='traderColumns'/>
 </template>
 
 <script>
-  import {Status, Direction} from '../../utils/utils'
-
-    const Tag = {
+  import { Direction} from '../../utils/utils'
+ import Vue from 'vue';
+  Vue.component('Tag', {
         template: `<div class='trade-tag'>
             <div class='finish' :style='{width: width + "%"}'></div>
             <div  class='remain' :style='{width: 100 - width + "%"}'></div>
@@ -32,12 +17,12 @@
                 return CloseVolume / Volume *100;
             }
         }
-    }
-  export default {
-    props: ['tableData', 'rates'],
-    components: {Tag},
-    data(){
+    })
 
+  export default {
+    props: ['data', 'rates', 'price', 'instruments'],
+    data(){
+        const _this = this;
         return {
             traderColumns: [
                 {
@@ -89,9 +74,14 @@
                      label: '盈亏点',
                     prop: 'range',
                     render(data){
-                        if(!data.ClosePrice) return 0;
                        let range =  data.ClosePrice - data.Price;
-                       if(data.Direction==='1'){
+                     
+                       const {ClosePrice , Price, Volume, CloseVolume, Direction, InstrumentID} = data;
+                       range = ClosePrice - Price;
+                       if(_this.price[InstrumentID] && Volume > CloseVolume){
+                           range = (range * CloseVolume + (Volume -CloseVolume) *( _this.price[InstrumentID][Direction] -Price)) / Volume;
+                       }
+                        if(data.Direction==='1'){
                            range = -range;
                        }
                        return range.toFixed(2)
@@ -101,6 +91,7 @@
                      label: '手续费',
                     prop: 'commission',
                     render(data){
+                        //closeType 1平今 2平昨
                         return data.Price.toFixed(2)
                     }
                 },
@@ -131,7 +122,6 @@
     computed:{
         traderData(){
             let arr = []
-           
             function findAnDmatch(e){
                  const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate} = e;
                  const item =arr.find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
@@ -142,6 +132,12 @@
                             item.ClosePrice = (gap * Price +  item.CloseVolume * item.ClosePrice) / item.Volume;
                             e.Volume = Volume - gap;
                             item.CloseVolume = item.Volume;
+                            
+                            if(item.TradeTime){
+                                item.closeType='1'
+                            }else{
+                                 item.closeType='0'
+                            }
                             findAnDmatch(e)
                         }else{
                             if(!TradeTime){
@@ -154,25 +150,32 @@
                         }
                         item.TradeTime = TradeTime;
                      }else{
-                         item.TradeTime = TradeTime;
                          if(TradeTime){
-                            item.Price = (item.Price*item.Volume + Price * Volume)/(item.Volume + Volume);
+                                arr.unshift({
+                                InstrumentID,
+                                Volume,
+                                Direction,
+                                Price,
+                                TradeDate: TradeDate,
+                                TradeTime,
+                                CloseVolume: 0,
+                                ClosePrice: 0
+                            })
+                         }else {
+                             item.Volume = item.Volume + Volume; 
                          }
                         
-                         item.Volume = item.Volume + Volume; 
+                         
                      }
                     
                    
                 }else{
-                    let price = Price;
-                    if(!TradeTime){
-                        price = e.LastSettlementPrice;
-                    }
+                   
                     arr.unshift({
                         InstrumentID,
                         Volume,
                         Direction,
-                        Price: price,
+                        Price,
                         TradeDate: TradeDate||OpenDate,
                         TradeTime,
                         CloseVolume: 0,
@@ -180,7 +183,7 @@
                     })
                 }
             }
-            this.tableData.sort((a, b)=>{
+            this.data.sort((a, b)=>{
                 const date1 = a.OpenDate || a.TradeDate
                 const date2 = b.OpenDate || b.TradeDate
                 return date1 - date2

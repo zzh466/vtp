@@ -1,5 +1,5 @@
 <template>
-  <div class="price-body"  @dblclick="mouseTrade"> 
+  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading'> 
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
     <div  class="price-tick" v-show="showbar" :style="{ width: '15px', left: this.left + 'px' }"></div>
   </div>
@@ -9,7 +9,8 @@
 import { ipcRenderer } from 'electron';
 import Chart from './chart'
 import Gen from './hotkey';
-import {getWinName} from '../../utils/utils'
+import {getWinName, getTodayAndYesterday ,getTodayOpen} from '../../utils/utils'
+import {Notification} from 'element-ui'
 export default {
   watch:{
     traded(val) {
@@ -38,9 +39,9 @@ export default {
         direction,
         price
       }
-      console.log(results)
       this.chart.traded = results;
       this.chart.renderTradeOrder();
+      console.log(results)
       return results;
 
     },
@@ -66,9 +67,11 @@ export default {
         this.func(e, this);
       }
       const p = new Promise(a => {
-         ipcRenderer.invoke('get-pirceTick', id).then(tick => {
-          console.log(tick)
+         ipcRenderer.invoke('get-pirceTick', id).then(({PriceTick: tick, ExchangeID: exchangeId}) => {
+          console.log(tick, exchangeId)
+          this.exchangeId = exchangeId;
           this.chart = new Chart(chartDom, this.width, this.height,tick, {width: this.stepwidth});
+          this.loading =false;
           a();
           ipcRenderer.on(`receive-${id}`, (event, arg) => {
             this.chart.render(arg)
@@ -79,19 +82,41 @@ export default {
       ipcRenderer.on('place-order', (_, field) => {
        
         p.then(()=>{
-          console.log(field, 82)
+          if(field && field.OrderSubmitStatus === '4'){
+            Notification({
+              type: 'error',
+              message: field.StatusMsg
+            })
+            return;
+          }
           this.chart.placeOrder.push(field);
           this.chart.renderBakcground();
           this.chart.renderVolume();  
           this.chart.renderPlaceOrder();
         })
       })
+      ipcRenderer.on('total-order', (_, orders) => { 
+        const arr = [];const id = this.$route.query.id;
+        for(let key in orders){
+          if(orders[key].ExchangeInstID === id){
+            arr.push(orders[key])
+          }
+        }
+       this.orders = arr;
+       
+      })
+      ipcRenderer.on('instrumet-data', (_, instrumet) => {
+        this.instrumet = instrumet;
+      })
+   
       ipcRenderer.on('trade-order', (_, field) => {
         
         p.then(()=>{
            
            this.traded.push(field);
-           console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
+       
+          //  console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
+          
         })
       })
 
@@ -109,7 +134,8 @@ export default {
         type: '1',
         closeType: '0'
       },
-      traded: []
+      traded: [],
+      loading: true
     }
   },
   methods: {
@@ -124,7 +150,7 @@ export default {
       }
     },
     mouseTrade(){
-      if(!this.showbar) return;
+      if(!this.showbar || !this.chart.data.length) return;
       const index = (this.left - 105) / this.stepwidth;
       let {buyIndex, askIndex, start} = this.chart;
       buyIndex = buyIndex - start;
@@ -142,24 +168,103 @@ export default {
     putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume){
        const instrumentID = this.$route.query.id;
       let combOffsetFlag = '0'
-      const {traded } = this.chart;
+      const {traded, holdVolume} = this.chart;
       limitPrice = parseFloat(limitPrice)
       if(traded.direction && traded.price.length){
         if(direction !== traded.direction){
           combOffsetFlag = '1';
+          if(volumeTotalOriginal + holdVolume> traded.price.length){
+            volumeTotalOriginal = traded.price.length - holdVolume;
+          }
         }
-        if(volumeTotalOriginal> traded.price.length){
-          volumeTotalOriginal = traded.price.length;
-        }
+       
       }
-      console.log('tarde')
-      ipcRenderer.send('trade', {limitPrice, direction, volumeTotalOriginal, instrumentID, combOffsetFlag})
+      if(volumeTotalOriginal <=0){
+        Notification({
+          message: '已有平仓单，请撤单后再下单'
+        })
+        return;
+      }
+      const traderData= this.checkLock(direction, volumeTotalOriginal,combOffsetFlag);
+      if(!traderData) return
+      ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData})
+    },
+    canunlock(direction){
+      const {today, yesterDay} = getTodayAndYesterday(this.traded, this.orders);
+       const { holdVolume} = this.chart;
+      const _direction = direction === '0'? '1' : '0';
+      return yesterDay[_direction] - today[_direction] -  holdVolume[direction];
+    },
+    hasYesterDaylock(direction){
+       const {today, yesterDay} = getTodayAndYesterday(this.traded);
+      const _direction = direction === '0'? '1' : '0';
+      
+       return yesterDay[direction] - today[_direction]  > 0;
+    },
+    hasTodayUnlock(direction, volumeTotalOriginal){
+      const { holdVolume} = this.chart;
+      const hold = holdVolume [direction];
+      const todayOpen  = getTodayOpen(this.traded, this.orders);
+       const _direction = direction === '0'? '1' : '0';
+      return todayOpen[_direction] >= volumeTotalOriginal+hold;
+    },
+    checkLock(direction, volumeTotalOriginal,combOffsetFlag){
+      console.log(this.instrumet); 
+      const {todayAsk, todayBuy, yesterdayAsk, yesterdayBuy} = this.instrumet;
+      const { holdVolume} = this.chart;
+      const hold = holdVolume[direction];
+      const yesterDay = direction === 0? yesterdayBuy: yesterdayAsk;
+      const oppositeYesterDay = direction === 0? yesterdayAsk: yesterdayBuy;
+       const toDay = direction === 0? todayBuy: todayAsk;
+      const oppositeToday = direction === 0? todayAsk: todayBuy;
+      switch(this.config.type){
+        case '0': 
+          if(oppositeYesterDay>= volumeTotalOriginal + hold){
+            combOffsetFlag = '1';
+          }else {
+            if(combOffsetFlag === '0' && this.exchangeId === 'CFFEX' && yesterDay){
+               Notification({
+                message: '锁仓模式上期所合约需要先将昨仓解锁再开仓'
+              })
+              return ;
+            }
+            combOffsetFlag = '0';
+          }
+        case '1':
+           if(oppositeYesterDay>= volumeTotalOriginal + hold){
+              combOffsetFlag = '1';
+            }else if(oppositeToday >= volumeTotalOriginal + hold){
+               combOffsetFlag = 1
+              if(this.exchangeId === 'CFFEX'){
+                combOffsetFlag = 3
+              }
+            }else if(this.exchangeId === 'CFFEX' && combOffsetFlag === '1'){
+              combOffsetFlag = 3
+            }
+          break;
+        case '2':
+          combOffsetFlag = '0'
+          break;
+        case '3':
+          if(combOffsetFlag === '0' && oppositeYesterDay< volumeTotalOriginal + hold){
+              Notification({
+                message: '昨仓不够平仓模式下无法开仓'
+              })
+              return
+          }
+          combOffsetFlag = '1';
+        
+      }
+      return {direction, volumeTotalOriginal,combOffsetFlag}
     },
     changeConfig(key, val){
       const value = this.config[key];
       if(value !== val){
         this.config[key] = val;
       }
+    },
+    changeHotKey(config){
+      this.func = Gen(config);
     }
     // init(data){
     //   const {LastPrice} = data;

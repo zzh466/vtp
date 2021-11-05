@@ -59,7 +59,6 @@ ipcMain.on('close-main', () => {
 let opedwindow = [];
 function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
-  BrowserWindow.getAllWindows();
   return win;
 }
 ipcMain.on('open-window', (evnt, {id: insId, title}) => {
@@ -133,6 +132,7 @@ app.on('activate', () => {
 const orderMap = {};
 const tradeMap = [];
 const rateMap =[];
+let InstrumetsData =[];
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
   const win =  findedopened(args);
@@ -143,13 +143,31 @@ ipcMain.on('register-event',  (event, args) =>{
       win.sender.send('place-order',value);
     }
   }
-  tradeMap.forEach(field=>{
+  const instrumet = InstrumetsData.find(({instrumentID}) => instrumentID===args);
+  win.sender.send('instrumet-data',instrumet);
+  win.sender.send('total-order',orderMap);
+  tradeMap.sort((a, b)=>{
+      const date1 = a.OpenDate || a.TradeDate
+      const date2 = b.OpenDate || b.TradeDate
+      return date1 - date2
+  }).forEach(field=>{
     if(field.InstrumentID === args){
       win.sender.send('trade-order',field);
     }
   })
 
 })
+ipcMain.on('update-instrumentsData',  (event, args) =>{
+  InstrumetsData = args;
+  InstrumetsData.forEach(instrumet =>{
+    const {instrumentID} = instrumet;
+    const win =  findedopened(instrumentID);
+    if(win){
+      win.sender.send('instrumet-data',instrumet);
+    }
+  })
+})
+
 //停止订阅
 ipcMain.on('stop-subscrible',  (event, args) =>{
   console.log('stop-subscrible')
@@ -168,6 +186,7 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-order', orderMap);
     event.sender.send('receive-order', orderMap);
     event.sender.send('receive-rate', rateMap)
+    STARTTRADE = false;
     return
   }
   trade = new Trade(args);
@@ -257,6 +276,7 @@ ipcMain.on('trade-login', (event, args) => {
       if(win && win.sender){ 
         console.log(InstrumentID)
         win.sender.send('place-order', orderMap[key]);
+        win.sender.send('total-order',orderMap);
       }
     }
     // console.log('emmit---rtnOrder', field)
@@ -271,15 +291,15 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-order', orderMap);
   })
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
-    const { OpenPrice, OpenDate, TradingDay} = field;
+    const { LastSettlementPrice, OpenDate, TradingDay} = field;
     if(OpenDate ===TradingDay) return;  
-    field.Price = OpenPrice;
+    field.Price = LastSettlementPrice;
+    field.Volume = field.Volume + field.CloseVolume;
     tradeMap.push(field);
     if(isLast && !TRADETIME){
       event.sender.send('receive-trade', tradeMap);
     }
   })
-
   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
     console.log('rqInstrumentCommissionRate is callback');
     console.log("rqInstrumentCommissionRate: isLast", isLast);
@@ -288,8 +308,10 @@ ipcMain.on('trade-login', (event, args) => {
       event.sender.send('finish-loading', 'rate')
       event.sender.send('receive-rate', rateMap);
     }
-});
-  trade.emitterOn('error', msg =>{
+  });
+
+  trade.emitterOn('error', (msg, skip) =>{
+    if(skip && !STARTTRADE) return;
     event.sender.send('error-msg', msg);
   })
   const settlementInfo = []
@@ -312,7 +334,13 @@ ipcMain.on('confirm-settlement', (event)=>{
   })
 })
 ipcMain.on('trade', (event, args) => {
+  const {instrumentID } = args;
+  const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
+  if(index === -1){
+    // trade.send('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId);
+  }
   STARTTRADE = true;
+  
   trade.trade(args);
 })
 
@@ -329,6 +357,8 @@ ipcMain.on('cancel-order', (event, args) => {
 })
 
 //行情相关
+const PriceData ={};
+let Maincycle = null
 ipcMain.on('start-receive', (event, args) =>{
   const {host, port, instrumentIDs, type,  iCmdID, size = 36} = args
   const tcp_client = new net.Socket();
@@ -357,7 +387,14 @@ ipcMain.on('start-receive', (event, args) =>{
     console.log('success')
   })
   const decodeMsg = new cppmsg.msg(receiveData[type])
-
+  if(!Maincycle){
+    Maincycle=setInterval(()=>{
+      
+      if(Object.getOwnPropertyNames(PriceData).length!==0){
+        event.sender.send('receive-price', PriceData)
+      }
+    }, 1000)
+  }
   const decodeKey = new cppmsg.msg([
     ['key', 'uint8'],
   ])
@@ -370,9 +407,11 @@ ipcMain.on('start-receive', (event, args) =>{
     let flag = 0 
     while(flag < data.length){
       let parseData;
+      
       parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
       // console.log(parseData)
-      const {InstrumentID } = parseData; 
+      const {InstrumentID,BidPrice1, AskPrice1 } = parseData; 
+      PriceData[InstrumentID] = [BidPrice1, AskPrice1 ]
       const win = findedopened(InstrumentID);
       // console.log(InstrumentID)
       if(win && win.sender){ 
@@ -390,7 +429,7 @@ ipcMain.on('start-receive', (event, args) =>{
     }else {
       //建立缓冲区 解析分片发送数据
       const head  = headMsg.decodeMsg(data.slice(0, 8));
-      console.log(head)
+      // console.log(head)
       if(head.CmdID === 201){
         return
       }
@@ -401,7 +440,7 @@ ipcMain.on('start-receive', (event, args) =>{
       //   return
       // }
       cacheArr.push(data)
-      console.log.apply(console, cacheArr.map(e => e.length));
+      // console.log.apply(console, cacheArr.map(e => e.length));
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
      
       if(length % 416 === 0){

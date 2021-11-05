@@ -70,12 +70,12 @@ class Trade {
             
             _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
                
-                const {InstrumentID, PriceTick} = field;
+                const {InstrumentID, PriceTick, ExchangeID} = field;
                 console.log(field)
                 const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
                 const { resolve } = item;
                 item.field = field;
-                resolve(PriceTick);
+                resolve({PriceTick, ExchangeID});
             })
             
             // _trader.on('rtnOrder',  (field) => {
@@ -90,8 +90,8 @@ class Trade {
                 
             //   })
            
-            _trader.on('errInsert', function(a,b){
-                this.emitter.emit('error', a);
+            _trader.on('errInsert', (a,b) =>{
+                this.emitter.emit('error', b, true);
                 console.log(a,b)
             })
          
@@ -116,14 +116,15 @@ class Trade {
                 const item = this.getInstrumentList.find(({id}) => id===insId);
                 if(item && item.field.PriceTick) {
                     item.resolve = null;
-                    resolve(item.field.PriceTick);
+                    const {PriceTick, ExchangeID} = item.field
+                    resolve({PriceTick, ExchangeID});
                     return;
                 }
                 this.getInstrumentList.push({
                     resolve,
                     id: insId
                 })
-                this._trader.reqQryInstrument(insId, function (field) {
+                this.send('reqQryInstrument', insId, function (field) {
                     // console.log('reqQryInstrument is callback');
                     // console.log(field);
                 })
@@ -131,6 +132,9 @@ class Trade {
             })
            
         })
+    }
+    send(event, ...args){
+        this._trader[event](...args)
     }
     on(event, fn){
         console.log(`${event} ---- register`);
@@ -164,7 +168,7 @@ class Trade {
             })
             if(!tasks.length){
                
-                _trader[func](m_BrokerId, m_InvestorId, function (field) {
+                this.send(func, m_BrokerId, m_InvestorId, function (field) {
                     console.log(`${func} is callback`);
                     console.log(arguments);
                 })
@@ -178,13 +182,13 @@ class Trade {
         
     }
     next(){
-        const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
+        const { tasks, m_BrokerId, m_InvestorId} = this;
         tasks.shift();
        if(tasks.length){
             let _func = tasks[0].func;
             //ctp一秒只能发一个请求
             setTimeout(()=> {
-                _trader[_func](m_BrokerId, m_InvestorId, function (field) {
+                this.send(_func, m_BrokerId, m_InvestorId, function (field) {
                     console.log(`${_func} is callback`);
                     console.log(arguments);
                 })
@@ -236,7 +240,7 @@ class Trade {
             "MacAddress": "",
           };
           console.log(insertOrder);
-          this._trader.reqOrderInsert(insertOrder, function (field) {
+          this.send('reqOrderInsert', insertOrder, function (field) {
             console.log('ReqOrderInsert is callback');
             console.log(field);
           })
@@ -259,7 +263,7 @@ class Trade {
                 InstrumentID
             }
             console.log(cancelOrder);
-            this._trader.reqOrderAction(cancelOrder, function(field){
+            this.send('reqOrderAction',cancelOrder, function(field){
                 console.log('reqOrderAction is callback');
                 console.log(field);
             })

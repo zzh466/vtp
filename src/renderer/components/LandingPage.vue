@@ -2,40 +2,22 @@
   <div id="wrapper" v-loading='loading.length'  element-loading-text="正在获取账号信息">
     <main  v-if='!loading.length'>
       <div class="left-side">
-          <div class="doc"> 
-              <p v-for='ins in InstrumentIDs' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
-              <p v-for='ins in ids' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
-              <p v-for='ins in gz' :style="{backgroundColor: activeIns===ins?'pink':''}" @click="start(ins)" :key="ins">{{ins}}</p>
-              <button @click="open">商品</button>
-              <button @click="open1">郑商所</button>
-              <button @click="open2">股指</button>
-              <button @click="stop">停止</button>
-              <br><br>
-           </div>
+          <div class="label">订阅合约:</div>
+          <Table @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
+          <el-button @click="open">商品</el-button>
+              <el-button @click="open1">郑商所</el-button>
+              <el-button @click="open2">股指</el-button>
+              <el-button @click="stop">停止</el-button>
       </div>
 
       <div class="right-side">
         <div>
           <div class="label">下单信息：</div>
-          <el-table :data='orderData'   height="250" size='mini'
-            border>
-            <el-table-column
-              v-for="column in orderColumns"
-              :key='column.prop'
-              :label="column.label"
-              :prop="column.prop"
-              :width="column.width"
-              row-key='key'>
-              <template v-if="column.render || column.component" scope="scope">
-                <div v-if='column.render'>{{column.render(scope.row)}}</div>
-                <component v-if='column.component' :is='column.component' :data='scope.row'></component>
-              </template>
-            </el-table-column>
-          </el-table>
+            <Table  height='250' :columns='orderColumns' :tableData='orderData'/>
         </div>
         <div>
            <div class="label">回合信息：</div>
-          <Round :tableData='traders' :rates='rates'></Round>
+          <Round :data='traders' :rates='rates' :price='price' ></Round>
         </div>
       </div>
     </main>
@@ -55,12 +37,13 @@
 </template>
 
 <script>
-  import Status from './LandingPage/Status'
   import { ipcRenderer } from 'electron';
   import request from '../utils/request';
   import {getWinName, Direction, CombOffsetFlag} from '../utils/utils';
   import Round from './LandingPage/round.vue';
-  const StatusMsg = {
+  import Status from './LandingPage/Status.vue';
+  import Vue from 'vue';
+  Vue.component('StatusMsg', {
     props: ['data'],
     template: `<el-popover
                 placement="left"
@@ -70,11 +53,11 @@
                 <div slot="reference">{{data.StatusMsg.length> 4? data.StatusMsg.slice(0,4) + '……': data.StatusMsg}}</div>
               </el-popover>
             `
-  }
-
+  })
+  Vue.component('Status', Status);
   export default {
     name: 'landing-page',
-    components: { Status, StatusMsg, Round },
+    components: {  Round },
     computed: {
       priceData(){
         return this.$store.state.PriceData.priceData;
@@ -94,6 +77,54 @@
         }
         console.log(arr)
         return arr;
+      },
+      subscribelInstruments(){
+        const ExchangeId = this.InstrumentIDs.concat(this.ids, this.gz);
+        return ExchangeId;
+      },
+      instrumentsData(){
+        const data = this.subscribelInstruments.map(e=>({
+          instrumentID: e,
+          yesterdayBuy: 0,
+          yesterdayAsk: 0,
+          todayBuy: 0,
+          todayAsk:0,
+          todayVolume: 0,
+          'todayCancel': 0
+        }))
+        this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
+          const {InstrumentID, VolumeTotalOriginal} = order;
+          const item = data.find(e => e.instrumentID === InstrumentID);
+          if(item)item.todayCancel += VolumeTotalOriginal;
+        })
+        const orderData = this.orderData.filter(e => e.OrderStatus === '0')
+        this.traders.forEach(trader => {
+           const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
+           const item = data.find(e => e.instrumentID === InstrumentID)
+           if(!TradeTime){
+             const key = Direction === '0'? 'yesterdayBuy': 'yesterdayAsk';
+              item[key] += Volume
+           }else {
+             const order = orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+             if(!order) return
+              const {CombOffsetFlag} = order;
+            if(CombOffsetFlag === '0'){
+                const key = Direction === '0'? 'todayBuy': 'todayAsk';
+                item[key] += Volume;
+                item.todayVolume += Volume;
+            }else {
+               const keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
+               const keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
+               if(item[keyYesterDay] >= Volume){
+                 item[keyYesterDay] -= Volume
+               }else {
+                 item[keyToady] -= Volume;
+               }
+            }
+           }
+        })
+        ipcRenderer.send('update-instrumentsData', data);
+        return data
       }
     },
     data(){
@@ -175,7 +206,43 @@
         }],
         traders: [],
         confirmInfo: [],
-        rates: []
+        rates: [],
+        price: {},
+        instrumentsColumns:[{
+          label: '合约',
+          prop: 'instrumentID',
+        },{
+          label: '总多仓',
+          prop: 'totalBuy',
+          render(data){
+            return data.yesterdayBuy+ data.todayBuy;
+          }
+        },{
+          label: '总空仓',
+          prop: 'totalAsk',
+          render(data){
+            return data.yesterdayAsk+ data.todayAsk;
+          }
+        },{
+          label: '昨多仓',
+          prop: 'yesterdayBuy',
+        },{
+          label: '昨空仓',
+          prop: 'yesterdayAsk',
+        },{
+          label: '今多仓',
+          prop: 'todayBuy',
+        },{
+          label: '今空仓',
+          prop: 'todayAsk',
+        },{
+          label: '今开仓',
+          prop: 'todayVolume',
+        },{
+          label: '今撤单',
+          prop: 'todayCancel',
+        }
+        ],
       }
     },
     mounted(){
@@ -210,6 +277,9 @@
         this.confirmInfo =  arg.map(({Content}) => Content)
         this.dialogVisible = true;
       })
+       ipcRenderer.on('receive-price', (event, arg)=>{
+        this.price=arg
+      })
       setTimeout(()=>{
         if(this.loading.length !== 0){
           this.$alert('查询超时，不在交易时间或者网络连接有问题', '错误', {
@@ -222,9 +292,10 @@
       
     },
     methods: {
-      start(ins) {
-        ipcRenderer.send('open-window', {id:ins, title: getWinName(ins)});
-        this.$store.dispatch('updateIns', ins);
+      start(row) {
+        const {instrumentID} = row
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID)});
+        this.$store.dispatch('updateIns', instrumentID);
       },
       open () {
          ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18199, instrumentIDs: this.InstrumentIDs, type: 'SP',  iCmdID: 101});
@@ -253,7 +324,7 @@
         this.dialogVisible = false;
          ipcRenderer.send('confirm-settlement');
         
-      }
+      },
       
     }
   }
@@ -303,6 +374,7 @@
     display: flex;
     flex-direction: column;
     flex-basis: 70%; 
+    padding-left: 30px;
   }
   .welcome {
     color: #555;

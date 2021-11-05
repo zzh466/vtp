@@ -4,7 +4,7 @@ import { ipcRenderer } from 'electron'
 import App from './App'
 import router from './router'
 import store from './store'
-import ElementUI, {MessageBox} from 'element-ui';
+import ElementUI, {MessageBox, Notification} from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 import './element'
 
@@ -33,7 +33,31 @@ ipcRenderer.on('error-msg', (event, arg) => {
 })
 /* eslint-disable no-new */
 Vue.use(ElementUI);
-
+Vue.component('Table', {
+  props: ['columns', 'height', 'tableData'],
+  template: ` <el-table :data='tableData'   :height="height" size='mini' @row-click='rowClick'
+          border>
+          <el-table-column
+            v-for="column in columns"
+            :key='column.prop'
+            :label="column.label"
+            :prop="column.prop"
+            :width="column.width"
+            row-key='key'
+            :highlight-current-row='true'
+            >
+            <template v-if="column.render || column.component" scope="scope">
+              <div v-if='column.render'>{{column.render(scope.row)}}</div>
+              <component v-if='column.component' :is='column.component' :data='scope.row'></component>
+            </template>
+          </el-table-column>
+        </el-table>`,
+    methods:{
+    rowClick(...args){
+      this.$emit('row-click', ...args);
+    }
+  }
+})
 new Vue({
   components: { App },
   router,
