@@ -25,7 +25,7 @@ class Chart {
         this.step = step;
         this.data = [];
         this.start = 0;
-        this.count = Math.floor((width - 150) / (this.stepwidth * 2) ) * 2;
+        
         const decimal = (this.step.toString().split(1) || []).length;
         this.decimal = decimal;
         this.range =[10, 20, 30, 50, 100, 200];
@@ -50,12 +50,14 @@ class Chart {
     }
      init(){
         const ctx= this.ctx;
+      
+        this.count = Math.floor((this.width - 150) / (this.stepwidth * 2) ) * 2;
         ctx.beginPath();
         ctx.strokeStyle = '#00ff00'
         ctx.moveTo(X, Y + this.stepHeight);
         ctx.lineTo(X,270.5);
         ctx.stroke();
-       
+        
         let range = this.range;
         ctx.beginPath();
         ctx.moveTo(X + 50, Y+10);
@@ -87,7 +89,17 @@ class Chart {
         });
         ctx.restore()
     }
-
+    resize( width, height){
+        const ctx= this.ctx;
+        this.width = width;
+        this.height = height;
+        ctx.width = width;
+        ctx.height = height;
+        this.init();
+        this.data = [];
+        this.initData(this.currentPrice);
+        this.renderPrice()
+    }
      initData(price){
         const count = this.count / 2;
         const decimal = this.decimal;

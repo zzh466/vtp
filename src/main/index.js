@@ -204,7 +204,7 @@ ipcMain.on('trade-login', (event, args) => {
     TRADETIME= null;
   }, 2000)
   trade.on('rtnTrade', function(field){
-    console.log('emmit---rtnTrade', field);
+    console.log('emmit---rtnTrade');
     const { Volume, Price, InstrumentID} = field
     const win = findedopened(InstrumentID);
     tradeMap.push(field);
@@ -303,7 +303,10 @@ ipcMain.on('trade-login', (event, args) => {
   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
     console.log('rqInstrumentCommissionRate is callback');
     console.log("rqInstrumentCommissionRate: isLast", isLast);
-    rateMap.push(field)
+    if(!rateMap.find(e => e.InstrumentID === field.InstrumentID)){
+      rateMap.push(field)
+    }
+    
     if(isLast){
       event.sender.send('finish-loading', 'rate')
       event.sender.send('receive-rate', rateMap);
@@ -337,7 +340,7 @@ ipcMain.on('trade', (event, args) => {
   const {instrumentID } = args;
   const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
   if(index === -1){
-    // trade.send('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId);
+    trade.send('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
   }
   STARTTRADE = true;
   

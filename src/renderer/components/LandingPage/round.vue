@@ -1,5 +1,5 @@
 <template>
-    <Table :tableData='traderData' height="250" :columns='traderColumns'/>
+    <Table :tableData='traderData' height="300" :columns='traderColumns'/>
 </template>
 
 <script>
@@ -124,27 +124,25 @@
             let arr = []
             function findAnDmatch(e){
                  const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate} = e;
+                 let _volume = e._volume;
+                 if(_volume === undefined){
+                     _volume = Volume
+                 }// 不能修改原数据
                  const item =arr.find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
                  if(item){
                      if( item.Direction!==Direction){
-                         if(Volume + item.CloseVolume > item.Volume){
+                         if(_volume + item.CloseVolume > item.Volume){
                             const gap = item.Volume - item.CloseVolume;
                             item.ClosePrice = (gap * Price +  item.CloseVolume * item.ClosePrice) / item.Volume;
-                            e.Volume = Volume - gap;
+                            e._volume = _volume - gap;
                             item.CloseVolume = item.Volume;
-                            
-                            if(item.TradeTime){
-                                item.closeType='1'
-                            }else{
-                                 item.closeType='0'
-                            }
                             findAnDmatch(e)
                         }else{
                             if(!TradeTime){
-                                item.Volume = item.Volume - Volume;
+                                item.Volume = item.Volume - _volume;
                             }else{
-                                item.ClosePrice = (item.CloseVolume * item.ClosePrice  + Price*Volume )/ (item.CloseVolume + Volume);
-                                item.CloseVolume = item.CloseVolume + Volume;
+                                item.ClosePrice = (item.CloseVolume * item.ClosePrice  + Price*_volume )/ (item.CloseVolume + _volume);
+                                item.CloseVolume = item.CloseVolume + _volume;
                             }
                             
                         }
@@ -179,7 +177,8 @@
                         TradeDate: TradeDate||OpenDate,
                         TradeTime,
                         CloseVolume: 0,
-                        ClosePrice: 0
+                        ClosePrice: 0,
+                        closeType: TradeTime? '1': '0'
                     })
                 }
             }

@@ -13,7 +13,7 @@
       <div class="right-side">
         <div>
           <div class="label">下单信息：</div>
-            <Table  height='250' :columns='orderColumns' :tableData='orderData'/>
+            <Table  height='300' :columns='orderColumns' :tableData='orderData'/>
         </div>
         <div>
            <div class="label">回合信息：</div>
@@ -75,7 +75,6 @@
           this.orders[key].key =key;
           arr.unshift(this.orders[key])
         }
-        console.log(arr)
         return arr;
       },
       subscribelInstruments(){
@@ -93,18 +92,21 @@
           'todayCancel': 0
         }))
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
-          const {InstrumentID, VolumeTotalOriginal} = order;
+          const {InstrumentID} = order;
           const item = data.find(e => e.instrumentID === InstrumentID);
-          if(item)item.todayCancel += VolumeTotalOriginal;
+          if(item)item.todayCancel += 1;
         })
         const orderData = this.orderData.filter(e => e.OrderStatus === '0')
+        // console.log(JSON.parse(JSON.stringify(traders)))
         this.traders.forEach(trader => {
            const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
            const item = data.find(e => e.instrumentID === InstrumentID)
            if(!TradeTime){
+            //  console.log(JSON.parse(JSON.stringify(trader)))
              const key = Direction === '0'? 'yesterdayBuy': 'yesterdayAsk';
               item[key] += Volume
            }else {
+            // console.log(JSON.parse(JSON.stringify(trader)))
              const order = orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
              if(!order) return
               const {CombOffsetFlag} = order;

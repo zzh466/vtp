@@ -66,6 +66,23 @@ export default {
       window.onkeydown =(e)=>{
         this.func(e, this);
       }
+      let resizeTimeout;
+      window.onresize =(e)=>{
+        if(!this.chart) return;
+        let {innerWidth, innerHeight} =e.target;
+        if(innerHeight < 300){
+          innerHeight = 300
+        }
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(()=> {
+          this.width = innerWidth;
+          this.height = innerHeight;
+          this.$nextTick(function(){
+            this.chart.resize( this.width, this.height)
+          })
+          
+        }, 500)
+      }
       const p = new Promise(a => {
          ipcRenderer.invoke('get-pirceTick', id).then(({PriceTick: tick, ExchangeID: exchangeId}) => {
           console.log(tick, exchangeId)
@@ -128,7 +145,7 @@ export default {
       height: 300,
       showbar: false,
       left: 0,
-      stepwidth: 15,
+      stepwidth: 10,
       config: {
         volume: 1,
         type: '1',
@@ -187,27 +204,10 @@ export default {
       }
       const traderData= this.checkLock(direction, volumeTotalOriginal,combOffsetFlag);
       if(!traderData) return
+      console.log({limitPrice, instrumentID, ...traderData})
       ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData})
     },
-    canunlock(direction){
-      const {today, yesterDay} = getTodayAndYesterday(this.traded, this.orders);
-       const { holdVolume} = this.chart;
-      const _direction = direction === '0'? '1' : '0';
-      return yesterDay[_direction] - today[_direction] -  holdVolume[direction];
-    },
-    hasYesterDaylock(direction){
-       const {today, yesterDay} = getTodayAndYesterday(this.traded);
-      const _direction = direction === '0'? '1' : '0';
-      
-       return yesterDay[direction] - today[_direction]  > 0;
-    },
-    hasTodayUnlock(direction, volumeTotalOriginal){
-      const { holdVolume} = this.chart;
-      const hold = holdVolume [direction];
-      const todayOpen  = getTodayOpen(this.traded, this.orders);
-       const _direction = direction === '0'? '1' : '0';
-      return todayOpen[_direction] >= volumeTotalOriginal+hold;
-    },
+    
     checkLock(direction, volumeTotalOriginal,combOffsetFlag){
       console.log(this.instrumet); 
       const {todayAsk, todayBuy, yesterdayAsk, yesterdayBuy} = this.instrumet;
@@ -230,6 +230,7 @@ export default {
             }
             combOffsetFlag = '0';
           }
+          break;
         case '1':
            if(oppositeYesterDay>= volumeTotalOriginal + hold){
               combOffsetFlag = '1';
