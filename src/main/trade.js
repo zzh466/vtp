@@ -1,7 +1,7 @@
 
 var ctp = require('../../build/Release/ctp.node');
 var events = require('events');
-ctp.settings({ log: true });
+ctp.settings({ log: false });
 
 // simnow hanzhe
 

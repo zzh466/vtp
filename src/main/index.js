@@ -6,6 +6,7 @@ import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
+
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production

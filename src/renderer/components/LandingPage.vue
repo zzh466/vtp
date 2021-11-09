@@ -4,10 +4,10 @@
       <div class="left-side">
           <div class="label">订阅合约:</div>
           <Table @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
-          <el-button @click="open">商品</el-button>
+          <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>
-              <el-button @click="stop">停止</el-button>
+              <el-button @click="stop">停止</el-button> -->
       </div>
 
       <div class="right-side">
@@ -137,7 +137,7 @@
         gz:['IC2112','IF2112','IC2111','IF2111','IH2111'],
         orders: {},
         loading: ['order', 'trade', 'config', 'rate'],
-        loading: [],
+        // loading: [],
         orderColumns: [{
           label: '合约',
           prop: 'InstrumentID',
@@ -252,7 +252,9 @@
         url: 'user/config',
         type: 'GET'
       }).then(res => {
-       
+        this.open();
+        this.open1();
+        this.open2();
         this.finishLoading('config')
       });
       ipcRenderer.send('trade-login', {});
