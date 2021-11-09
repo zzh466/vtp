@@ -22,9 +22,20 @@ let mainConfig = {
         use: 'babel-loader',
         exclude: /node_modules/
       },
+
+      //因为ctp.node的特殊性 开发环境用node-loader绝对路径引入,生产环境用相对路径引入，并在package.json里面build 配置项中将node-gpybuild出来的文件夹作为extraResourse引入
+      process.env.NODE_ENV !== 'development'?  {
+        test:  /\.node$/,
+        use: 'node-loader',
+      }:
       {
         test: /\.node$/,
-        use:  "native-ext-loader"
+        use:  {
+          loader: "native-ext-loader",
+          options: {
+            basePath: ['../', '../', '../', 'build', 'Release']
+          }
+        }
       }
     ]
   },
