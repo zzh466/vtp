@@ -42,7 +42,7 @@ Vue.component('Table', {
             :key='column.prop'
             :label="column.label"
             :prop="column.prop"
-            :width="column.width"
+            :width="column.width|| 60"
             row-key='key'
             :highlight-current-row='true'
             >

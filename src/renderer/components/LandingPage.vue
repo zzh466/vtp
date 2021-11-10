@@ -3,7 +3,7 @@
     <main  v-if='!loading.length'>
       <div class="left-side">
           <div class="label">订阅合约:</div>
-          <Table @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
+          <Table height='640' @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>
@@ -11,13 +11,14 @@
       </div>
 
       <div class="right-side">
-        <div>
-          <div class="label">下单信息：</div>
-            <Table  height='300' :columns='orderColumns' :tableData='orderData'/>
-        </div>
+        
         <div>
            <div class="label">回合信息：</div>
           <Round :data='traders' :rates='rates' :price='price' ></Round>
+        </div>
+        <div>
+          <div class="label">下单信息：</div>
+            <Table  height='300' :columns='orderColumns' :tableData='orderData'/>
         </div>
       </div>
     </main>
@@ -203,8 +204,8 @@
         },{
            label: '详细信息',
             prop: 'StatusMsg',
-            component: 'StatusMsg',
-            width: '100'
+           
+            width: '200'
         }],
         traders: [],
         confirmInfo: [],
@@ -216,33 +217,41 @@
         },{
           label: '总多仓',
           prop: 'totalBuy',
+          width: 50,
           render(data){
             return data.yesterdayBuy+ data.todayBuy;
           }
         },{
           label: '总空仓',
           prop: 'totalAsk',
+           width: 50,
           render(data){
             return data.yesterdayAsk+ data.todayAsk;
           }
         },{
           label: '昨多仓',
           prop: 'yesterdayBuy',
+           width: 50,
         },{
           label: '昨空仓',
           prop: 'yesterdayAsk',
+           width: 50,
         },{
           label: '今多仓',
           prop: 'todayBuy',
+           width: 50,
         },{
           label: '今空仓',
           prop: 'todayAsk',
+           width: 50,
         },{
           label: '今开仓',
           prop: 'todayVolume',
+           width: 50,
         },{
           label: '今撤单',
           prop: 'todayCancel',
+           width: 50,
         }
         ],
       }
@@ -252,9 +261,9 @@
         url: 'user/config',
         type: 'GET'
       }).then(res => {
-        this.open();
-        this.open1();
-        this.open2();
+        // this.open();
+        // this.open1();
+        // this.open2();
         this.finishLoading('config')
       });
       ipcRenderer.send('trade-login', {});
@@ -305,7 +314,7 @@
          ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18199, instrumentIDs: this.InstrumentIDs, type: 'SP',  iCmdID: 101});
       },
       open1(){
-        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 19188, instrumentIDs: this.ids, type: 'SP', iCmdID: 101});
+        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 19188, instrumentIDs: this.ids, type: 'GZ',  iCmdID: 101});
       },
       open2(){
         ipcRenderer.send('start-receive', {host: '117.185.41.78', port: 18198, instrumentIDs: this.gz, type: 'SP', iCmdID: 101});
@@ -347,7 +356,7 @@
 
   #wrapper {
     height: 100vh;
-    padding: 30px 40px;
+    padding: 10px 10px;
     width: 100vw;
   }
 
@@ -420,5 +429,11 @@
   .doc button.alt {
     color: #42b983;
     background-color: transparent;
+  }
+  .cell {
+    padding: 0 4px !important;
+  }
+  .el-table__cell {
+    padding: 2px 0 !important;;
   }
 </style>

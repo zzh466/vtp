@@ -304,6 +304,7 @@ ipcMain.on('trade-login', (event, args) => {
   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
     console.log('rqInstrumentCommissionRate is callback');
     console.log("rqInstrumentCommissionRate: isLast", isLast);
+    console.log(field)
     if(!rateMap.find(e => e.InstrumentID === field.InstrumentID)){
       rateMap.push(field)
     }
@@ -400,7 +401,7 @@ ipcMain.on('start-receive', (event, args) =>{
     }, 1000)
   }
   const decodeKey = new cppmsg.msg([
-    ['key', 'uint8'],
+    ['key', 'uint16'],
   ])
   const headMsg = new cppmsg.msg([
     ['size', 'int32'],
@@ -426,6 +427,21 @@ ipcMain.on('start-receive', (event, args) =>{
       flag = flag + 416;
     }
   }
+  function parseEncodeData(data, size){
+   
+    
+    const parseData = decodeMsg.decodeMsg(data);
+    // console.log(parseData)
+    const {InstrumentID,BidPrice1, AskPrice1 } = parseData; 
+    PriceData[InstrumentID] = [BidPrice1, AskPrice1 ]
+    const win = findedopened(InstrumentID);
+    // console.log(InstrumentID)
+    if(win && win.sender){ 
+      // console.log(InstrumentID, '11111111111111111111111111111111111')
+      
+        win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
+    }
+  }
   const HasDATA = false
   tcp_client.on('data',function(data){
     if(data.length % 416 === 0){
@@ -440,6 +456,17 @@ ipcMain.on('start-receive', (event, args) =>{
       if(head.CmdID === 11 ){
         cacheArr =[];
       }
+      if(head.CmdID === 12 ){
+
+        const key = data[8]; 
+        for(let i = 9; i<data.length -1; i++){
+          data[i] = data[i] ^ key;
+        }
+        // console.log(data.length)
+        parseEncodeData(data.slice(9), 297)
+        return
+      }
+      
       // if(cacheArr.length !== 0 && head.CmdID !== 11){
       //   return
       // }

@@ -151,7 +151,7 @@
                  if(_volume === undefined){
                      _volume = Volume
                  }// 不能修改原数据
-                 const item =arr.find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
+                 const item =arr.slice().reverse().find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
                  if(item){
                      if( item.Direction!==Direction){
                          if(_volume + item.CloseVolume > item.Volume){
@@ -174,7 +174,7 @@
                          if(TradeTime){
                                 arr.unshift({
                                 InstrumentID,
-                                Volume,
+                                Volume: e._volume || Volume,
                                 Direction,
                                 Price,
                                 TradeDate: TradeDate,
@@ -194,7 +194,7 @@
                    
                     arr.unshift({
                         InstrumentID,
-                        Volume,
+                        Volume:e._volume || Volume,
                         Direction,
                         Price,
                         TradeDate: TradeDate||OpenDate,
@@ -211,8 +211,9 @@
                 return date1 - date2
             }).forEach(e => {
                 findAnDmatch(e);
+                console.log(JSON.stringify(arr));
             });
-            
+            console.log(JSON.parse(JSON.stringify(this.data.filter(e=>e.InstrumentID === 'lh2201'))))
             return arr.filter(a=> {
                 return a.TradeTime || a.Volume !== a.CloseVolume 
             })
