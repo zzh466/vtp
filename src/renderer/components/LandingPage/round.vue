@@ -95,9 +95,9 @@
                         console.log('data')
                         console.log(data)
 
-                        var rate = _this.rates.find(e => e.InstrumentID.startWith(data.InstrumentID))
-                        console.log('rate')
-                        console.log(rate)
+                        // var rate = _this.rates.find(e => e.InstrumentID.startWith(data.InstrumentID))
+                        // console.log('rate')
+                        // console.log(rate)
 
                         let commission = 0
                         // switch (data.closeType) {

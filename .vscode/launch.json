@@ -11,9 +11,10 @@
             // "args": ["${workspaceFolder}/test/ctp/reqInstrument.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInsertOrder.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js"],
-            "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
+            // "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqQrySettlementInfoConfirm.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqSettlementInfoConfirm.js"],
+            "args": ["${workspaceFolder}/test/ctp/tradingAccount.js"],
             "cwd": "${workspaceFolder}"
         },
         {
