@@ -91,8 +91,31 @@
                      label: '手续费',
                     prop: 'commission',
                     render(data){
-                        //closeType 1平今 2平昨
-                        return data.Price.toFixed(2)
+                        
+                        console.log('data')
+                        console.log(data)
+
+                        var rate = _this.rates.find(e => e.InstrumentID.startWith(data.InstrumentID))
+                        console.log('rate')
+                        console.log(rate)
+
+                        let commission = 0
+                        // switch (data.closeType) {
+                        //     case "0":
+                        //         // 开仓手续费
+                        //         commission = rate.OpenRatioByMoney * data.price + rate.OpenRatioByVolume * data.volume
+                        //         break;
+                        //     case "1":
+                        //         // 平仓手续费
+                        //         commission = rate.CloseRatioByMoney * data.closePrice + rate.CloseRatioByVolume * data.closeVolume
+                        //         break;
+                        //     case "3":
+                        //         // 平今手续费
+                        //         commission = rate.CloseTodayRatioByMoney * data.closePrice + rate.CloseTodayRatioByVolume * data.closeVolume
+                        //         break;
+                        // }
+
+                        return commission
                     }
                 },
                 {

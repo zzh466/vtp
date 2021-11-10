@@ -885,7 +885,7 @@ void WrapTrader::ReqQryInstrumentCommissionRate(const FunctionCallbackInfo<Value
     }
 
     int uuid = -1;
-    int funIndex = 2;
+    int funIndex = 3;
     if (!args[funIndex]->IsUndefined() && args[funIndex]->IsFunction())
     {
         uuid = ++s_uuid;
@@ -895,11 +895,14 @@ void WrapTrader::ReqQryInstrumentCommissionRate(const FunctionCallbackInfo<Value
     }
     String::Utf8Value brokerIDUtf8(isolate, args[0]->ToString(context).ToLocalChecked());
     String::Utf8Value investorIDUtf8(isolate, args[1]->ToString(context).ToLocalChecked());
+    String::Utf8Value instrumentIdUtf8(isolate, args[2]->ToString(context).ToLocalChecked());
 
     CThostFtdcQryInstrumentCommissionRateField req = {0};
     strcpy(req.BrokerID, ((std::string)*brokerIDUtf8).c_str());
     strcpy(req.InvestorID, ((std::string)*investorIDUtf8).c_str());
-    logger_cout(log.append(" ").append((std::string)*brokerIDUtf8).append("|").append(" ").append((std::string)*investorIDUtf8).append("|").c_str());
+    strcpy(req.InstrumentID, ((std::string)*instrumentIdUtf8).c_str());
+    logger_cout(log.append(" ").append((std::string)*brokerIDUtf8).append("|").append(" ").append((std::string)*investorIDUtf8).append("|")
+    .append(" ").append(req.InstrumentID).append("|").c_str());
 
     WrapTrader *obj = ObjectWrap::Unwrap<WrapTrader>(args.Holder());
     obj->uvTrader->ReqQryInstrumentCommissionRate(&req, FunRtnCallback, uuid);
