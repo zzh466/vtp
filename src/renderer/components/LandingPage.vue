@@ -137,7 +137,7 @@
         gz:['IC2112','IF2112','IC2111','IF2111','IH2111'],
         orders: {},
         loading: ['order', 'trade', 'config', 'rate'],
-        // loading: [],
+        loading: [],
         orderColumns: [{
           label: '合约',
           prop: 'InstrumentID',
