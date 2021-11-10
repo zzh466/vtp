@@ -155,12 +155,6 @@ class Trade {
 
                 if(isLast){
                     this.next()
-                    if(!tasks.length){
-                        tasks.push(setTimeout(()=>{
-                            this.next()
-                        }, 1000))
-                    }
-                 
                 }
                 
                 console.log(`${event} ---- receive`);
@@ -193,6 +187,10 @@ class Trade {
                     console.log(arguments);
                 })
             }, 1000)
+       }else{
+            tasks.push(setTimeout(()=>{
+                this.next()
+            }, 1000))
        }
     }
     emitterOn(event, fn){

@@ -38,27 +38,27 @@ const receiveData = {
     GZ: [
         ['InstrumentID', 'string', 31],
         ['LastPrice', 'double'],
-        ['Volume', 'int64'], //数量
+        ['Volume', 'int32'], //数量
         [`BidPrice1`, 'double'],
         [`BidPrice2`, 'double'],
         [`BidPrice3`, 'double'],
         [`BidPrice4`, 'double'],
         [`BidPrice5`, 'double'],
-        [`BidVolume1`, 'int64'],
-        [`BidVolume2`, 'int64'],
-        [`BidVolume3`, 'int64'],
-        [`BidVolume4`, 'int64'],
-        [`BidVolume5`, 'int64'],
+        [`BidVolume1`, 'int32'],
+        [`BidVolume2`, 'int32'],
+        [`BidVolume3`, 'int32'],
+        [`BidVolume4`, 'int32'],
+        [`BidVolume5`, 'int32'],
         [`AskPrice1`, 'double'],
         [`AskPrice2`, 'double'],
         [`AskPrice3`, 'double'],
         [`AskPrice4`, 'double'],
         [`AskPrice5`, 'double'],
-        [`AskVolume1`, 'int64'],
-        [`AskVolume2`, 'int64'],
-        [`AskVolume3`, 'int64'],
-        [`AskVolume4`, 'int64'],
-        [`AskVolume5`, 'int64'],
+        [`AskVolume1`, 'int32'],
+        [`AskVolume2`, 'int32'],
+        [`AskVolume3`, 'int32'],
+        [`AskVolume4`, 'int32'],
+        [`AskVolume5`, 'int32'],
         ['HighestPrice', 'double'],//最高价
         ['LowestPrice', 'double'],//最低价
         ['UpperLimitPrice', 'double'],//涨停板价
@@ -74,7 +74,7 @@ const receiveData = {
         ['Turnover', 'double'], //成交金额
         ['OpenInterest', 'double'],//持仓量
         ['TradingDay', 'string', 9],//交易日
-        ['UpdateTime', 'string', 12], //最后修改时间
+        ['UpdateTime', 'string', 9], //最后修改时间
         ['UpdateMillisec', 'int32']
 ]
 

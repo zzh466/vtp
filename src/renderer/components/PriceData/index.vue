@@ -145,7 +145,7 @@ export default {
       height: 300,
       showbar: false,
       left: 0,
-      stepwidth: 10,
+      stepwidth: 15,
       config: {
         volume: 1,
         type: '1',
@@ -185,7 +185,8 @@ export default {
     putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume){
        const instrumentID = this.$route.query.id;
       let combOffsetFlag = '0'
-      const {traded, holdVolume} = this.chart;
+      let {traded, holdVolume} = this.chart;
+      holdVolume = holdVolume[direction];
       limitPrice = parseFloat(limitPrice)
       if(traded.direction && traded.price.length){
         if(direction !== traded.direction){
@@ -247,9 +248,9 @@ export default {
           combOffsetFlag = '0'
           break;
         case '3':
-          if(combOffsetFlag === '0' && oppositeYesterDay< volumeTotalOriginal + hold){
+          if(combOffsetFlag === '0' && oppositeYesterDay< volumeTotalOriginal + hold && oppositeToday < volumeTotalOriginal + hold){
               Notification({
-                message: '昨仓不够平仓模式下无法开仓'
+                message: '持仓不够平仓模式下无法开仓'
               })
               return
           }

@@ -22,7 +22,7 @@
     data () {
       if (process.env.NODE_ENV === 'development'){
          this.$router.push('main');
-         ipcRenderer.send('resize-main', {width: 2000, height: 800});
+         ipcRenderer.send('resize-main', {width: 1300, height: 760});
       }
       return {
         form: {
@@ -51,7 +51,7 @@
               data: this.form,
             }).then((res) => {
               if(res.code === 'REQ_SUCCESS'){
-                ipcRenderer.send('resize-main',  {width: 2000, height: 800});
+                ipcRenderer.send('resize-main',  {width: 1300, height: 760});
                 this.$router.push('main');
               }else{
                 this.$message.error(res.msg || '登陆失败');
