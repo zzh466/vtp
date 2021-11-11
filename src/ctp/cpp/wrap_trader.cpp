@@ -1743,12 +1743,11 @@ void WrapTrader::pkg_cb_rqtradingaccount(CbRtnField *data, Local<Value> *cbArray
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
 
-    *cbArray = Number::New(isolate, data->nRequestID);
-    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    Local<Object> jsonRtn = Object::New(isolate);
     if (data->rtnField)
     {
         CThostFtdcTradingAccountField *pTradingAccount = static_cast<CThostFtdcTradingAccountField *>(data->rtnField);
-        Local<Object> jsonRtn = Object::New(isolate);
+        jsonRtn = Object::New(isolate);
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pTradingAccount->BrokerID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "AccountID").ToLocalChecked(), String::NewFromUtf8(isolate, pTradingAccount->AccountID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "PreMortgage").ToLocalChecked(), Number::New(isolate, pTradingAccount->PreMortgage));
@@ -1797,10 +1796,10 @@ void WrapTrader::pkg_cb_rqtradingaccount(CbRtnField *data, Local<Value> *cbArray
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "SpecProductExchangeMargin").ToLocalChecked(), Number::New(isolate, pTradingAccount->SpecProductExchangeMargin));
         *(cbArray + 2) = jsonRtn;
     }
-    else
-    {
-        *(cbArray + 2) = Local<Value>::New(isolate, Undefined(isolate));
-    }
+    
+    *cbArray = Number::New(isolate, data->nRequestID);
+    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    *(cbArray + 2) = jsonRtn;
     *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
     return;
 }

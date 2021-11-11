@@ -510,7 +510,6 @@ void uv_trader::_async(uv_work_t *work)
 		CThostFtdcQryTradingAccountField *_pQryTradingAccount = static_cast<CThostFtdcQryTradingAccountField *>(baton->args);
 		baton->nResult = uv_trader_obj->m_pApi->ReqQryTradingAccount(_pQryTradingAccount, baton->iRequestID);
 		logger_cout(log.append("invoke ReqQryTradingAccount,the result:").append(to_string(baton->nResult)).c_str());
-
 		break;
 	}
 	case T_INVESTORPOSITION_RE:
