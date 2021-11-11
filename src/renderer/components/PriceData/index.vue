@@ -75,8 +75,8 @@ export default {
         }
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(()=> {
-          this.width = innerWidth;
-          this.height = innerHeight;
+          this.width = innerWidth - 80;
+          this.height = innerHeight ;
           this.$nextTick(function(){
             this.chart.resize( this.width, this.height)
           })
@@ -141,7 +141,7 @@ export default {
   data () {
     return {
       BidPrice: 0,
-      width: 1400,
+      width: 1420,
       height: 300,
       showbar: false,
       left: 0,

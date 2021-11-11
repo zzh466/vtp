@@ -6,7 +6,7 @@ import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
-
+import './menu'
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
@@ -46,9 +46,7 @@ function createWindow () {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
-  if (process.env.NODE_ENV !== 'development') {
-    mainWindow.removeMenu()
-  }
+ 
 }
 
 ipcMain.on('resize-main', (evnt, {width, height}) => {
@@ -96,9 +94,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title}) => {
         evnt.sender.send('change-ins', insId)
       }
     })
-    if (process.env.NODE_ENV !== 'development') {
-      childwin.removeMenu()
-    }
+   
     opedwindow.push({
       id: insId,
       win: childwin
@@ -291,9 +287,10 @@ ipcMain.on('trade-login', (event, args) => {
     }
     event.sender.send('receive-order', orderMap);
   })
-  // trade.chainOn('rqTradingAccount', 'ReqQryTradingAccount',function( isLast, field){
-  //   console.log(field)
-  // })
+  trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
+    event.sender.send('receive-account', field);
+  })
+  
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
     if(OpenDate ===TradingDay) return;  
@@ -345,7 +342,7 @@ ipcMain.on('trade', (event, args) => {
   const {instrumentID } = args;
   const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
   if(index === -1){
-    trade.chainsend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
+    trade.chainSend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
   }
   STARTTRADE = true;
   
@@ -397,7 +394,11 @@ ipcMain.on('start-receive', (event, args) =>{
   const decodeMsg = new cppmsg.msg(receiveData[type])
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      
+      if(trade){
+        trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
+          
+        })
+      }
       if(Object.getOwnPropertyNames(PriceData).length!==0){
         event.sender.send('receive-price', PriceData)
       }

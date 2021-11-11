@@ -74,10 +74,11 @@
                      label: '盈亏点',
                     prop: 'range',
                     render(data){
-                       let range =  data.ClosePrice - data.Price;
+;
                      
                        const {ClosePrice , Price, Volume, CloseVolume, Direction, InstrumentID} = data;
-                       range = ClosePrice - Price;
+                       if(!ClosePrice) return 0
+                       let range = ClosePrice - Price;
                        if(_this.price[InstrumentID] && Volume > CloseVolume){
                            range = (range * CloseVolume + (Volume -CloseVolume) *( _this.price[InstrumentID][Direction] -Price)) / Volume;
                        }
@@ -92,18 +93,21 @@
                     prop: 'commission',
                     render(data){
                         
-                        console.log('data')
-                        console.log(data)
-
-                        // var rate = _this.rates.find(e => e.InstrumentID.startWith(data.InstrumentID))
-                        // console.log('rate')
-                        // console.log(rate)
-
-                        let commission = 0
+                
+                        var rate = _this.rates.find(e => data.InstrumentID.startsWith(e.InstrumentID))
+                        if(!rate) return
+                        let commission  = rate.OpenRatioByMoney * data.Price + rate.OpenRatioByVolume * data.Volume;
+                        if(data.ClosePrice){
+                            if(data.closeType === '1'){
+                                 commission = commission+ rate.CloseTodayRatioByMoney * data.ClosePrice + rate.CloseTodayRatioByVolume * data.CloseVolume
+                            }else{
+                                 commission = commission+ rate.CloseRatioByMoney * data.ClosePrice + rate.CloseTodayRatioByVolume * data.CloseVolume
+                            }
+                        }
                         // switch (data.closeType) {
                         //     case "0":
                         //         // 开仓手续费
-                        //         commission = rate.OpenRatioByMoney * data.price + rate.OpenRatioByVolume * data.volume
+                        //         
                         //         break;
                         //     case "1":
                         //         // 平仓手续费
@@ -115,7 +119,7 @@
                         //         break;
                         // }
 
-                        return commission
+                        return commission.toFixed(2);
                     }
                 },
                 {
@@ -146,7 +150,8 @@
         traderData(){
             let arr = []
             function findAnDmatch(e){
-                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate} = e;
+                
+                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID} = e;
                  let _volume = e._volume;
                  if(_volume === undefined){
                      _volume = Volume
@@ -201,7 +206,7 @@
                         TradeTime,
                         CloseVolume: 0,
                         ClosePrice: 0,
-                        closeType: TradeTime? '1': '0'
+                        closeType: TradeTime && ExchangeID !== 'CFFEX'? '1': '0'
                     })
                 }
             }

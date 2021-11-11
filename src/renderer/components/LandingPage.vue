@@ -1,13 +1,24 @@
 <template>
-  <div id="wrapper" v-loading='loading.length'  element-loading-text="正在获取账号信息">
+  <div id="wrapper" v-loading='loading.length'  element-loading-text="正在获取账号信息" >
+    <el-descriptions :style="{fontSize: '20px'}" direction="vertical" :column="10" border>
+      <el-descriptions-item label="账号">kooriookami</el-descriptions-item>
+      <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
+      <el-descriptions-item label="开仓手数">{{instrumentsData.reduce((a,b) => a += b.todayVolume, 0)}}</el-descriptions-item>
+        <el-descriptions-item label="报单手数">{{orderData.length}}</el-descriptions-item>
+      <el-descriptions-item label="总手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
+      <el-descriptions-item label="总实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
+      <el-descriptions-item label="强平线"></el-descriptions-item>
+        <el-descriptions-item label="可用资金">{{account.Available.toFixed(2)}}</el-descriptions-item>
+    </el-descriptions>
     <main  v-if='!loading.length'>
+      
       <div class="left-side">
           <div class="label">订阅合约:</div>
           <Table height='640' @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
-          <!-- <el-button @click="open">商品</el-button>
+          <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
-              <el-button @click="open2">股指</el-button>
-              <el-button @click="stop">停止</el-button> -->
+              <el-button @click="open2">股指</el-button> 
+              <el-button @click="stop">停止</el-button>
       </div>
 
       <div class="right-side">
@@ -172,7 +183,8 @@
         },{
           label: '状态',
           prop: 'OrderStatus',
-          component: 'Status'
+          component: 'Status',
+          width: 80,
         },{
            label: '成交均价',
             prop: 'price',
@@ -211,6 +223,12 @@
         confirmInfo: [],
         rates: [],
         price: {},
+        account: {
+          Commission: 0,
+          CloseProfit: 0,
+          PositionProfit: 0,
+          Available: 0
+        },
         instrumentsColumns:[{
           label: '合约',
           prop: 'instrumentID',
@@ -291,7 +309,13 @@
         this.dialogVisible = true;
       })
        ipcRenderer.on('receive-price', (event, arg)=>{
-        this.price=arg
+         if(this.instrumentsData.some(({todayAsk, todayBuy, yesterdayBuy, yesterdayAsk})=> todayAsk!==todayBuy || yesterdayBuy!== yesterdayAsk)){
+            this.price=arg;
+         }
+       
+      })
+       ipcRenderer.on('receive-account', (event, arg)=>{
+        this.account=arg
       })
       setTimeout(()=>{
         if(this.loading.length !== 0){

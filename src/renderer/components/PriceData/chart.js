@@ -55,7 +55,7 @@ class Chart {
         ctx.beginPath();
         ctx.strokeStyle = '#00ff00'
         ctx.moveTo(X, Y + this.stepHeight);
-        ctx.lineTo(X,this.height - 20);
+        ctx.lineTo(X,this.height - 30);
         ctx.stroke();
         
         let range = this.range;
