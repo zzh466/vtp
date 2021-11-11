@@ -291,6 +291,9 @@ ipcMain.on('trade-login', (event, args) => {
     }
     event.sender.send('receive-order', orderMap);
   })
+  // trade.chainOn('rqTradingAccount', 'ReqQryTradingAccount',function( isLast, field){
+  //   console.log(field)
+  // })
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
     if(OpenDate ===TradingDay) return;  
@@ -313,7 +316,7 @@ ipcMain.on('trade-login', (event, args) => {
       event.sender.send('finish-loading', 'rate')
       event.sender.send('receive-rate', rateMap);
     }
-  });
+  }, '');
 
   trade.emitterOn('error', (msg, skip) =>{
     if(skip && !STARTTRADE) return;
@@ -342,7 +345,7 @@ ipcMain.on('trade', (event, args) => {
   const {instrumentID } = args;
   const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
   if(index === -1){
-    trade.send('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
+    trade.chainsend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
   }
   STARTTRADE = true;
   

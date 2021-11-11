@@ -55,7 +55,7 @@ class Chart {
         ctx.beginPath();
         ctx.strokeStyle = '#00ff00'
         ctx.moveTo(X, Y + this.stepHeight);
-        ctx.lineTo(X,270.5);
+        ctx.lineTo(X,this.height - 20);
         ctx.stroke();
         
         let range = this.range;
@@ -101,6 +101,7 @@ class Chart {
         this.renderPrice()
     }
      initData(price){
+         if(!price) return;
         const count = this.count / 2;
         const decimal = this.decimal;
         this.data.push({

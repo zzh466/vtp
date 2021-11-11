@@ -69,13 +69,16 @@ class Trade {
             });
             
             _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
-               
+                if(isLast){
+                    this.next()
+                }
                 const {InstrumentID, PriceTick, ExchangeID} = field;
                 console.log(field)
                 const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
                 const { resolve } = item;
                 item.field = field;
                 resolve({PriceTick, ExchangeID});
+                
             })
             
             // _trader.on('rtnOrder',  (field) => {
@@ -112,24 +115,22 @@ class Trade {
     }
     getInstrument(insId){
         return new Promise(resolve => {
-            this.login.then(() => {
-                const item = this.getInstrumentList.find(({id}) => id===insId);
-                if(item && item.field.PriceTick) {
-                    item.resolve = null;
-                    const {PriceTick, ExchangeID} = item.field
-                    resolve({PriceTick, ExchangeID});
-                    return;
-                }
-                this.getInstrumentList.push({
-                    resolve,
-                    id: insId
-                })
-                this.send('reqQryInstrument', insId, function (field) {
-                    // console.log('reqQryInstrument is callback');
-                    // console.log(field);
-                })
-             
+            const item = this.getInstrumentList.find(({id}) => id===insId);
+            if(item && item.field.PriceTick) {
+                item.resolve = null;
+                const {PriceTick, ExchangeID} = item.field
+                resolve({PriceTick, ExchangeID});
+                return;
+            }
+            this.getInstrumentList.push({
+                resolve,
+                id: insId
             })
+            this.chainSend('reqQryInstrument', insId, function (field) {
+                // console.log('reqQryInstrument is callback');
+                // console.log(field);
+            })
+            
            
         })
     }
@@ -146,7 +147,7 @@ class Trade {
         this.emitter.on(event, fn.bind(this));
     }
     //ctp除了order trade其他的on必须等待一个完成后再调用另一个
-    chainOn(event, func,fn){
+    chainOn(event, func,fn, ...extend){
         this.login.then(()=>{
            
             const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
@@ -160,38 +161,45 @@ class Trade {
                 console.log(`${event} ---- receive`);
                 fn.call(this,isLast,field)
             })
-            if(!tasks.length){
-               
-                this.send(func, m_BrokerId, m_InvestorId, function (field) {
+            if(extend){
+                this.chainSend(func, m_BrokerId, m_InvestorId,...extend, function (field) {
+                    console.log(`${func} is callback`);
+                    console.log(arguments);
+                })
+            }else{
+                this.chainSend(func, m_BrokerId, m_InvestorId, function (field) {
                     console.log(`${func} is callback`);
                     console.log(arguments);
                 })
             }
-            tasks.push({
-            event,
-            func
-            })
             
         })
         
     }
     next(){
-        const { tasks, m_BrokerId, m_InvestorId} = this;
+        const { tasks} = this;
         tasks.shift();
        if(tasks.length){
-            let _func = tasks[0].func;
+            let task = tasks[0];
             //ctp一秒只能发一个请求
             setTimeout(()=> {
-                this.send(_func, m_BrokerId, m_InvestorId, function (field) {
-                    console.log(`${_func} is callback`);
-                    console.log(arguments);
-                })
+                task()
             }, 1000)
        }else{
             tasks.push(setTimeout(()=>{
                 this.next()
             }, 1000))
        }
+    }
+    chainSend(event, ...args){
+        const { tasks} = this;
+        const task =()=>{
+            this.send(event,  ...args)
+        }
+        if(!tasks.length){
+            task()
+        }
+        tasks.push(task)
     }
     emitterOn(event, fn){
         this.emitter.on(event, fn.bind(this));

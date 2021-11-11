@@ -211,9 +211,7 @@
                 return date1 - date2
             }).forEach(e => {
                 findAnDmatch(e);
-                console.log(JSON.stringify(arr));
             });
-            console.log(JSON.parse(JSON.stringify(this.data.filter(e=>e.InstrumentID === 'lh2201'))))
             return arr.filter(a=> {
                 return a.TradeTime || a.Volume !== a.CloseVolume 
             })
