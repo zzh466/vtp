@@ -39,7 +39,7 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     login = true;
 
     // 为空时查询所有
-    var instrumentID = "IC2111";
+    var instrumentID = "j";
     trader.reqQryInstrument(instrumentID, function (field) {
         console.log('reqQryInstrument is callback');
         console.log(field);
