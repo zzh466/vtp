@@ -1,12 +1,14 @@
 import { app, BrowserWindow, ipcMain, Notification } from 'electron'
 import  { receiveData }  from '../ctp/dataStruct'
-import '../renderer/store'
+
 
 import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
-import './menu'
+import './menu';
+import './requeset';
+import '../renderer/store';
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
@@ -60,7 +62,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -78,7 +80,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title}) => {
         contextIsolation: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -130,6 +132,8 @@ const orderMap = {};
 const tradeMap = [];
 const rateMap =[];
 let InstrumetsData =[];
+const PriceData ={};
+const broadcast_Data = {};
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
   const win =  findedopened(args);
@@ -141,6 +145,7 @@ ipcMain.on('register-event',  (event, args) =>{
     }
   }
   const instrumet = InstrumetsData.find(({instrumentID}) => instrumentID===args);
+  win.sender.send(`receive-${args}`, PriceData[args])
   win.sender.send('instrumet-data',instrumet);
   win.sender.send('total-order',orderMap);
   tradeMap.sort((a, b)=>{
@@ -183,6 +188,7 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-order', orderMap);
     event.sender.send('receive-order', orderMap);
     event.sender.send('receive-rate', rateMap)
+    event.sender.send('receive-instrument', trade.getInstrumentList);
     STARTTRADE = false;
     return
   }
@@ -301,6 +307,18 @@ ipcMain.on('trade-login', (event, args) => {
       event.sender.send('receive-trade', tradeMap);
     }
   })
+  trade.emitterOn('instrument-finish', function (list) {
+    event.sender.send('receive-instrument', list);
+    event.sender.send('finish-loading', 'instrument')
+    
+  })
+  trade.login.then(()=>{
+    trade.chainSend('reqQryInstrument', '', function (field) {
+      // console.log('reqQryInstrument is callback');
+      // console.log(field);
+    })
+  })
+  
   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
     console.log('rqInstrumentCommissionRate is callback');
     console.log("rqInstrumentCommissionRate: isLast", isLast);
@@ -321,10 +339,20 @@ ipcMain.on('trade-login', (event, args) => {
   })
   const settlementInfo = []
   trade.emitterOn('settlement-info', (islast, info) =>{
-    settlementInfo.push(info)
+    console.log(info, islast, '22222222222222222222222222222')
+    if(info){
+      settlementInfo.push(info)
+    }
+
+    
     if(islast){
-      console.log('111111111111111111111111', event.sender.send)
-      event.sender.send('receive-info', settlementInfo);
+      console.log('111111111111111111111111', settlementInfo)
+      if(settlementInfo.length){
+        event.sender.send('receive-info', settlementInfo);
+      }else{
+        trade.chainOn('rSettlementInfoConfirm', 'reqSettlementInfoConfirm', function(){})
+      }
+      
     }
   })
 })
@@ -362,12 +390,14 @@ ipcMain.on('cancel-order', (event, args) => {
 })
 
 //行情相关
-const PriceData ={};
+const decodeMsg = new cppmsg.msg(receiveData['SP'])
+const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
 let Maincycle = null
 ipcMain.on('start-receive', (event, args) =>{
   const {host, port, instrumentIDs, type,  iCmdID, size = 36} = args
   const tcp_client = new net.Socket();
-  tcp_client_list.push(tcp_client)
+  tcp_client_list.push(tcp_client);
+  tcp_client.setKeepAlive(true);
   tcp_client.connect({host, port},function(){
     console.log('connected to Server');
     
@@ -391,7 +421,7 @@ ipcMain.on('start-receive', (event, args) =>{
 
     console.log('success')
   })
-  const decodeMsg = new cppmsg.msg(receiveData[type])
+
   if(!Maincycle){
     Maincycle=setInterval(()=>{
       if(trade){
@@ -400,7 +430,11 @@ ipcMain.on('start-receive', (event, args) =>{
         })
       }
       if(Object.getOwnPropertyNames(PriceData).length!==0){
-        event.sender.send('receive-price', PriceData)
+        const data = {};
+        for(let key in PriceData){
+          data[key] = [PriceData[key].BidPrice1, PriceData[key].AskPrice1 ]
+        }
+        event.sender.send('receive-price', data)
       }
     }, 1000)
   }
@@ -419,8 +453,8 @@ ipcMain.on('start-receive', (event, args) =>{
       
       parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
       // console.log(parseData)
-      const {InstrumentID,BidPrice1, AskPrice1 } = parseData; 
-      PriceData[InstrumentID] = [BidPrice1, AskPrice1 ]
+      const {InstrumentID} = parseData; 
+      PriceData[InstrumentID] = parseData
       const win = findedopened(InstrumentID);
       // console.log(InstrumentID)
       if(win && win.sender){ 
@@ -434,7 +468,7 @@ ipcMain.on('start-receive', (event, args) =>{
   function parseEncodeData(data, size){
    
     
-    const parseData = decodeMsg.decodeMsg(data);
+    const parseData = endecodeMsg.decodeMsg(data);
     // console.log(parseData)
     const {InstrumentID,BidPrice1, AskPrice1 } = parseData; 
     PriceData[InstrumentID] = [BidPrice1, AskPrice1 ]
@@ -490,8 +524,8 @@ ipcMain.on('start-receive', (event, args) =>{
     console.log('data end!');
   })
 
-  tcp_client.on('error', function () {
-    console.log('tcp_client error!');
+  tcp_client.on('error', function (e) {
+    console.log('tcp_client error!', e);
   })
 
   // 接收数据
@@ -510,6 +544,10 @@ ipcMain.on('start-receive', (event, args) =>{
   //   a++
   //  }, 500)
 })
+ipcMain.on('broadcast-openinterest', function(arg){
+
+})
+
 /**
  * Auto Updater
  *

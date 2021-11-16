@@ -12,10 +12,6 @@ import './element'
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios
 Vue.config.productionTip = false
-ipcRenderer.on('receive-tarde-data', (event, arg) => {
-  
-  window._$store.dispatch('updateData', arg)
-})
 
 ipcRenderer.on('change-ins', (event, arg) => {
   

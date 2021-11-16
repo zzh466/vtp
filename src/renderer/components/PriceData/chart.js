@@ -17,18 +17,30 @@ const ASKBACKGROUND = '#103210'
 const FONTCOLOR = '#7f7f7f'
 class Chart {
     constructor(dom, width, height, step = 0.2, config ={}){
+        const {
+            barToBorder,
+            barVolume,
+            barWeight = 10,
+            calcBarType,
+            volumeScaleCount,
+            volumeScaleHeight = 30,
+            volumeScaleTick,
+            volumeScaleType
+        } = config
         this.ctx = dom.getContext('2d');
-        this.stepwidth = config.width || 10;
-        this.stepHeight = config.height || 30;
+        this.stepwidth =barWeight;
+        this.stepHeight = volumeScaleHeight;
+        this.volumeScaleType = volumeScaleType;
+        this.volumeScaleCount =volumeScaleCount;
+        this.volumeScaleTick = volumeScaleTick;
         this.width = width;
         this.height = height;
         this.step = step;
         this.data = [];
         this.start = 0;
-        
+        this.range = this.initRange();
         const decimal = (this.step.toString().split(1) || []).length;
         this.decimal = decimal;
-        this.range =[10, 20, 30, 50, 100, 200];
         this.placeOrder=[];  
         this.traded ={};
         this.init();
@@ -67,6 +79,29 @@ class Chart {
         this.renderRange(range);
        
     }
+    initRange(){
+        let {stepHeight, volumeScaleType, volumeScaleCount, volumeScaleTick, height} = this;
+        let baseRange = null;
+        
+        switch(volumeScaleType){
+            case 0:
+                volumeScaleCount = Math.floor((height - 100)/stepHeight)
+                break;
+            case 2:
+                volumeScaleCount = Math.floor((height - 100)/stepHeight)
+                baseRange = [10, 20, 30, 50, 100, 200, 400, 500, 1000, 2000, 3000, 4000, 5000].slice(0, volumeScaleCount);
+                break;
+            case 3:
+                baseRange = [10, 20, 30, 50, 100, 200, 400, 500, 1000, 2000, 3000, 4000, 5000].slice(0, volumeScaleCount);
+        }
+        if(!baseRange){
+            baseRange = [];
+            for(let i = 1; i <= volumeScaleCount; i++){
+                baseRange.push(i*volumeScaleTick)
+            }
+        }
+        return baseRange
+    }
      renderRange(range){
         const ctx= this.ctx;
         ctx.textAlign = 'right'
@@ -95,6 +130,7 @@ class Chart {
         this.height = height;
         ctx.width = width;
         ctx.height = height;
+        this.range = this.initRange()
         this.init();
         this.data = [];
         this.initData(this.currentPrice);

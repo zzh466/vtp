@@ -19,17 +19,19 @@ class Trade {
         m_CurrencyId = "CNY",
         m_AppId = "simnow_client_test",
         m_AuthCode = "0000000000000000",
+        instruments
     }){
         this.m_BrokerId =m_BrokerId;
         this.m_UserId = m_UserId;
         this.m_InvestorId = m_InvestorId;
         const _trader = ctp.createTrader();
         this._trader = _trader;
-        this.getInstrumentList = [];
         this.tasks =[];
+        this.getInstrumentList = instruments.map(id => ({id}));
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
+        this.instruments = instruments;
         this.login = new Promise((resolve, reject) => {
             _trader.on("connect", function (result) {
                 console.log("in js code: ----> on connected , result=", result);
@@ -69,15 +71,22 @@ class Trade {
             });
             
             _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
+              
+                const {InstrumentID, PriceTick, ExchangeID} = field;
+            
+                const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
+                if(item){
+                    const { resolve } = item;
+                    item.field = field;
+                    if(resolve){
+                        resolve({PriceTick, ExchangeID});
+                    }
+                }
+                
                 if(isLast){
                     this.next()
+                    this.emitter.emit('instrument-finish',  this.getInstrumentList)
                 }
-                const {InstrumentID, PriceTick, ExchangeID} = field;
-                console.log(field)
-                const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
-                const { resolve } = item;
-                item.field = field;
-                resolve({PriceTick, ExchangeID});
                 
             })
             
@@ -105,7 +114,7 @@ class Trade {
         let a =  {};
         a.valueOf = undefined
         this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
-           
+            console.log(field, '3333333333333333333333333' );
             if(!field.ConfirmTime)    
                 this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
                     this.emitter.emit('settlement-info', _,info)
@@ -116,16 +125,14 @@ class Trade {
     getInstrument(insId){
         return new Promise(resolve => {
             const item = this.getInstrumentList.find(({id}) => id===insId);
-            if(item && item.field.PriceTick) {
+            if( item.field.PriceTick) {
                 item.resolve = null;
                 const {PriceTick, ExchangeID} = item.field
                 resolve({PriceTick, ExchangeID});
                 return;
+            }else {
+                item.resolve = resolve
             }
-            this.getInstrumentList.push({
-                resolve,
-                id: insId
-            })
             this.chainSend('reqQryInstrument', insId, function (field) {
                 // console.log('reqQryInstrument is callback');
                 // console.log(field);
@@ -153,7 +160,6 @@ class Trade {
             const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
             console.log(`${event} ---- register`, tasks);
             _trader.on(event, (requestId, isLast, field, info) =>{
-
                 if(isLast){
                     this.next()
                 }

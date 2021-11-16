@@ -18,12 +18,13 @@
 
   import { ipcRenderer } from 'electron';
   import request from '../../utils/request';
+  import { getIPAdress, hostname, version} from '../../utils/utils';
   export default {
     data () {
-      if (process.env.NODE_ENV === 'development'){
-         this.$router.push('main');
-         ipcRenderer.send('resize-main', {width: 1300, height: 880});
-      }
+      // if (process.env.NODE_ENV === 'development'){
+      //    this.$router.push('main');
+      //    ipcRenderer.send('resize-main', {width: 1320, height: 840});
+      // }
       return {
         form: {
           userNm: '',
@@ -46,12 +47,22 @@
         this.$refs.form.validate((validate) => {
           if(validate){
             request({
-              url: 'access/login', 
+              url: 'access/loginClient', 
               method: 'POST',
-              data: this.form,
+              data: {
+                appVersion: version,
+                ip: getIPAdress(),
+                hostNm: hostname,
+                ...this.form},
             }).then((res) => {
               if(res.code === 'REQ_SUCCESS'){
-                ipcRenderer.send('resize-main',  {width: 1300, height: 880});
+                ipcRenderer.send('resize-main',  {width: 1320, height: 840});
+                
+                this.$store.commit('setstate', {
+                    key: 'userData',
+                    data:{account: this.form.userNm, ...res}
+                })
+                
                 this.$router.push('main');
               }else{
                 this.$message.error(res.msg || '登陆失败');
