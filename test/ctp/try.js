@@ -13,16 +13,27 @@ ctp.settings({ log: true });
 // var m_AppId = "simnow_client_test";
 // var m_AuthCode = "0000000000000000";
 
-var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
-var m_BrokerId = "9999";
-var m_UserId = "136380";
-var m_InvestorId = "136380";
-var m_PassWord = "jpf000jpf";
+// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
+// var m_BrokerId = "9999";
+// var m_UserId = "136380";
+// var m_InvestorId = "136380";
+// var m_PassWord = "jpf000jpf";
+// var m_TradingDay = "20210805";
+// var m_AccountId = "136380";
+// var m_CurrencyId = "CNY";
+// var m_AppId = "simnow_client_test";
+// var m_AuthCode = "0000000000000000";
+
+var ctp1_TradeAddress = "tcp://180.169.95.252:41205";
+var m_BrokerId = "5040";
+var m_UserId = "91700058";
+var m_InvestorId = "91700058";
+var m_PassWord = "sxy123456";
 var m_TradingDay = "20210805";
-var m_AccountId = "136380";
+var m_AccountId = "91700058";
 var m_CurrencyId = "CNY";
-var m_AppId = "simnow_client_test";
-var m_AuthCode = "0000000000000000";
+var m_AppId = "client_syc_v21.4.1";
+var m_AuthCode = "3DJRGBBOBJMVQQTT";
 
 
 console.log("try.js starting");
@@ -86,55 +97,55 @@ trader.on('rqSettlementInfo', function (requestId, isLast, field, info) {
   console.log("rqSettlementInfo: field", JSON.stringify(field));
   console.log('rqsettlementinfo callback');
 
-  if (!t_bInsertOrder) {
-    t_bInsertOrder = true;
+  // if (!t_bInsertOrder) {
+  //   t_bInsertOrder = true;
 
-    var instrumentID = "j2201";
-    var orderRef = "1632460886";
-    var direction = "0";
-    var combOffsetFlag = "0";
-    var limitPrice = "4840.1999999"
-    var volumeTotalOriginal = "1";
-    var requestID = "110";
-    var exchangeID = "DCE";
-    var insertOrder = {
-      "BrokerID": m_BrokerId,
-      "InvestorID": m_InvestorId,
-      "InstrumentID": instrumentID,
-      "OrderRef": orderRef,
-      "UserID": m_UserId,
-      //"OrderPriceType": "",
-      "Direction": direction,
-      "CombOffsetFlag": combOffsetFlag,
-      //"CombHedgeFlag": "",
-      "LimitPrice": limitPrice,
-      "VolumeTotalOriginal": volumeTotalOriginal,
-      //"TimeCondition": "",
-      //"GTDDate": "",
-      //"VolumeCondition": "",
-      //"MinVolume": "",
-      //"ContingentCondition": "",
-      //"StopPrice": "",
-      //"ForceCloseReason": "",
-      //"IsAutoSuspend": "",
-      //"BusinessUnit": "",
-      "RequestID": requestID,
-      //"UserForceClose": "",
-      //"IsSwapOrder": "",
-      "ExchangeID": exchangeID,
-      "InvestUnitID": "",
-      "AccountID": "",
-      "CurrencyID": "",
-      "ClientID": "",
-      "IPAddress": "",
-      "MacAddress": "",
-    };
+  //   var instrumentID = "j2201";
+  //   var orderRef = "1632460886";
+  //   var direction = "0";
+  //   var combOffsetFlag = "0";
+  //   var limitPrice = "4840.1999999"
+  //   var volumeTotalOriginal = "1";
+  //   var requestID = "110";
+  //   var exchangeID = "DCE";
+  //   var insertOrder = {
+  //     "BrokerID": m_BrokerId,
+  //     "InvestorID": m_InvestorId,
+  //     "InstrumentID": instrumentID,
+  //     "OrderRef": orderRef,
+  //     "UserID": m_UserId,
+  //     //"OrderPriceType": "",
+  //     "Direction": direction,
+  //     "CombOffsetFlag": combOffsetFlag,
+  //     //"CombHedgeFlag": "",
+  //     "LimitPrice": limitPrice,
+  //     "VolumeTotalOriginal": volumeTotalOriginal,
+  //     //"TimeCondition": "",
+  //     //"GTDDate": "",
+  //     //"VolumeCondition": "",
+  //     //"MinVolume": "",
+  //     //"ContingentCondition": "",
+  //     //"StopPrice": "",
+  //     //"ForceCloseReason": "",
+  //     //"IsAutoSuspend": "",
+  //     //"BusinessUnit": "",
+  //     "RequestID": requestID,
+  //     //"UserForceClose": "",
+  //     //"IsSwapOrder": "",
+  //     "ExchangeID": exchangeID,
+  //     "InvestUnitID": "",
+  //     "AccountID": "",
+  //     "CurrencyID": "",
+  //     "ClientID": "",
+  //     "IPAddress": "",
+  //     "MacAddress": "",
+  //  };
 
     // trader.reqOrderInsert(insertOrder, function (field) {
     //   console.log('ReqOrderInsert is callback');
     //   console.log(field);
     // })
-  }
+  //}
 });
 
 // trader.on('rtnOrder', function (field) {

@@ -13,17 +13,6 @@ var m_CurrencyId = "CNY";
 var m_AppId = "simnow_client_test";
 var m_AuthCode = "0000000000000000";
 
-// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
-// var m_BrokerId = "9999";
-// var m_UserId = "136380";
-// var m_InvestorId = "136380";
-// var m_PassWord = "jpf000jpf";
-// var m_TradingDay = "20210805";
-// var m_AccountId = "136380";
-// var m_CurrencyId = "CNY";
-// var m_AppId = "simnow_client_test";
-// var m_AuthCode = "0000000000000000";
-
 console.log("try.js starting");
 
 var login = false;
@@ -49,24 +38,22 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     console.log("rspUserLogin: info", JSON.stringify(info));
     login = true;
 
-    trader.reqQrySettlementInfoConfirm(m_BrokerId, m_AccountId, function (field) {
-        console.log('reqQrySettlementInfoConfirm is callback');
-        console.log("reqQrySettlementInfoConfirm: field", JSON.stringify(field));
-    });
+    trader.reqQryTradingAccount(m_BrokerId, m_InvestorId, function (field) {
+        console.log('reqQryTradingAccount is callback');
+        console.log(field);
+    })
 });
 
 trader.on('rspError', function (requestId, isLast, field) {
     console.log(JSON.stringify(field));
 });
 
-trader.on('rqSettlementInfoConfirm', function (requestId, isLast, field, info) {
-    console.log('rqSettlementInfoConfirm');
-    console.log("rspUserLogin: requestId", requestId);
-    console.log("rspUserLogin: requestId", isLast);
-    console.log("rqSettlementInfoConfirm: field", JSON.stringify(field));
-    console.log(" sttttt", field, !field, typeof(field));
-
-    console.log("rqSettlementInfoConfirm: info", JSON.stringify(info));
+trader.on('rqTradingAccount', function (requestId, isLast, field, info) {
+    console.log('rqTradingAccount');
+    console.log(JSON.stringify(requestId));
+    console.log(JSON.stringify(isLast));
+    console.log("rqTradingAccount: field", JSON.stringify(field));
+    console.log("rqTradingAccount: info", JSON.stringify(info));
 })
 
 trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
