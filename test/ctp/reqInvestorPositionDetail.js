@@ -13,6 +13,18 @@ var m_CurrencyId = "CNY";
 var m_AppId = "simnow_client_test";
 var m_AuthCode = "0000000000000000";
 
+
+// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
+// var m_BrokerId = "9999";
+// var m_UserId = "161517";
+// var m_InvestorId = "161517";
+// var m_PassWord = "xzqxzqa";
+// var m_TradingDay = "20210805";
+// var m_AccountId = "161517";
+// var m_CurrencyId = "CNY";
+// var m_AppId = "simnow_client_test";
+// var m_AuthCode = "0000000000000000";
+
 console.log("try.js starting");
 
 var login = false;

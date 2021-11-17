@@ -52,11 +52,11 @@ trader.on('rspError', function (requestId, isLast, field) {
 });
 
 trader.on('rSettlementInfoConfirm', function (requestId, isLast, field, info) {
-    console.log('rqSettlementInfoConfirm');
+    console.log('rSettlementInfoConfirm');
     console.log(JSON.stringify(requestId));
     console.log(JSON.stringify(isLast));
-    console.log("rqSettlementInfoConfirm: field", JSON.stringify(field));
-    console.log("rqSettlementInfoConfirm: info", JSON.stringify(info));
+    console.log("rSettlementInfoConfirm: field", JSON.stringify(field));
+    console.log("rSettlementInfoConfirm: info", JSON.stringify(info));
 })
 
 trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
