@@ -22,7 +22,7 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "vtp",
+    "productName": "vtp2021",
     "appId": "xinqi",
     "directories": {
       "output": "electron-build"

@@ -9,6 +9,7 @@ const state = {
        state.priceData  = data;
     },
     'changeactive'(state, data) {
+      console.log(data, '11')
       state.activeIns  = data;
    },
    removeactive(state, data) {
@@ -22,7 +23,6 @@ const state = {
       commit('tarde-data', data)
     },
     updateIns({ commit }, data) {
- 
       commit('changeactive', data)
     },
     removeIns({commit}, data){

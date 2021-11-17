@@ -1,35 +1,35 @@
 <template>
-  <div id="wrapper" v-loading='loading.length'  element-loading-text="正在获取账号信息" >
+  <div id="wrapper" v-loading='loading.length || forcing'  :element-loading-text="forcing?'触发强平操作，正在强平中':'正在获取账号信息'" >
     <el-descriptions :style="{fontSize: '20px'}" direction="vertical" :column="10" border>
-      <el-descriptions-item label="账号">kooriookami</el-descriptions-item>
+      <el-descriptions-item label="账号">{{userData.account}}</el-descriptions-item>
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
       <el-descriptions-item label="开仓手数">{{instrumentsData.reduce((a,b) => a += b.todayVolume, 0)}}</el-descriptions-item>
         <el-descriptions-item label="报单手数">{{orderData.length}}</el-descriptions-item>
       <el-descriptions-item label="总手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="总实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
-      <el-descriptions-item label="强平线"></el-descriptions-item>
+      <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
         <el-descriptions-item label="可用资金">{{account.Available.toFixed(2)}}</el-descriptions-item>
     </el-descriptions>
     <main  v-if='!loading.length'>
       
       <div class="left-side">
           <div class="label">订阅合约:</div>
-          <Table height='640' @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
-          <el-button @click="open">商品</el-button>
+          <Table height='600' @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
+          <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
-              <el-button @click="open2">股指</el-button> 
-              <el-button @click="stop">停止</el-button>
+              <el-button @click="open2">股指</el-button>  -->
+              <el-button @click="forceClose">停止</el-button>
       </div>
 
       <div class="right-side">
         
         <div>
            <div class="label">回合信息：</div>
-          <Round :data='traders' :rates='rates' :price='price' ></Round>
+          <Round :data='traders' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
         </div>
         <div>
           <div class="label">下单信息：</div>
-            <Table  height='300' :columns='orderColumns' :tableData='orderData'/>
+            <Table  height='280' :columns='orderColumns' :tableData='orderData'/>
         </div>
       </div>
     </main>
@@ -50,7 +50,7 @@
 
 <script>
   import { ipcRenderer } from 'electron';
-  import request from '../utils/request';
+
   import {getWinName, Direction, CombOffsetFlag} from '../utils/utils';
   import Round from './LandingPage/round.vue';
   import Status from './LandingPage/Status.vue';
@@ -71,14 +71,22 @@
     name: 'landing-page',
     components: {  Round },
     computed: {
-      priceData(){
-        return this.$store.state.PriceData.priceData;
+      userData() {
+         return this.$store.state.user.userData
       },
-      InstrumentIDs (){
-        return this.$store.state.PriceData.InstrumentIDs
+      subscribelInstruments (){
+        return this.userData.subInstruments.split(',')
       },
       activeIns() {
          return this.$store.state.PriceData.activeIns
+      },
+      locked: {
+        get(){
+          return this.$store.state.user.userData.locked;
+        },
+        set(){
+          this.$store.commit('lock-user');
+        }
       },
       orderData(){
         
@@ -89,10 +97,7 @@
         }
         return arr;
       },
-      subscribelInstruments(){
-        const ExchangeId = this.InstrumentIDs.concat(this.ids, this.gz);
-        return ExchangeId;
-      },
+  
       instrumentsData(){
         const data = this.subscribelInstruments.map(e=>({
           instrumentID: e,
@@ -103,24 +108,33 @@
           todayVolume: 0,
           'todayCancel': 0
         }))
+        
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
           const {InstrumentID} = order;
           const item = data.find(e => e.instrumentID === InstrumentID);
           if(item)item.todayCancel += 1;
         })
-        const orderData = this.orderData.filter(e => e.OrderStatus === '0')
-        // console.log(JSON.parse(JSON.stringify(traders)))
-        this.traders.forEach(trader => {
+        //过滤
+        const orderData = this.orderData.filter(e => {
+        
+          return  e.VolumeTraded
+        })
+        // console.log(JSON.parse(JSON.stringify(this.traders.filter(e => e.InstrumentID === 'j2201'))))
+        this.traders.filter(e => e.InstrumentID === 'j2201').forEach(trader => {
            const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
            const item = data.find(e => e.instrumentID === InstrumentID)
+           if(!item)return;
            if(!TradeTime){
             //  console.log(JSON.parse(JSON.stringify(trader)))
              const key = Direction === '0'? 'yesterdayBuy': 'yesterdayAsk';
               item[key] += Volume
            }else {
-            // console.log(JSON.parse(JSON.stringify(trader)))
+            
              const order = orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-             if(!order) return
+             if(!order) {
+               
+               return
+             }
               const {CombOffsetFlag} = order;
             if(CombOffsetFlag === '0'){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
@@ -130,8 +144,10 @@
                const keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
                const keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
                if(item[keyYesterDay] >= Volume){
+                 
                  item[keyYesterDay] -= Volume
                }else {
+                 
                  item[keyToady] -= Volume;
                }
             }
@@ -145,11 +161,9 @@
       const _this = this;
       return {
         dialogVisible: false,
-        ids: ['AP201','AP203','SM205','SM201'],
-        gz:['IC2112','IF2112','IC2111','IF2111','IH2111'],
         orders: {},
-        loading: ['order', 'trade', 'config', 'rate'],
-        loading: [],
+        loading: ['order', 'trade', 'config', 'rate', 'instrument'],
+        // loading: [],
         orderColumns: [{
           label: '合约',
           prop: 'InstrumentID',
@@ -199,10 +213,12 @@
                   const {ExchangeID , OrderSysID} = item;
                   const traders = _this.traders.filter(trade=> trade.ExchangeID ===ExchangeID &&   trade.OrderSysID ===OrderSysID);
                   const price = {price: 0, volume : 0};
+                  
                   traders.reduce(function(a, b){
                     const {Price, Volume} = b;
                     a.price = Price*Volume;
                     a.volume = price.volume+ Volume;
+                    return a;
                   }, price);
                   let average = 0;
                   if(price.volume){
@@ -223,6 +239,7 @@
         confirmInfo: [],
         rates: [],
         price: {},
+        instrumentInfo: [],
         account: {
           Commission: 0,
           CloseProfit: 0,
@@ -272,19 +289,41 @@
            width: 50,
         }
         ],
+        forcing: false
       }
     },
     mounted(){
-      request({
-        url: 'user/config',
-        type: 'GET'
-      }).then(res => {
-        // this.open();
-        // this.open1();
-        // this.open2();
-        this.finishLoading('config')
-      });
-      ipcRenderer.send('trade-login', {});
+      
+      this.$store.dispatch('get-config').then(()=>{
+        
+        const userData = this.$store.state.user.userData
+        const {
+          tradeAddr:ctp1_TradeAddress,
+          quotAddr,
+          brokerId: m_BrokerId,
+          authCode: m_AuthCode,
+          futureUserId: m_InvestorId,
+          futureUserId: m_UserId,
+          futureUserPwd:m_PassWord,
+          appId: m_AppId,
+          futureUserId:m_AccountId
+        } = userData;
+         this.finishLoading('config')
+         ipcRenderer.send('trade-login', {
+           ctp1_TradeAddress,
+            m_BrokerId,
+            m_AuthCode,
+            m_InvestorId,
+            m_UserId,
+            m_PassWord,
+            m_AppId,
+            m_AccountId,
+           instruments: this.subscribelInstruments
+          });
+          const _quotAddr = quotAddr.split(':')
+          ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: this.subscribelInstruments,   iCmdID: 101});
+      })
+     
       ipcRenderer.on('receive-order', (event, orders) =>{
     
         this.orders = orders;
@@ -297,7 +336,7 @@
         }
       });
        ipcRenderer.on('receive-rate', (event, rates) =>{
-         console.log(rates)
+        //  console.log(rates)
           this.rates = rates;
       });
       ipcRenderer.on('finish-loading', (event, arg) =>{
@@ -309,13 +348,22 @@
         this.dialogVisible = true;
       })
        ipcRenderer.on('receive-price', (event, arg)=>{
-         if(this.instrumentsData.some(({todayAsk, todayBuy, yesterdayBuy, yesterdayAsk})=> todayAsk!==todayBuy || yesterdayBuy!== yesterdayAsk)){
+         if(this.instrumentsData.some(({todayAsk, todayBuy, yesterdayBuy, yesterdayAsk})=> todayAsk+ yesterdayAsk!== yesterdayBuy+ todayBuy)){
             this.price=arg;
          }
        
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
+         if(this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
+           this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+         }else{
+           clearTimeout(this.forceCloseTime)
+         }
         this.account=arg
+      })
+      ipcRenderer.on('receive-instrument', (event, arg)=>{
+        // console.log(arg)
+        this.instrumentInfo = arg
       })
       setTimeout(()=>{
         if(this.loading.length !== 0){
@@ -325,13 +373,17 @@
             }
           })
         }
-      }, 20000)
+      }, 60000)
       
     },
     methods: {
       start(row) {
+        if(this.locked){
+          this.$alert('当前账号已锁定', '锁定' )
+          return
+        }
         const {instrumentID} = row
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID)});
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID), account: this.userData.account});
         this.$store.dispatch('updateIns', instrumentID);
       },
       open () {
@@ -347,8 +399,15 @@
         ipcRenderer.send('stop-subscrible');
         this.$store.dispatch('updateIns', '')
       }, 
+      forceClose(){
+        this.stop();
+        this.forcing  = true;
+        this.locked = true;
+        setTimeout(()=> this.forcing = false, 200 )
+      },
       finishLoading(tag){
         const index = this.loading.indexOf(tag);
+        // console.log(tag)
         if(index > -1) {
           this.loading.splice(index, 1)
         }

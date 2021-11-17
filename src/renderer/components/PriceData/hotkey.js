@@ -15,22 +15,30 @@ export default function generate(hotKey){
          const {keyCode} = e;
          const haskey = hotKey.find(key => key.length && key[1] === keyCode.toString());
          console.log(haskey)
+         function order() {
+            if(!chart.data.length)return;
+            const direction = haskey[3];
+            const overprice = haskey[4];
+            let price;
+            if(direction === '0'){
+                price = parseFloat(chart.data[chart.buyIndex].price) + parseInt(overprice) * chart.step;
+
+            }else{
+               price = parseFloat(chart.data[chart.askIndex].price) - parseInt(overprice) * chart.step;
+
+            }
+       
+            vue.putOrder(fixPirce(price, vue.chart.decimal), direction);
+         }
          if(haskey){
              switch(haskey[2]){
                  case '0':
-                    if(!chart.data.length)return;
-                     const direction = haskey[3];
-                     const overprice = haskey[4];
-                     let price;
-                     if(direction === '0'){
-                         price = parseFloat(chart.data[chart.buyIndex].price) + parseInt(overprice) * chart.step;
-
-                     }else{
-                        price = parseFloat(chart.data[chart.askIndex].price) - parseInt(overprice) * chart.step;
-
-                     }
-                
-                     vue.putOrder(fixPirce(price, vue.chart.decimal), direction);
+                    order();
+                   
+                    break;
+                case '1':
+                    ipcRenderer.send('cancel-order', vue.$route.qurey.id);
+                    order();
                     break;
                 case '3':
                      const volume = haskey[5];

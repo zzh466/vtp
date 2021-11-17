@@ -57,11 +57,16 @@ export default {
   mounted(){
       const chartDom = document.getElementById('can');
       
-      console.log(this.$store.state.user);
-      const id = this.$route.query.id;
+     
+      const {id,account} = this.$route.query;
+       const config =JSON.parse(localStorage.getItem(`config-${account}`));
+      console.log(config);
+      config.barWeight = config.barWeight + 1;
+      this.broadcastOpenInterest = config.broadcastOpenInterest;
+      this.stepwidth = config.barWeight ;
       ipcRenderer.send('register-event', id);
-    
-       this.func = Gen(this.$store.state.user.hotKey)
+
+       this.func = Gen(config.hotKey)
      
       window.onkeydown =(e)=>{
         this.func(e, this);
@@ -76,26 +81,36 @@ export default {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(()=> {
           this.width = innerWidth - 80;
-          this.height = innerHeight ;
+          this.height = innerHeight-20 ;
           this.$nextTick(function(){
-            this.chart.resize( this.width, this.height)
+            this.chart.resize( this.width, this.height);
+            if(this.arg){
+               this.chart.render(this.arg)
+            }
           })
           
         }, 500)
       }
+      
       const p = new Promise(a => {
          ipcRenderer.invoke('get-pirceTick', id).then(({PriceTick: tick, ExchangeID: exchangeId}) => {
           console.log(tick, exchangeId)
           this.exchangeId = exchangeId;
-          this.chart = new Chart(chartDom, this.width, this.height,tick, {width: this.stepwidth});
+          this.chart = new Chart(chartDom, this.width, this.height,tick, config);
           this.loading =false;
           a();
-          ipcRenderer.on(`receive-${id}`, (event, arg) => {
-            this.chart.render(arg)
-          })
+         
         })
       })
-     
+       ipcRenderer.on(`receive-${id}`, (event, arg) => {
+          p.then(()=>{
+            if(arg){
+              this.arg = arg;
+              this.chart.render(arg)
+            }
+            
+          })
+        })
       ipcRenderer.on('place-order', (_, field) => {
        
         p.then(()=>{
@@ -140,25 +155,24 @@ export default {
   },
   data () {
     return {
-      BidPrice: 0,
       width: 1420,
-      height: 300,
+      height: 280,
       showbar: false,
       left: 0,
-      stepwidth: 15,
       config: {
         volume: 1,
         type: '1',
         closeType: '0'
       },
       traded: [],
-      loading: true
+      loading: true,
+      stepwidth: 10
     }
   },
   methods: {
     move(e){
       const {x ,y} = e;
-  
+      
       if(x > 104 && y > 54){
         this.showbar = true;
         this.left = x - (x-105)%this.stepwidth;
@@ -214,10 +228,10 @@ export default {
       const {todayAsk, todayBuy, yesterdayAsk, yesterdayBuy} = this.instrumet;
       const { holdVolume} = this.chart;
       const hold = holdVolume[direction];
-      const yesterDay = direction === 0? yesterdayBuy: yesterdayAsk;
-      const oppositeYesterDay = direction === 0? yesterdayAsk: yesterdayBuy;
-       const toDay = direction === 0? todayBuy: todayAsk;
-      const oppositeToday = direction === 0? todayAsk: todayBuy;
+      const yesterDay = direction === '0'? yesterdayBuy: yesterdayAsk;
+      const oppositeYesterDay = direction === '0'? yesterdayAsk: yesterdayBuy;
+       const toDay = direction === '0'? todayBuy: todayAsk;
+      const oppositeToday = direction === '0'? todayAsk: todayBuy;
       switch(this.config.type){
         case '0': 
           if(oppositeYesterDay>= volumeTotalOriginal + hold){
@@ -236,12 +250,12 @@ export default {
            if(oppositeYesterDay>= volumeTotalOriginal + hold){
               combOffsetFlag = '1';
             }else if(oppositeToday >= volumeTotalOriginal + hold){
-               combOffsetFlag = 1
+               combOffsetFlag = '1'
               if(this.exchangeId === 'CFFEX'){
-                combOffsetFlag = 3
+                combOffsetFlag = '3'
               }
             }else if(this.exchangeId === 'CFFEX' && combOffsetFlag === '1'){
-              combOffsetFlag = 3
+              combOffsetFlag = '3'
             }
           break;
         case '2':
@@ -319,6 +333,7 @@ export default {
   background-color: #000;
   padding: 5px;
   position: relative;
+  height: 100vh;
 }
 #can {
   background-color: #000;

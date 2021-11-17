@@ -7,7 +7,7 @@ const { dependencies } = require('../package.json')
 const webpack = require('webpack')
 
 const MinifyPlugin = require("babel-minify-webpack-plugin")
-
+console.log(process.env.NODE_ENV)
 let mainConfig = {
   entry: {
     main: path.join(__dirname, '../src/main/index.js')
@@ -24,7 +24,7 @@ let mainConfig = {
       },
 
       //因为ctp.node的特殊性 开发环境用node-loader绝对路径引入,生产环境用相对路径引入，并在package.json里面build 配置项中将node-gpybuild出来的文件夹作为extraResourse引入
-      process.env.NODE_ENV !== 'development'?  {
+      process.env.NODE_ENV !== 'production'?  {
         test:  /\.node$/,
         use: 'node-loader',
       }:

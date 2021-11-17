@@ -1,5 +1,5 @@
 <template>
-    <Table :tableData='traderData' height="300" :columns='traderColumns'/>
+    <Table :tableData='traderData' height="280" :columns='traderColumns'/>
 </template>
 
 <script>
@@ -20,7 +20,7 @@
     })
 
   export default {
-    props: ['data', 'rates', 'price', 'instruments'],
+    props: ['data', 'rates', 'price', 'instrumentInfo'],
     data(){
         const _this = this;
         return {
@@ -77,7 +77,7 @@
 ;
                      
                        const {ClosePrice , Price, Volume, CloseVolume, Direction, InstrumentID} = data;
-                       if(!ClosePrice) return 0
+                      
                        let range = ClosePrice - Price;
                        if(_this.price[InstrumentID] && Volume > CloseVolume){
                            range = (range * CloseVolume + (Volume -CloseVolume) *( _this.price[InstrumentID][Direction] -Price)) / Volume;
@@ -85,6 +85,7 @@
                         if(data.Direction==='1'){
                            range = -range;
                        }
+                       data.range = range;
                        return range.toFixed(2)
                     }
                 },
@@ -94,14 +95,20 @@
                     render(data){
                         
                 
-                        var rate = _this.rates.find(e => data.InstrumentID.startsWith(e.InstrumentID))
-                        if(!rate) return
-                        let commission  = rate.OpenRatioByMoney * data.Price + rate.OpenRatioByVolume * data.Volume;
+                        const rate = _this.rates.find(e => data.InstrumentID.startsWith(e.InstrumentID))
+                        const info = _this.instrumentInfo.find(e => data.InstrumentID === e.id);
+                        if(!rate || !info){
+                            data.commission = 0;
+                            return 0
+                        } 
+                        const {OpenRatioByMoney, OpenRatioByVolume, CloseTodayRatioByMoney, CloseTodayRatioByVolume, CloseRatioByMoney, CloseRatioByVolume} = rate;
+                        const {VolumeMultiple} = info.field;
+                        let commission  = (VolumeMultiple * OpenRatioByMoney * data.Price + OpenRatioByVolume )* data.Volume;
                         if(data.ClosePrice){
                             if(data.closeType === '1'){
-                                 commission = commission+ rate.CloseTodayRatioByMoney * data.ClosePrice + rate.CloseTodayRatioByVolume * data.CloseVolume
+                                 commission = commission+ (VolumeMultiple * CloseTodayRatioByMoney * data.ClosePrice + CloseTodayRatioByVolume )* data.CloseVolume;
                             }else{
-                                 commission = commission+ rate.CloseRatioByMoney * data.ClosePrice + rate.CloseTodayRatioByVolume * data.CloseVolume
+                                 commission = commission+  (VolumeMultiple * CloseRatioByMoney * data.ClosePrice + CloseRatioByVolume )* data.CloseVolume;
                             }
                         }
                         // switch (data.closeType) {
@@ -118,7 +125,7 @@
                         //         commission = rate.CloseTodayRatioByMoney * data.closePrice + rate.CloseTodayRatioByVolume * data.closeVolume
                         //         break;
                         // }
-
+                        data.commission = commission;
                         return commission.toFixed(2);
                     }
                 },
@@ -126,21 +133,51 @@
                      label: '持仓盈亏',
                     prop: 'optionProfit',
                     render(data){
-                        return data.Price.toFixed(3)
+                         const {  Price, Volume, CloseVolume, Direction, InstrumentID} = data;
+                         let profit = 0
+                         if( Volume> CloseVolume){
+                              const info = _this.instrumentInfo.find(e => InstrumentID === e.id);
+                             const volume  = Volume - CloseVolume;
+                             
+                             if(_this.price[InstrumentID] && info){
+                                 profit =(_this.price[InstrumentID][Direction] - Price) *volume * info.field.VolumeMultiple;
+                                
+                             }
+                              if(Direction==='1'){
+                                profit = -profit;
+                            }
+
+                         }
+                         data.optionProfit = profit
+                        return profit.toFixed(2)
                     }
                 },
                 {
                      label: '平仓盈亏',
                     prop: 'closeProfit',
                     render(data){
-                        return data.Price.toFixed(3)
+                           const {  Price, CloseVolume, ClosePrice , InstrumentID, Direction} = data;
+                         let profit = 0
+                         if(CloseVolume ){
+                              const info = _this.instrumentInfo.find(e => InstrumentID === e.id);
+                              if(info){
+                                   profit = (ClosePrice -Price) * CloseVolume* info.field.VolumeMultiple
+                              }
+                            
+                            if(Direction==='1'){
+                                profit = -profit;
+                            }
+
+                         }
+                         data.closeProfit = profit
+                        return profit.toFixed(2)
                     }
                 },
                 {
                      label: '实际盈亏',
                     prop: 'true',
                     render(data){
-                        return data.Price.toFixed(3)
+                        return (data.closeProfit + data.optionProfit - data.commission).toFixed(2);
                     }
                 }
             ]
