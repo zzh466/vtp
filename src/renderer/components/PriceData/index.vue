@@ -1,7 +1,7 @@
 <template>
   <div class="price-body"  @dblclick="mouseTrade" v-loading='loading'> 
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
-    <div  class="price-tick" v-show="showbar" :style="{ width: '15px', left: this.left + 'px' }"></div>
+    <div  class="price-tick" v-show="showbar" :style="{ width: this.stepwidth +'px', left: this.left + 'px' ,}"></div>
   </div>
 </template>
 

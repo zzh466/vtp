@@ -41,7 +41,7 @@ const state = {
       localStorage.setItem(`config-${state.userData.account}`, JSON.stringify(config_1));
       commit('setstate', {
         key: 'over_price',
-        data: over_price.propertyValue
+        data: parseInt(over_price.propertyValue)
       })
       commit('setstate', {
         key: 'broadcast',
@@ -52,6 +52,13 @@ const state = {
         data: openvolume_limit.propertyValue
       })
      
+    },
+    async lock(){
+      const result = await request({
+        url: 'user/lock',
+        type: 'POST'
+      });
+      
     }
 
   }

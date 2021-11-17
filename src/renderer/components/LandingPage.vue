@@ -3,8 +3,7 @@
     <el-descriptions :style="{fontSize: '20px'}" direction="vertical" :column="10" border>
       <el-descriptions-item label="账号">{{userData.account}}</el-descriptions-item>
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
-      <el-descriptions-item label="开仓手数">{{instrumentsData.reduce((a,b) => a += b.todayVolume, 0)}}</el-descriptions-item>
-        <el-descriptions-item label="报单手数">{{orderData.length}}</el-descriptions-item>
+    
       <el-descriptions-item label="总手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="总实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
@@ -18,14 +17,14 @@
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
-              <el-button @click="forceClose">停止</el-button>
+              <el-button @click="forceClose">强平</el-button>
       </div>
 
       <div class="right-side">
         
         <div>
            <div class="label">回合信息：</div>
-          <Round :data='traders' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
+          <Round ref="round" :data='traders' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
         </div>
         <div>
           <div class="label">下单信息：</div>
@@ -354,10 +353,14 @@
        
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
-         if(this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
-           this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+         if(!this.locked && this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
+           if(!this.forceCloseTime){
+             this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+           }
+           
          }else{
            clearTimeout(this.forceCloseTime)
+           this.forceCloseTime = null;
          }
         this.account=arg
       })
@@ -386,24 +389,46 @@
         ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID), account: this.userData.account});
         this.$store.dispatch('updateIns', instrumentID);
       },
-      open () {
-         ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 18199, instrumentIDs: this.InstrumentIDs, type: 'SP',  iCmdID: 101});
-      },
-      open1(){
-        ipcRenderer.send('start-receive', {host: '101.132.114.246', port: 19188, instrumentIDs: this.ids, type: 'GZ',  iCmdID: 101});
-      },
-      open2(){
-        ipcRenderer.send('start-receive', {host: '117.185.41.78', port: 18198, instrumentIDs: this.gz, type: 'SP', iCmdID: 101});
-      },
       stop(){
         ipcRenderer.send('stop-subscrible');
         this.$store.dispatch('updateIns', '')
       }, 
-      forceClose(){
+      closeALL(){
+        ipcRenderer.send('cancel-order');
+        const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume}) => Volume> CloseVolume);
+        if(arr.length){
+          arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
+              const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+              let combOffsetFlag = '1';
+              if(order) {
+                combOffsetFlag = order.CombOffsetFlag
+              }
+              const direction= Direction==='0'? '1': '0'
+              let over_price = this.$store.state.user.over_price;
+              if(direction === '1'){
+                over_price = -over_price;
+              }
+              const limitPrice = this.price[direction] + over_price;
+              ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction}) 
+          })
+        }else{
+           this.forcing = false;
+           clearInterval(this.forcingCloseTime)
+        }
+      },
+      async forceClose(){
         this.stop();
         this.forcing  = true;
         this.locked = true;
-        setTimeout(()=> this.forcing = false, 200 )
+        const force = await this.$store.dispatch('lock');
+        if(force){
+          this.forcingCloseTime = setInterval(()=> {
+            this.closeALL();
+          }, 1000)
+        }else{
+          setTimeout(()=> this.forcing = false, 200 )
+        }
+        
       },
       finishLoading(tag){
         const index = this.loading.indexOf(tag);

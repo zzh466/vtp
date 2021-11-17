@@ -379,9 +379,12 @@ ipcMain.on('trade', (event, args) => {
 
 ipcMain.on('cancel-order', (event, args) => {
   const arr = [];
+  function needCancel(order){
+    return (order.OrderStatus === '1' || order.OrderStatus === 'a' || order.OrderStatus === '3') && (!args || args.value === item[key])
+  }
  for(let key in orderMap){
    const item = orderMap[key];
-   if(item.OrderStatus === '3' && !args || args === item.InstrumentID){
+   if(needCancel(item)){
     //  console.log(item)
      arr.push(item)
    }
@@ -424,11 +427,11 @@ ipcMain.on('start-receive', (event, args) =>{
 
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      if(trade){
-        trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
+      // if(trade){
+      //   trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
-        })
-      }
+      //   })
+      // }
       if(Object.getOwnPropertyNames(PriceData).length!==0){
         const data = {};
         for(let key in PriceData){

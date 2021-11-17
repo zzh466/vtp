@@ -37,7 +37,7 @@ export default function generate(hotKey){
                    
                     break;
                 case '1':
-                    ipcRenderer.send('cancel-order', vue.$route.qurey.id);
+                    ipcRenderer.send('cancel-order', {key: 'instrumentID' , value: vue.$route.query.id});
                     order();
                     break;
                 case '3':
@@ -49,10 +49,13 @@ export default function generate(hotKey){
                      vue.changeConfig('type', type);
                      break;
                 case '2':
-                    ipcRenderer.send('cancel-order');
+                    ipcRenderer.send('cancel-order', {key: 'ExchangeID' , value: vue.exchangeId});
                      break;
+                case '7':
+                    ipcRenderer.send('cancel-order');
+                break;
                 case '8':
-                    ipcRenderer.send('cancel-order', vue.$route.qurey.id);
+                    ipcRenderer.send('cancel-order', {key: 'instrumentID' , value: vue.$route.query.id});
                     break
              }
          }

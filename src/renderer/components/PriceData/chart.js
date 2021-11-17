@@ -66,7 +66,7 @@ class Chart {
         this.count = Math.floor((this.width - 150) / (this.stepwidth * 2) ) * 2;
         ctx.beginPath();
         ctx.strokeStyle = '#00ff00'
-        ctx.moveTo(X, Y + this.stepHeight);
+        ctx.moveTo(X, Y + 30);
         ctx.lineTo(X,this.height - 30);
         ctx.stroke();
         
@@ -107,9 +107,10 @@ class Chart {
         ctx.textAlign = 'right'
         ctx.font= '12px sans-serif';
         ctx.fillStyle= FONTCOLOR;
-        let start = 35
+       
        
         let stepHeight = this.stepHeight;
+        let start = 30
         const _Y = Y + stepHeight;
         ctx.save();
         ctx.setLineDash([1, 1])
@@ -155,7 +156,7 @@ class Chart {
     }
     renderBakcground(){
         const ctx = this.ctx;
-        const y = Y + this.stepHeight;
+        const y = Y + 30;
         const _x = X + 50.5;
         const start = this.start;
         ctx.clearRect(_x-2 , y - 5 ,this.width , this.height);
@@ -370,7 +371,7 @@ class Chart {
         const ctx =this.ctx;
         ctx.save();
         
-        const y = Y + 29;
+        const y = Y + 30 ;
         const _x = X + 50.5;
         const {stepwidth, stepHeight, range} = this;
         let _volume = [0, 0];
