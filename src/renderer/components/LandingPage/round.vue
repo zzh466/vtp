@@ -188,7 +188,7 @@
             let arr = []
             function findAnDmatch(e){
                 
-                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID} = e;
+                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID} = e;
                  let _volume = e._volume;
                  if(_volume === undefined){
                      _volume = Volume
@@ -222,7 +222,9 @@
                                 TradeDate: TradeDate,
                                 TradeTime,
                                 CloseVolume: 0,
-                                ClosePrice: 0
+                                ClosePrice: 0,
+                                OrderSysID,
+                                ExchangeID
                             })
                          }else {
                              item.Volume = item.Volume + Volume; 
@@ -243,15 +245,14 @@
                         TradeTime,
                         CloseVolume: 0,
                         ClosePrice: 0,
-                        closeType: TradeTime && ExchangeID !== 'CFFEX'? '1': '0'
+                        closeType: TradeTime && ExchangeID !== 'CFFEX'? '1': '0',
+                        OrderSysID,
+                        ExchangeID
                     })
                 }
             }
-            this.data.sort((a, b)=>{
-                const date1 = a.OpenDate || a.TradeDate
-                const date2 = b.OpenDate || b.TradeDate
-                return date1 - date2
-            }).forEach(e => {
+    
+            this.data.forEach(e => {
                 findAnDmatch(e);
             });
             return arr.filter(a=> {

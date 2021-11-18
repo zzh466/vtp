@@ -1,5 +1,13 @@
 <template>
   <div class="price-body"  @dblclick="mouseTrade" v-loading='loading'> 
+    <div class="hold-order">
+      <div class="buy-orders">
+        <div class="buy-order" v-for="index of broadcast['0']" :key="index"></div>
+      </div>
+       <div class="sell-orders">
+         <div class="sell-order" v-for="index of broadcast['1']" :key="index"></div>
+       </div>
+    </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
     <div  class="price-tick" v-show="showbar" :style="{ width: this.stepwidth +'px', left: this.left + 'px' ,}"></div>
   </div>
@@ -151,6 +159,13 @@ export default {
           
         })
       })
+      ipcRenderer.on('receive-broadcast', (_, data) => {
+        
+        if(this.broadcastOpenInterest && data.volume !== undefined){
+          this.broadcast[data.direction]= parseInt(data.volume);
+          console.log(this.broadcast)
+        }
+      })
 
   },
   data () {
@@ -161,12 +176,16 @@ export default {
       left: 0,
       config: {
         volume: 1,
-        type: '1',
+        type: '0',
         closeType: '0'
       },
       traded: [],
       loading: true,
-      stepwidth: 10
+      stepwidth: 10,
+      broadcast: {
+        '0': 0,
+        '1': 0
+      }
     }
   },
   methods: {
@@ -205,9 +224,10 @@ export default {
       if(traded.direction && traded.price.length){
         if(direction !== traded.direction){
           combOffsetFlag = '1';
-          if(volumeTotalOriginal + holdVolume> traded.price.length){
+          if(volumeTotalOriginal + holdVolume> traded.price.length || this.config.closeType === '0'){
             volumeTotalOriginal = traded.price.length - holdVolume;
           }
+
         }
        
       }
@@ -346,5 +366,34 @@ export default {
   top: 55px;
   z-index: 10;
   height: 200px;
+}
+.hold-order {
+  position: absolute;
+  top: 1px;
+  display: flex;
+  left: 50%;
+  z-index: 10;
+}
+.buy-orders {
+  display: flex;
+  flex-basis: 50%;
+  text-align: right;
+}
+.sell-orders {
+  display: flex;
+  flex-basis: 50%;
+  
+}
+.buy-order {
+  background-color: rgb(255, 130, 0);
+  margin-left: 2px;
+  width: 10px;
+  height: 3px;
+}
+.sell-order {
+   background-color: rgb(130, 255, 0);
+  margin-left: 2px;
+  width: 10px;
+  height: 3px;
 }
 </style>

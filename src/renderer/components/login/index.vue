@@ -78,6 +78,6 @@
 </script>
 <style >
   .login-container {
-    padding: 40px;
+    padding: 70px;
   }
 </style>

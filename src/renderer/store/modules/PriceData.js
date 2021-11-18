@@ -9,7 +9,7 @@ const state = {
        state.priceData  = data;
     },
     'changeactive'(state, data) {
-      console.log(data, '11')
+      // console.log(data, '11')
       state.activeIns  = data;
    },
    removeactive(state, data) {

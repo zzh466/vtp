@@ -24,7 +24,7 @@
         
         <div>
            <div class="label">回合信息：</div>
-          <Round ref="round" :data='traders' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
+          <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
         </div>
         <div>
           <div class="label">下单信息：</div>
@@ -51,9 +51,11 @@
   import { ipcRenderer } from 'electron';
 
   import {getWinName, Direction, CombOffsetFlag} from '../utils/utils';
+  import {TraderSocket} from '../utils/request';
   import Round from './LandingPage/round.vue';
   import Status from './LandingPage/Status.vue';
   import Vue from 'vue';
+  import request from "../utils/request"; 
   Vue.component('StatusMsg', {
     props: ['data'],
     template: `<el-popover
@@ -65,6 +67,10 @@
               </el-popover>
             `
   })
+  function coverZero(num){
+    if(num < 0) return 0;
+    return num
+  }
   Vue.component('Status', Status);
   export default {
     name: 'landing-page',
@@ -119,7 +125,7 @@
           return  e.VolumeTraded
         })
         // console.log(JSON.parse(JSON.stringify(this.traders.filter(e => e.InstrumentID === 'j2201'))))
-        this.traders.filter(e => e.InstrumentID === 'j2201').forEach(trader => {
+        this.traderData.forEach(trader => {
            const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
            const item = data.find(e => e.instrumentID === InstrumentID)
            if(!item)return;
@@ -154,6 +160,13 @@
         })
         ipcRenderer.send('update-instrumentsData', data);
         return data
+      },
+      traderData(){
+        return this.traders.slice().sort((a, b)=>{
+              const date1 = a.OpenDate || a.TradeDate
+              const date2 = b.OpenDate || b.TradeDate
+              return date1 - date2
+          })
       }
     },
     data(){
@@ -253,14 +266,14 @@
           prop: 'totalBuy',
           width: 50,
           render(data){
-            return data.yesterdayBuy+ data.todayBuy;
+            return coverZero(data.yesterdayBuy+ data.todayBuy);
           }
         },{
           label: '总空仓',
           prop: 'totalAsk',
            width: 50,
           render(data){
-            return data.yesterdayAsk+ data.todayAsk;
+            return coverZero(data.yesterdayAsk+ data.todayAsk);
           }
         },{
           label: '昨多仓',
@@ -274,10 +287,16 @@
           label: '今多仓',
           prop: 'todayBuy',
            width: 50,
+          render(data){
+            return coverZero(data.todayBuy);
+          }
         },{
           label: '今空仓',
           prop: 'todayAsk',
            width: 50,
+          render(data){
+            return coverZero(data.todayAsk);
+          }
         },{
           label: '今开仓',
           prop: 'todayVolume',
@@ -295,7 +314,15 @@
       
       this.$store.dispatch('get-config').then(()=>{
         
-        const userData = this.$store.state.user.userData
+        const userData = this.userData;
+        const broadcast = this.$store.state.user.broadcast;
+        if(broadcast && !this.ws){
+          this.ws = new TraderSocket();
+          this.ws.onmessage((e)=>{
+            console.log(e.data)
+            ipcRenderer.send('broadcast-openinterest', e.data);
+          })
+        }
         const {
           tradeAddr:ctp1_TradeAddress,
           quotAddr,
@@ -328,10 +355,22 @@
         this.orders = orders;
       });
        ipcRenderer.on('receive-trade', (event, trader) =>{
+        
+        if(this.ws && this.traders.length){
+          const {futureUserId} = this.userData
+          let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime} = trader[trader.length -1];
+          if(!TradeTime ){
+            return
+          }
+          if(Direction === '1'){
+            Volume = -Volume;
+          }
+          this.ws.send(`${futureUserId}-${ExchangeID}-${OrderSysID}-${TradeID}:${InstrumentID}:${Volume}`)
+        }
+         
+        
         if(Array.isArray(trader)){
           this.traders = trader 
-        }else {
-          this.traders.push(trader)
         }
       });
        ipcRenderer.on('receive-rate', (event, rates) =>{
@@ -363,9 +402,33 @@
            this.forceCloseTime = null;
          }
         this.account=arg
+     
+        const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
+        const staticBalance = arg.PreBalance + arg.Mortgage + arg.PreFundMortgageIn + arg.FundMortgageIn + arg.FundMortgageOut + arg.FundMortgageAvailable - arg.PreFundMortgageOut - arg.PreCredit - arg.PreMortgage;
+        const data ={
+            date: Date(),
+            commission: arg.Commission,
+            realProfit,
+            margin: arg.CurrMargin,
+            available: arg.Available,
+            balance: arg.Balance,
+            closeProfit: arg.CloseProfit,
+            orderVolume: this.instrumentsData.reduce((a,b) => a+ b.todayVolume, 0),
+            openVolume: this.orderData.length,
+            staticBalance,
+            positionProfit: arg.PositionProfit,
+            userId: this.userData.account
+          }
+         
+        request({
+          url: '/user/funtureAccountInfo ',
+          method: 'PATCH',
+          data
+        })
       })
       ipcRenderer.on('receive-instrument', (event, arg)=>{
         // console.log(arg)
+
         this.instrumentInfo = arg
       })
       setTimeout(()=>{
@@ -408,7 +471,8 @@
               if(direction === '1'){
                 over_price = -over_price;
               }
-              const limitPrice = this.price[direction] + over_price;
+       
+              const limitPrice = this.price[InstrumentID][direction] + over_price;
               ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction}) 
           })
         }else{
@@ -421,6 +485,7 @@
         this.forcing  = true;
         this.locked = true;
         const force = await this.$store.dispatch('lock');
+        
         if(force){
           this.forcingCloseTime = setInterval(()=> {
             this.closeALL();

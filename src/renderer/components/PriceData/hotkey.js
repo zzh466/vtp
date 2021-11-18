@@ -44,6 +44,17 @@ export default function generate(hotKey){
                      const volume = haskey[5];
                      vue.changeConfig('volume', parseInt(volume));
                      break
+                case '4':
+                    vue.changeConfig('closeType', (+!parseInt(vue.config.closeType)).toString());
+                    break
+                case '5':
+                    let _type = parseInt(vue.config.type);
+                    _type++;
+                    if(_type > 3){
+                        _type = 0
+                    }
+                    vue.changeConfig('type', _type.toString());
+                    break;
                 case  '6':
                      const type = haskey[7];
                      vue.changeConfig('type', type);

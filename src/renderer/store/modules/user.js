@@ -5,7 +5,7 @@ const state = {
    },
    over_price: 0,
     openvolume_limit: 0,
-  
+    broadcast: true,
     config: {}
   }
   
@@ -27,16 +27,16 @@ const state = {
     
       const [config_1, over_price, broadcast, openvolume_limit] = await Promise.all([request({
         url: 'user/config',
-        type: 'GET'
+        method: 'GET'
       }), request({
         url: 'property/info/vtp_client_forced_liquidation_over_price',
-        type: 'GET'
+        method: 'GET'
       }), request({
         url: 'property/info/vtp_client_broadcast_openinterest',
-        type: 'GET'
+        method: 'GET'
       }), request({
         url: 'property/info/vtp_client_openvolume_limit',
-        type: 'GET'
+        method: 'GET'
       })]);
       localStorage.setItem(`config-${state.userData.account}`, JSON.stringify(config_1));
       commit('setstate', {
@@ -56,9 +56,12 @@ const state = {
     async lock(){
       const result = await request({
         url: 'user/lock',
-        type: 'POST'
+        method: 'POST'
       });
-      
+      if(result.code === "REQ_SUCCESS"){
+        return result.lock
+      }
+      return false;
     }
 
   }
