@@ -36,6 +36,9 @@
       title="结算单确认"
       :visible.sync="dialogVisible"
       width="800px"
+      :close-on-click-modal='false'
+      :close-on-press-escape='false'
+      :show-close='false'
       center>
       <div class="confirm-info" v-html="confirmInfo.join('')">
       </div>
@@ -50,7 +53,7 @@
 <script>
   import { ipcRenderer } from 'electron';
 
-  import {getWinName, Direction, CombOffsetFlag} from '../utils/utils';
+  import {getWinName, Direction, CombOffsetFlag, getyyyyMMdd} from '../utils/utils';
   import {TraderSocket} from '../utils/request';
   import Round from './LandingPage/round.vue';
   import Status from './LandingPage/Status.vue';
@@ -124,7 +127,7 @@
         
           return  e.VolumeTraded
         })
-        // console.log(JSON.parse(JSON.stringify(this.traders.filter(e => e.InstrumentID === 'j2201'))))
+        console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
         this.traderData.forEach(trader => {
            const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
            const item = data.find(e => e.instrumentID === InstrumentID)
@@ -162,6 +165,7 @@
         return data
       },
       traderData(){
+        console.log(this.traders.map(e => e.TradeTime))
         return this.traders.slice().sort((a, b)=>{
               const date1 = a.OpenDate || a.TradeDate
               const date2 = b.OpenDate || b.TradeDate
@@ -355,7 +359,6 @@
         this.orders = orders;
       });
        ipcRenderer.on('receive-trade', (event, trader) =>{
-        
         if(this.ws && this.traders.length){
           const {futureUserId} = this.userData
           let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime} = trader[trader.length -1];
@@ -368,8 +371,9 @@
           this.ws.send(`${futureUserId}-${ExchangeID}-${OrderSysID}-${TradeID}:${InstrumentID}:${Volume}`)
         }
          
-        
+
         if(Array.isArray(trader)){
+          
           this.traders = trader 
         }
       });
@@ -406,7 +410,7 @@
         const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
         const staticBalance = arg.PreBalance + arg.Mortgage + arg.PreFundMortgageIn + arg.FundMortgageIn + arg.FundMortgageOut + arg.FundMortgageAvailable - arg.PreFundMortgageOut - arg.PreCredit - arg.PreMortgage;
         const data ={
-            date: Date(),
+            date: getyyyyMMdd(),
             commission: arg.Commission,
             realProfit,
             margin: arg.CurrMargin,

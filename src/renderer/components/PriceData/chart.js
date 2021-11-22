@@ -64,11 +64,7 @@ class Chart {
         const ctx= this.ctx;
       
         this.count = Math.floor((this.width - 150) / (this.stepwidth * 2) ) * 2;
-        ctx.beginPath();
-        ctx.strokeStyle = '#00ff00'
-        ctx.moveTo(X, Y + 30);
-        ctx.lineTo(X,this.height - 30);
-        ctx.stroke();
+        
         
         let range = this.range;
         ctx.beginPath();
@@ -166,7 +162,7 @@ class Chart {
         ctx.fillStyle = BUYBACKGROUND;
         ctx.fillRect(_x, y, buyIndex *stepwidth + stepwidth,this.height);
         ctx.fillStyle = ASKBACKGROUND;
-        ctx.fillRect(_x + askIndex *stepwidth, y, this.width- _x - askIndex *stepwidth , this.height);
+        ctx.fillRect(_x + askIndex *stepwidth, y, this.width- _x - askIndex *stepwidth - 30 , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
             if(!this.data[i]){
                 console.log(i, JSON.parse(JSON.stringify(this.data)))
@@ -432,6 +428,35 @@ class Chart {
             ctx.restore()
         }
     }
+    renderHighandLow(){
+
+        const lowindex = this.getindex(this.LowestPrice, true);
+        const highindex = this.getindex(this.HighestPrice, true);
+        const {start, ctx, count, stepwidth, height} = this;
+        let lowX = X + (lowindex - start) * stepwidth;
+        let HighX = (highindex - start) * stepwidth
+        if(lowindex < 0){
+            lowX = X;
+        }
+        if(highindex > start + count){
+            HighX = count * stepwidth + 100
+        }
+        ctx.clearRect(X , Y + 30 ,1 , height - 10);
+        ctx.clearRect( count * stepwidth +100 + X , Y + 30 ,1 , height - 10);
+        ctx.save()
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.strokeStyle = '#00ff00'
+        ctx.moveTo(lowX-1, Y + 30);
+        ctx.lineTo(lowX-1,height - 10);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = '#ffff00'
+        ctx.moveTo(HighX+X-1, Y + 30);
+        ctx.lineTo(HighX+X-1,height - 10);
+        ctx.stroke();
+        ctx.restore();
+    }
     render(arg){
      
         if(this.data.length === 0) {
@@ -458,11 +483,17 @@ class Chart {
                 this.askIndex = askIndex;
             }
         }
+        this.LowestPrice = arg.LowestPrice;
+        this.HighestPrice = arg.HighestPrice;
         this.renderBakcground();
         this.renderVolume();
+        this.renderHighandLow()
         this.renderCurrentPirce(arg.LastPrice);
         this.renderPlaceOrder();
         this.renderTradeOrder();
+
+
+
        
     }
 }

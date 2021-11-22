@@ -145,10 +145,10 @@ class Trade {
         this._trader[event](...args)
     }
     on(event, fn){
-        console.log(`${event} ---- register`);
+        // console.log(`${event} ---- register`);
         const _trader = this._trader;
         _trader.on(event, (...args) => {
-            console.log(`${event} ---- receive`);
+            // console.log(`${event} ---- receive`);
             this.emitter.emit(event, ...args);
         })
         this.emitter.on(event, fn.bind(this));
@@ -164,7 +164,7 @@ class Trade {
                     this.next()
                 }
                 
-                console.log(`${event} ---- receive`);
+                // console.log(`${event} ---- receive`);
                 fn.call(this,isLast,field)
             })
          

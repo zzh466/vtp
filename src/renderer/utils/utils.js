@@ -30,3 +30,13 @@ export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '�
 
 
 export const version = '211110';
+export function getyyyyMMdd(){
+    var d = new Date();
+    var curr_date = d.getDate();
+    var curr_month = d.getMonth() + 1; 
+    var curr_year = d.getFullYear();
+    String(curr_month).length < 2 ? (curr_month = "0" + curr_month): curr_month;
+    String(curr_date).length < 2 ? (curr_date = "0" + curr_date): curr_date;
+    var yyyyMMdd = curr_year + "" + curr_month +""+ curr_date;
+    return yyyyMMdd;
+} 

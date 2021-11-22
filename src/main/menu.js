@@ -4,7 +4,7 @@ let template = [{
     submenu: [{
       label: '置顶',
       click(event, window){
-        BrowserWindow.getAllWindows().forEach(win => win.setAlwaysOnTop(false));
+        // BrowserWindow.getAllWindows().forEach(win => win.setAlwaysOnTop(false));
         window.setAlwaysOnTop(true)
       }
     }],

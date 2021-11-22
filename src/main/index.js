@@ -31,7 +31,7 @@ function createWindow () {
    */
 
   mainWindow = new BrowserWindow({
-    height: 300,
+    height: 333,
     useContentSize: true,
     width: 500,
     title: 'Vtp',
@@ -73,7 +73,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account}) => {
       height: 300,
       useContentSize: true,
       width: 1500,
-      parent: mainWindow,
+      // parent: mainWindow,
       title: title,
       webPreferences: {
         nodeIntegration: true,
@@ -306,14 +306,12 @@ ipcMain.on('trade-login', (event, args) => {
       ORDERTIME = setTimeout(() => {
         event.sender.send('receive-order', orderMap);
         event.sender.send('finish-loading', 'order')
-      }, 2000)
+      }, 3000)
       return
     }
     event.sender.send('receive-order', orderMap);
   })
-  trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-    event.sender.send('receive-account', field);
-  })
+ 
   
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
@@ -321,9 +319,14 @@ ipcMain.on('trade-login', (event, args) => {
     field.Price = LastSettlementPrice;
     field.Volume = field.Volume + field.CloseVolume;
     tradeMap.push(field);
+  
     if(isLast && !TRADETIME){
+      console.log('111111111111111111111111111111111111111', event.sender.send)
       event.sender.send('receive-trade', tradeMap);
     }
+  })
+  trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
+    event.sender.send('receive-account', field);
   })
   trade.emitterOn('instrument-finish', function (list) {
     event.sender.send('receive-instrument', list);
@@ -348,12 +351,13 @@ ipcMain.on('trade-login', (event, args) => {
     if(isLast){
       event.sender.send('finish-loading', 'rate')
       event.sender.send('receive-rate', rateMap);
+      
     }
   }, '');
 
   trade.emitterOn('error', (msg, skip) =>{
     if(skip && !STARTTRADE) return;
-    event.sender.send('error-msg', msg);
+    event.sender.send('error-msg', {msg});
   })
   const settlementInfo = []
   trade.emitterOn('settlement-info', (islast, info) =>{
@@ -535,12 +539,14 @@ ipcMain.on('start-receive', (event, args) =>{
   
     tcp_client.on('error', function (e) {
       console.log('tcp_client error!', e);
-      event.sender.send('error-msg', `行情服务${host}:${port} 链接错误:${e}。正在重连…………`);
+      event.sender.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`, code: 'connect'});
       const index = tcp_client_list.indexOf(tcp_client);
       tcp_client_list.splice(index, 1);
       // tcp_client.destroy();
-      tcp_client = new net.Socket();
-      connect();
+      ipcMain.once('error-msg-connect', function(){
+        tcp_client = new net.Socket();
+        connect();
+      })
     })
   }
   

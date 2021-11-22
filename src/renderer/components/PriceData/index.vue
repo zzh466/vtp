@@ -2,14 +2,14 @@
   <div class="price-body"  @dblclick="mouseTrade" v-loading='loading'> 
     <div class="hold-order">
       <div class="buy-orders">
-        <div class="buy-order" v-for="index of broadcast['0']" :key="index"></div>
+        <div class="buy-order" v-for="index of broadcast['0']" :style="{ width: stepwidth +'px'}"  :key="index"></div>
       </div>
        <div class="sell-orders">
-         <div class="sell-order" v-for="index of broadcast['1']" :key="index"></div>
+         <div class="sell-order" v-for="index of broadcast['1']" :style="{ width: stepwidth +'px'}" :key="index"></div>
        </div>
     </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
-    <div  class="price-tick" v-show="showbar" :style="{ width: this.stepwidth +'px', left: this.left + 'px' ,}"></div>
+    <div  class="price-tick" v-show="showbar" :style="{ width: stepwidth +'px', left: left + 'px' ,}"></div>
   </div>
 </template>
 
@@ -69,7 +69,7 @@ export default {
       const {id,account} = this.$route.query;
        const config =JSON.parse(localStorage.getItem(`config-${account}`));
       console.log(config);
-      config.barWeight = config.barWeight + 1;
+      config.barWeight = config.barWeight ;
       this.broadcastOpenInterest = config.broadcastOpenInterest;
       this.stepwidth = config.barWeight ;
       ipcRenderer.send('register-event', id);
@@ -133,6 +133,7 @@ export default {
           this.chart.renderBakcground();
           this.chart.renderVolume();  
           this.chart.renderPlaceOrder();
+          this.chart.renderHighandLow()
         })
       })
       ipcRenderer.on('total-order', (_, orders) => { 
@@ -160,8 +161,8 @@ export default {
         })
       })
       ipcRenderer.on('receive-broadcast', (_, data) => {
-        
-        if(this.broadcastOpenInterest && data.volume !== undefined){
+
+        if(data && this.broadcastOpenInterest && data.volume !== undefined){
           this.broadcast[data.direction]= parseInt(data.volume);
           console.log(this.broadcast)
         }
@@ -257,13 +258,13 @@ export default {
           if(oppositeYesterDay>= volumeTotalOriginal + hold){
             combOffsetFlag = '1';
           }else {
-            if(combOffsetFlag === '0' && this.exchangeId === 'CFFEX' && yesterDay){
-               Notification({
-                message: '锁仓模式上期所合约需要先将昨仓解锁再开仓'
-              })
-              return ;
-            }
             combOffsetFlag = '0';
+          }
+          if(combOffsetFlag === '0' && this.exchangeId === 'CFFEX' && yesterDay){
+              Notification({
+              message: '锁仓模式上期所合约需要先将昨仓解锁再开仓'
+            })
+            return ;
           }
           break;
         case '1':
@@ -371,17 +372,21 @@ export default {
   position: absolute;
   top: 1px;
   display: flex;
-  left: 50%;
+  width: 100vw;
   z-index: 10;
 }
 .buy-orders {
   display: flex;
   flex-basis: 50%;
+  width: 50%;
+   justify-content: flex-end;
   text-align: right;
 }
 .sell-orders {
   display: flex;
   flex-basis: 50%;
+  
+  
   
 }
 .buy-order {
@@ -389,9 +394,10 @@ export default {
   margin-left: 2px;
   width: 10px;
   height: 3px;
+ 
 }
 .sell-order {
-   background-color: rgb(130, 255, 0);
+   background-color: rgb(1, 233, 1);
   margin-left: 2px;
   width: 10px;
   height: 3px;

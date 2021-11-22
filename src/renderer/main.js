@@ -20,12 +20,19 @@ ipcRenderer.on('change-ins', (event, arg) => {
 ipcRenderer.on('remove-window', (event, arg) => {
   window._$store.dispatch('close', arg)
 })
-ipcRenderer.on('error-msg', (event, arg) => {
+ipcRenderer.on('error-msg', (event, {msg, code}) => {
   MessageBox({
     type: 'error',
     title: '错误',
-    message: arg
+    message: msg,
+    callback(){
+      if(code){
+        event.sender.send(`error-msg-${code}`)
+      }
+      
+    }
   })
+ 
 })
 /* eslint-disable no-new */
 Vue.use(ElementUI);
