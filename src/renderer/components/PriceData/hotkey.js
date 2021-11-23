@@ -38,6 +38,7 @@ export default function generate(hotKey){
                     break;
                 case '1':
                     ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id});
+                    vue.chart.holdVolume = [0, 0];
                     order();
                     break;
                 case '3':

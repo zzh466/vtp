@@ -2,10 +2,10 @@
   <div class="price-body"  @dblclick="mouseTrade" v-loading='loading'> 
     <div class="hold-order">
       <div class="buy-orders">
-        <div class="buy-order" v-for="index of broadcast['0']" :style="{ width: stepwidth +'px'}"  :key="index"></div>
+        <div class="buy-order" v-for="index of broadcast['1']" :style="{ width: stepwidth +'px'}"  :key="index"></div>
       </div>
        <div class="sell-orders">
-         <div class="sell-order" v-for="index of broadcast['1']" :style="{ width: stepwidth +'px'}" :key="index"></div>
+         <div class="sell-order" v-for="index of broadcast['0']" :style="{ width: stepwidth +'px'}" :key="index"></div>
        </div>
     </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
@@ -17,7 +17,7 @@
 import { ipcRenderer } from 'electron';
 import Chart from './chart'
 import Gen from './hotkey';
-import {getWinName, getTodayAndYesterday ,getTodayOpen} from '../../utils/utils'
+import {getWinName} from '../../utils/utils'
 import {Notification} from 'element-ui'
 export default {
   watch:{

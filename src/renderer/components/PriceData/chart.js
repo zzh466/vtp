@@ -429,31 +429,33 @@ class Chart {
         }
     }
     renderHighandLow(){
-
+        // console.log(this.LowestPrice, this.HighestPrice)
         const lowindex = this.getindex(this.LowestPrice, true);
         const highindex = this.getindex(this.HighestPrice, true);
         const {start, ctx, count, stepwidth, height} = this;
         let lowX = X + (lowindex - start) * stepwidth;
         let HighX = (highindex - start) * stepwidth
         if(lowindex < 0){
-            lowX = X;
+            lowX = X - 50;
         }
         if(highindex > start + count){
-            HighX = count * stepwidth + 100
+            HighX = count * stepwidth + 50
         }
         ctx.clearRect(X , Y + 30 ,1 , height - 10);
         ctx.clearRect( count * stepwidth +100 + X , Y + 30 ,1 , height - 10);
+        const offset= X + 50;
         ctx.save()
         ctx.setLineDash([]);
         ctx.beginPath();
         ctx.strokeStyle = '#00ff00'
-        ctx.moveTo(lowX-1, Y + 30);
-        ctx.lineTo(lowX-1,height - 10);
+        ctx.moveTo(lowX+offset, Y + 30);
+        ctx.lineTo(lowX+offset,height - 10);
         ctx.stroke();
         ctx.beginPath();
+        
         ctx.strokeStyle = '#ffff00'
-        ctx.moveTo(HighX+X-1, Y + 30);
-        ctx.lineTo(HighX+X-1,height - 10);
+        ctx.moveTo(HighX+offset, Y + 30);
+        ctx.lineTo(HighX+offset,height - 10);
         ctx.stroke();
         ctx.restore();
     }

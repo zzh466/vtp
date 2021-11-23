@@ -17,7 +17,7 @@
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
-              <el-button @click="forceClose">强平</el-button>
+              <!-- <el-button @click="forceClose">强平</el-button> -->
       </div>
 
       <div class="right-side">
@@ -78,6 +78,13 @@
   export default {
     name: 'landing-page',
     components: {  Round },
+    watch:{
+      'userData.locked'(val, old){
+        if(val){
+          this.stop()
+        }
+      }
+    },
     computed: {
       userData() {
          return this.$store.state.user.userData
@@ -179,7 +186,7 @@
         dialogVisible: false,
         orders: {},
         loading: ['order', 'trade', 'config', 'rate', 'instrument'],
-        // loading: [],
+        loading: [],
         orderColumns: [{
           label: '合约',
           prop: 'InstrumentID',
@@ -365,6 +372,7 @@
           if(!TradeTime ){
             return
           }
+        
           if(Direction === '1'){
             Volume = -Volume;
           }
@@ -458,7 +466,7 @@
       },
       stop(){
         ipcRenderer.send('stop-subscrible');
-        this.$store.dispatch('updateIns', '')
+        // this.$store.dispatch('updateIns', '')
       }, 
       closeALL(){
         ipcRenderer.send('cancel-order');
@@ -466,12 +474,14 @@
         if(arr.length){
           arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
               const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+              const instrumentinfo = this.instrumentInfo.find(e => e.id === InstrumentID)
+              const { PriceTick } = instrumentinfo.field;
               let combOffsetFlag = '1';
               if(order) {
                 combOffsetFlag = order.CombOffsetFlag
               }
               const direction= Direction==='0'? '1': '0'
-              let over_price = this.$store.state.user.over_price;
+              let over_price = this.$store.state.user.over_price * PriceTick;
               if(direction === '1'){
                 over_price = -over_price;
               }
@@ -485,7 +495,7 @@
         }
       },
       async forceClose(){
-        this.stop();
+       
         this.forcing  = true;
         this.locked = true;
         const force = await this.$store.dispatch('lock');
@@ -495,7 +505,7 @@
             this.closeALL();
           }, 1000)
         }else{
-          setTimeout(()=> this.forcing = false, 200 )
+          setTimeout(()=> this.forcing = false, 500 )
         }
         
       },
