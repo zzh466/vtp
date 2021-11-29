@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, Notification } from 'electron'
-import  { receiveData }  from '../ctp/dataStruct'
-
+import  { receiveData }  from '../ctp/dataStruct';
+import { errorLog, infoLog} from './log';
 
 import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
@@ -46,15 +46,21 @@ function createWindow () {
   mainWindow.loadURL(winURL)
 
   mainWindow.on('closed', () => {
+  
     mainWindow = null
   })
- 
+  mainWindow.on('close', () => {
+    closeALLsubs();
+  })
 }
 
 ipcMain.on('resize-main', (evnt, {width, height}) => {
   mainWindow.setSize(width, height)
 })
-ipcMain.on('close-main', () => {
+ipcMain.on('close-main', (event, arg) => {
+  if(arg){
+    errorLog(`关闭，关闭原因${arg}未收到`)
+  }
   app.quit();
 })
 let opedwindow = [];
@@ -62,7 +68,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -70,9 +76,9 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account}) => {
     hasInsId.win.show()
   }else {
     const childwin = new BrowserWindow({
-      height: 300,
+      height,
       useContentSize: true,
-      width: 1500,
+      width,
       // parent: mainWindow,
       title: title,
       webPreferences: {
@@ -116,10 +122,13 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-  closeALLsubs()
+ 
  
 })
 function closeALLsubs(){
+  COLOSEALL = true;
+  opedwindow.forEach(({win}) => win.close())
+  opedwindow=[]
   tcp_client_list.forEach(e => e.destroy());
   tcp_client_list = []
 }
@@ -166,7 +175,7 @@ ipcMain.on('update-instrumentsData',  (event, args) =>{
   InstrumetsData.forEach(instrumet =>{
     const {instrumentID} = instrumet;
     const win =  findedopened(instrumentID);
-    if(win){
+    if(win && win.sender){
       win.sender.send('instrumet-data',instrumet);
     }
   })
@@ -175,10 +184,9 @@ ipcMain.on('update-instrumentsData',  (event, args) =>{
 //停止订阅
 ipcMain.on('stop-subscrible',  (event, args) =>{
   console.log('stop-subscrible')
-  COLOSEALL = true;
-  opedwindow.forEach(({win}) => win.close())
- 
-  opedwindow=[]
+  if(args){
+    errorLog(args)
+  }
   closeALLsubs();
   
 })
@@ -266,6 +274,7 @@ ipcMain.on('trade-login', (event, args) => {
 
     orderMap[key] = Object.assign(old, field);
     let send = false;
+    // console.log(field)
     switch(field.OrderStatus){
       case 'a':
         // event.sender.send('receive-order', orderMap[key])
@@ -278,7 +287,7 @@ ipcMain.on('trade-login', (event, args) => {
         break
       case "5":
         send = true;
-        orderMap[key].volume = -field.VolumeTotalOriginal;
+        orderMap[key].volume = -field.VolumeTotalOriginal + field.VolumeTraded;
         break;
       case "0":
       case "1":
@@ -395,7 +404,7 @@ ipcMain.on('trade', (event, args) => {
     trade.chainSend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
   }
   STARTTRADE = true;
-  
+  infoLog(JSON.stringify(args));
   trade.trade(args);
 })
 
@@ -411,6 +420,7 @@ ipcMain.on('cancel-order', (event, args) => {
      arr.push(item)
    }
  }
+ infoLog('撤单')
  trade.cancel(arr);
 })
 
@@ -576,7 +586,7 @@ ipcMain.on('broadcast-openinterest', function(_, arg){
     volume: instrument[2]
   }
   broadcast_Data[instrument[0]] = data;
-  if(win){
+  if(win && win.sender){
     win.sender.send('receive-broadcast',data)
   }
   

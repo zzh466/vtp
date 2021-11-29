@@ -17,7 +17,7 @@
 import { ipcRenderer } from 'electron';
 import Chart from './chart'
 import Gen from './hotkey';
-import {getWinName} from '../../utils/utils'
+import {getWinName, getHoldCondition, setClientSize} from '../../utils/utils'
 import {Notification} from 'element-ui'
 export default {
   watch:{
@@ -57,7 +57,7 @@ export default {
       deep: true,
       handler({volume, type, closeType}) {
         const id = this.$route.query.id;
-        const title =getWinName(id, volume, type, closeType);
+        const title =getWinName(id, volume, type, closeType) + getHoldCondition(this.instrumet);
         ipcRenderer.send('change-title', {id, title});
       }
     }
@@ -83,13 +83,15 @@ export default {
       window.onresize =(e)=>{
         if(!this.chart) return;
         let {innerWidth, innerHeight} =e.target;
-        if(innerHeight < 300){
-          innerHeight = 300
-        }
+       
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(()=> {
           this.width = innerWidth - 80;
-          this.height = innerHeight-20 ;
+          this.height = innerHeight-20;
+          if(this.height < 280){
+            this.height = 280;
+          }
+          setClientSize(innerWidth, innerHeight)
           this.$nextTick(function(){
             this.chart.resize( this.width, this.height);
             if(this.arg){
@@ -148,6 +150,10 @@ export default {
       })
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         this.instrumet = instrumet;
+        const id = this.$route.query.id;
+        const {volume, type, closeType} = this.config;
+        const title =getWinName(id, volume, type, closeType) + getHoldCondition(this.instrumet);
+        ipcRenderer.send('change-title', {id, title});
       })
    
       ipcRenderer.on('trade-order', (_, field) => {
@@ -170,9 +176,13 @@ export default {
 
   },
   data () {
+    let  height  = window.innerHeight -20;
+    if(height < 280){
+        height = 280;
+    }
     return {
-      width: 1420,
-      height: 280,
+      width: window.innerWidth -80 ,
+      height,
       showbar: false,
       left: 0,
       config: {
@@ -372,7 +382,7 @@ export default {
   position: absolute;
   top: 1px;
   display: flex;
-  width: 100vw;
+  width: 98vw;
   z-index: 10;
 }
 .buy-orders {

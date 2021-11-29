@@ -58,7 +58,10 @@ class Chart {
                 before = range[i];
             }
         }
-        return start;
+        if(start){
+            start = start + 0.5
+        }
+        return start ;
     }
      init(){
         const ctx= this.ctx;
@@ -69,7 +72,7 @@ class Chart {
         let range = this.range;
         ctx.beginPath();
         ctx.moveTo(X + 50, Y+10);
-        ctx.strokeStyle = FONTCOLOR
+        ctx.strokeStyle = '#404040'
         ctx.lineTo(this.width - 19.5,Y+10);
         ctx.stroke();
         this.renderRange(range);
@@ -105,17 +108,22 @@ class Chart {
         ctx.fillStyle= FONTCOLOR;
        
        
-        let stepHeight = this.stepHeight;
+        let {stepHeight, width} = this;
         let start = 30
         const _Y = Y + stepHeight;
         ctx.save();
         ctx.setLineDash([1, 1])
+     
         range.forEach(e => {
             ctx.fillText(e.toString(), X - 10, _Y + start + 5);
             ctx.beginPath();
             ctx.strokeStyle = FONTCOLOR
             ctx.moveTo(X, _Y + start);
             ctx.lineTo(X+ 50 , _Y + start);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(width - 30, _Y + start);
+            ctx.lineTo(width - 5 , _Y + start);
             ctx.stroke();
             start = start + stepHeight;
         });
@@ -129,7 +137,7 @@ class Chart {
         ctx.height = height;
         this.range = this.initRange()
         this.init();
-        this.data = [];
+        
         this.initData(this.currentPrice);
         this.renderPrice()
     }
@@ -137,16 +145,24 @@ class Chart {
          if(!price) return;
         const count = this.count / 2;
         const decimal = this.decimal;
-        this.data.push({
+        const data = []
+        data.push({
             price: price.toFixed(decimal)
         })
         for(let i = 1; i <= count; i++ ){
-            this.data.push({
+            data.push({
                 price: (price + this.step * i).toFixed(decimal)
             })
-            this.data.unshift({
+            data.unshift({
                 price: (price - this.step * i).toFixed(decimal)
             })
+        }
+        if(this.data.length){
+            this.getindex(data[data.length - 1].price);
+            this.getindex(data[0].price)
+            this.start = this.getindex(price, true) - count;
+        }else {
+            this.data = data;
         }
         
     }
@@ -155,7 +171,7 @@ class Chart {
         const y = Y + 30;
         const _x = X + 50.5;
         const start = this.start;
-        ctx.clearRect(_x-2 , y - 5 ,this.width , this.height);
+        ctx.clearRect(_x-2 , y - 5 ,this.width - 30 - _x, this.height);
         const stepwidth = this.stepwidth;
         const buyIndex = this.buyIndex - start;
         const askIndex = this.askIndex - start;
@@ -375,6 +391,9 @@ class Chart {
             const index = this.getindex(price, true);
             const  x = _x + (index-this.start) * stepwidth;
             const height = Chart.getHeight(range, volume, stepHeight); 
+            if(height < 0){
+                return
+            }
             ctx.fillStyle = 'red';
             _volume[direction] = _volume[direction] + volume;
             ctx.fillRect(x,y,stepwidth -1,height);
@@ -433,16 +452,16 @@ class Chart {
         const lowindex = this.getindex(this.LowestPrice, true);
         const highindex = this.getindex(this.HighestPrice, true);
         const {start, ctx, count, stepwidth, height} = this;
-        let lowX = X + (lowindex - start) * stepwidth;
+        let lowX = (lowindex - start) * stepwidth;
         let HighX = (highindex - start) * stepwidth
         if(lowindex < 0){
-            lowX = X - 50;
+            lowX =  - 50;
         }
         if(highindex > start + count){
-            HighX = count * stepwidth + 50
+            HighX = this.width - X - 51
         }
         ctx.clearRect(X , Y + 30 ,1 , height - 10);
-        ctx.clearRect( count * stepwidth +100 + X , Y + 30 ,1 , height - 10);
+        ctx.clearRect( this.width - 1, Y + 30 ,1 , height - 10);
         const offset= X + 50;
         ctx.save()
         ctx.setLineDash([]);

@@ -21,6 +21,10 @@ export function getWinName(instrumentID, volume = 1, type = 0, closeType=0){
     return `${instrumentID}   （手数：${volume} 平仓方式：${closeTypeMap[closeType]} 平今策略：${typeMap[type]} ）`
 }
 
+export function getHoldCondition(data){
+    const {todayAsk, todayBuy, yesterdayAsk, yesterdayBuy, todayVolume, todayCancel} = data;
+    return `今多：${todayBuy} 今空：${todayAsk} 昨多：${yesterdayBuy} 昨空：${yesterdayAsk} 今开仓：${todayVolume} 今撤单：${todayCancel}`
+}
 export const Direction = ['买', '卖'];
 
 export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
@@ -40,3 +44,25 @@ export function getyyyyMMdd(){
     var yyyyMMdd = curr_year + "" + curr_month +""+ curr_date;
     return yyyyMMdd;
 } 
+
+// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.118:8080/vtpmanagerapi': '139.196.41.155:8080/vtpmanagerapi'
+export const baseURL = '139.196.41.155:8080/vtpmanagerapi'
+
+const key = 'user-client';
+export function getClientSize(){
+    const width = parseInt(localStorage.getItem(`${key}-width`)) || 1500;
+    const height =  parseInt(localStorage.getItem(`${key}-height`)) || 300;
+    return {
+        width,
+        height
+    }
+}
+
+export function setClientSize(width, height){
+    if(width){
+        localStorage.setItem(`${key}-width`, width);
+    }
+    if(height){
+        localStorage.setItem(`${key}-height`, height);
+    }
+}

@@ -38,7 +38,7 @@ ipcRenderer.on('error-msg', (event, {msg, code}) => {
 Vue.use(ElementUI);
 Vue.component('Table', {
   props: ['columns', 'height', 'tableData'],
-  template: ` <el-table :data='tableData'   :height="height" size='mini' @row-click='rowClick'
+  template: ` <el-table :data='tableData'   :height="height" size='mini' @row-click='rowClick' @row-dblclick='dbclick'
           border>
           <el-table-column
             v-for="column in columns"
@@ -50,7 +50,7 @@ Vue.component('Table', {
             :highlight-current-row='true'
             >
             <template v-if="column.render || column.component" scope="scope">
-              <div v-if='column.render'>{{column.render(scope.row)}}</div>
+              <div v-if='column.render' :class='column.class? typeof column.class === "function"?column.class(scope.row): column.class: ""'>{{column.render(scope.row)}}</div>
               <component v-if='column.component' :is='column.component' :data='scope.row'></component>
             </template>
           </el-table-column>
@@ -58,7 +58,10 @@ Vue.component('Table', {
     methods:{
     rowClick(...args){
       this.$emit('row-click', ...args);
-    }
+    },
+    dbclick(...args){
+      this.$emit('row-dblclick', ...args);
+    },
   }
 })
 new Vue({

@@ -56,7 +56,7 @@
                 ...this.form},
             }).then((res) => {
               if(res.code === 'REQ_SUCCESS'){
-                ipcRenderer.send('resize-main',  {width: 1320, height: 840});
+                ipcRenderer.send('resize-main',  {width: 1600, height: 770});
                 
                 this.$store.commit('setstate', {
                     key: 'userData',

@@ -1,37 +1,40 @@
 <template>
   <div id="wrapper" v-loading='loading.length || forcing'  :element-loading-text="forcing?'触发强平操作，正在强平中':'正在获取账号信息'" >
-    <el-descriptions :style="{fontSize: '20px'}" direction="vertical" :column="10" border>
+    <el-descriptions size= 'samll' direction="vertical" :column="10" border>
       <el-descriptions-item label="账号">{{userData.account}}</el-descriptions-item>
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
     
       <el-descriptions-item label="总手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="总实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
-        <el-descriptions-item label="可用资金">{{account.Available.toFixed(2)}}</el-descriptions-item>
+        <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
     </el-descriptions>
     <main  v-if='!loading.length'>
       
       <div class="left-side">
-          <div class="label">订阅合约:</div>
-          <Table height='600' @row-click='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
-          <!-- <el-button @click="open">商品</el-button>
-              <el-button @click="open1">郑商所</el-button>
-              <el-button @click="open2">股指</el-button>  -->
-              <!-- <el-button @click="forceClose">强平</el-button> -->
+         <div>
+           <div class="label">回合信息：</div>
+          <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
+        </div>
+         
       </div>
 
       <div class="right-side">
         
-        <div>
-           <div class="label">回合信息：</div>
-          <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
-        </div>
+       
         <div>
           <div class="label">下单信息：</div>
             <Table  height='280' :columns='orderColumns' :tableData='orderData'/>
         </div>
       </div>
+     
     </main>
+      <div class="label">订阅合约:</div>
+          <Table height='300' @row-dblclick='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
+          <!-- <el-button @click="open">商品</el-button>
+              <el-button @click="open1">郑商所</el-button>
+              <el-button @click="open2">股指</el-button>  -->
+              <!-- <el-button @click="forceClose">强平</el-button> -->
     <el-dialog
       title="结算单确认"
       :visible.sync="dialogVisible"
@@ -53,7 +56,7 @@
 <script>
   import { ipcRenderer } from 'electron';
 
-  import {getWinName, Direction, CombOffsetFlag, getyyyyMMdd} from '../utils/utils';
+  import {getWinName, Direction, CombOffsetFlag, getyyyyMMdd, getHoldCondition, getClientSize} from '../utils/utils';
   import {TraderSocket} from '../utils/request';
   import Round from './LandingPage/round.vue';
   import Status from './LandingPage/Status.vue';
@@ -186,7 +189,7 @@
         dialogVisible: false,
         orders: {},
         loading: ['order', 'trade', 'config', 'rate', 'instrument'],
-        loading: [],
+        // loading: [],
         orderColumns: [{
           label: '合约',
           prop: 'InstrumentID',
@@ -199,6 +202,9 @@
         },{
           label: '方向',
           prop: 'Direction',
+          class(item){
+             return item.Direction === '1'? 'sell-direction': '';
+          }, 
           render(item){
             return Direction[item.Direction];
           }
@@ -362,7 +368,7 @@
       })
      
       ipcRenderer.on('receive-order', (event, orders) =>{
-    
+        
         this.orders = orders;
       });
        ipcRenderer.on('receive-trade', (event, trader) =>{
@@ -394,6 +400,7 @@
         this.finishLoading(arg);
       });
       ipcRenderer.on('receive-info', (event, arg)=>{
+        
         this.confirmInfo =  arg.map(({Content}) => Content)
         this.dialogVisible = true;
       })
@@ -404,6 +411,7 @@
        
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
+         this.account=arg
          if(!this.locked && this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
            if(!this.forceCloseTime){
              this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
@@ -413,7 +421,7 @@
            clearTimeout(this.forceCloseTime)
            this.forceCloseTime = null;
          }
-        this.account=arg
+        
      
         const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
         const staticBalance = arg.PreBalance + arg.Mortgage + arg.PreFundMortgageIn + arg.FundMortgageIn + arg.FundMortgageOut + arg.FundMortgageAvailable - arg.PreFundMortgageOut - arg.PreCredit - arg.PreMortgage;
@@ -446,12 +454,12 @@
       setTimeout(()=>{
         if(this.loading.length !== 0){
           this.$alert('查询超时，不在交易时间或者网络连接有问题', '错误', {
-            callback(){
-              ipcRenderer.send('close-main');
+            callback:()=>{
+              ipcRenderer.send('close-main', this.loading.toString());
             }
           })
         }
-      }, 60000)
+      }, 90000)
       
     },
     methods: {
@@ -460,15 +468,19 @@
           this.$alert('当前账号已锁定', '锁定' )
           return
         }
-        const {instrumentID} = row
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID), account: this.userData.account});
+        const {instrumentID} = row;
+        const {width, height} = getClientSize()
+        
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.account, width, height});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
-        ipcRenderer.send('stop-subscrible');
+        const account = this.account;
+        ipcRenderer.send('stop-subscrible',`触发锁定，盈亏金额${account.CloseProfit + account.PositionProfit - account.Commission}`);
         // this.$store.dispatch('updateIns', '')
       }, 
       closeALL(){
+        
         ipcRenderer.send('cancel-order');
         const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume}) => Volume> CloseVolume);
         if(arr.length){
@@ -564,16 +576,17 @@
     height: 400px;
     overflow-x: hidden;
     overflow-y: scroll;
+    white-space: pre-line;
   }
   .left-side {
     display: flex;
     flex-direction: column;
-    flex-basis: 30%; 
+    flex-basis: 50%; 
   }
   .right-side {
     display: flex;
     flex-direction: column;
-    flex-basis: 70%; 
+    flex-basis: 50%; 
     padding-left: 30px;
   }
   .welcome {
@@ -622,5 +635,8 @@
   }
   .el-table__cell {
     padding: 2px 0 !important;;
+  }
+  .sell-direction {
+    text-align: right;
   }
 </style>

@@ -1,7 +1,8 @@
 import axios from 'axios';
 import {ipcMain} from'electron';
+import {baseURL} from '../renderer/utils/utils'
 axios.defaults.withCredentials=true
-axios.defaults.baseURL = 'http://192.168.0.118:8080/vtpmanagerapi';
+axios.defaults.baseURL = `http://${baseURL}`;
 let cookie = null;
 axios.interceptors.response.use(function(config){
     if(config.headers['set-cookie']&& config.headers['set-cookie'].length){

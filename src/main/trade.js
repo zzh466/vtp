@@ -2,7 +2,7 @@
 var ctp = require('../../build/Release/ctp.node');
 var events = require('events');
 ctp.settings({ log: false });
-
+import { errorLog, infoLog} from './log';
 // simnow hanzhe
 
 
@@ -53,6 +53,7 @@ class Trade {
                 console.log("rspUserLogin: info", JSON.stringify(info));
                 if(info.ErrorID){
                     this.emitter.emit('error', info.ErrorMsg);
+                    errorLog(`登陆失败，${info.ErrorMsg}`)
                     reject(info.ErrorMsg)
                     return
                 }
@@ -66,6 +67,7 @@ class Trade {
             
             _trader.on('rspError', function (requestId, isLast, field) {
                 console.log(JSON.stringify(field));
+                errorLog(`错误，${info.ErrorMsg}`)
                 this.emitter.emit('error',field);
                 reject()
             });
@@ -103,6 +105,7 @@ class Trade {
             //   })
            
             _trader.on('errInsert', (a,b) =>{
+                errorLog(`报单错误，${b}`)
                 this.emitter.emit('error', b, true);
                 console.log(a,b)
             })

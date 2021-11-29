@@ -37,6 +37,9 @@
                 },{
                     label: '方向',
                     prop: 'Direction',
+                    class(item){
+                        return item.Direction === '1'? 'sell-direction': '';
+                    }, 
                     render(item){
                         return Direction[item.Direction];
                     }
