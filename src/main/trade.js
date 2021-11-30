@@ -105,7 +105,7 @@ class Trade {
             //   })
            
             _trader.on('errInsert', (a,b) =>{
-                errorLog(`报单错误，${b}`)
+                errorLog(`报单错误，${b.toString()}`)
                 this.emitter.emit('error', b, true);
                 console.log(a,b)
             })

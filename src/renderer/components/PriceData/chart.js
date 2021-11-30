@@ -174,7 +174,13 @@ class Chart {
         ctx.clearRect(_x-2 , y - 5 ,this.width - 30 - _x, this.height);
         const stepwidth = this.stepwidth;
         const buyIndex = this.buyIndex - start;
+        if(buyIndex < 0) {
+            buyIndex = 0;
+        } 
         const askIndex = this.askIndex - start;
+        if(askIndex  > this.count) {
+            buyIndex = this.count;
+        } 
         ctx.fillStyle = BUYBACKGROUND;
         ctx.fillRect(_x, y, buyIndex *stepwidth + stepwidth,this.height);
         ctx.fillStyle = ASKBACKGROUND;
@@ -454,7 +460,7 @@ class Chart {
         const {start, ctx, count, stepwidth, height} = this;
         let lowX = (lowindex - start) * stepwidth;
         let HighX = (highindex - start) * stepwidth
-        if(lowindex < 0){
+        if(lowindex < start){
             lowX =  - 50;
         }
         if(highindex > start + count){
@@ -488,7 +494,7 @@ class Chart {
         this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
         this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );
-        for(let i = 1; i<= 5; i++){
+        for(let i = 5; i>= 1; i--){
             const buyPirce = arg[`BidPrice${i}`];
             const buyIndex = this.getindex(buyPirce)
             const buyData = this.data[buyIndex];

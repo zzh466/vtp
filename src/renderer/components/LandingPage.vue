@@ -1,6 +1,6 @@
 <template>
   <div id="wrapper" v-loading='loading.length || forcing'  :element-loading-text="forcing?'触发强平操作，正在强平中':'正在获取账号信息'" >
-    <el-descriptions size= 'samll' direction="vertical" :column="10" border>
+    <el-descriptions size= 'samll' direction="vertical" :column="10" border class="account">
       <el-descriptions-item label="账号">{{userData.account}}</el-descriptions-item>
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
     
@@ -555,8 +555,9 @@
 
   #wrapper {
     height: 100vh;
-    padding: 10px 10px;
+    padding: 0 10px 10px 10px;
     width: 100vw;
+    overflow-x: hidden;
   }
 
   #logo {
@@ -568,6 +569,8 @@
   main {
     display: flex;
     justify-content: space-between;
+    margin-top: 110px;
+    top: 0;
   }
   .label {
     margin: 10px 0;
@@ -581,12 +584,12 @@
   .left-side {
     display: flex;
     flex-direction: column;
-    flex-basis: 50%; 
+    flex-basis: 48%; 
   }
   .right-side {
     display: flex;
     flex-direction: column;
-    flex-basis: 50%; 
+    flex-basis: 48%; 
     padding-left: 30px;
   }
   .welcome {
@@ -638,5 +641,10 @@
   }
   .sell-direction {
     text-align: right;
+  }
+  .account {
+    position: fixed;
+    width: 98%;
+    z-index: 10;
   }
 </style>

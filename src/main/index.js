@@ -6,7 +6,7 @@ import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
-import './menu';
+import meun from  './menu';
 import './requeset';
 import '../renderer/store';
 let COLOSEALL = false;
@@ -21,6 +21,7 @@ if (process.env.NODE_ENV !== 'development') {
 let mainWindow;
 let trade;
 let STARTTRADE = false;
+let Maincycle;
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
@@ -42,7 +43,7 @@ function createWindow () {
       contextIsolation: false
     }
   })
-
+  mainWindow.setMenu(meun());
   mainWindow.loadURL(winURL)
 
   mainWindow.on('closed', () => {
@@ -50,6 +51,7 @@ function createWindow () {
     mainWindow = null
   })
   mainWindow.on('close', () => {
+    clearInterval(Maincycle);
     closeALLsubs();
   })
 }
@@ -102,7 +104,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height}) => 
         evnt.sender.send('change-ins', insId)
       }
     })
-   
+    childwin.setMenu(meun())
     opedwindow.push({
       id: insId,
       win: childwin
@@ -125,13 +127,7 @@ app.on('window-all-closed', () => {
  
  
 })
-function closeALLsubs(){
-  COLOSEALL = true;
-  opedwindow.forEach(({win}) => win.close())
-  opedwindow=[]
-  tcp_client_list.forEach(e => e.destroy());
-  tcp_client_list = []
-}
+
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow()
@@ -143,7 +139,15 @@ const rateMap =[];
 let InstrumetsData =[];
 const PriceData ={};
 const broadcast_Data = {};
-let Maincycle
+
+function closeALLsubs(){
+  COLOSEALL = true;
+  tcp_client_list.forEach(e => e.destroy());
+  tcp_client_list = []
+  opedwindow.forEach(({win}) => win.close())
+  opedwindow=[]
+  
+}
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
   const win =  findedopened(args);
@@ -290,10 +294,19 @@ ipcMain.on('trade-login', (event, args) => {
         orderMap[key].volume = -field.VolumeTotalOriginal + field.VolumeTraded;
         break;
       case "0":
-      case "1":
+      
         if(orderStatus !== 'a'){
           orderMap[key].volume =  - field.VolumeTraded
           send = true
+        }
+        break
+      case "1":
+        send = true
+        if(orderStatus !== 'a'){
+          orderMap[key].volume =  - field.VolumeTraded
+          
+        }else {
+          orderMap[key].volume= field.VolumeTotalOriginal -  field.VolumeTraded
         }
         break
       default:
@@ -335,7 +348,9 @@ ipcMain.on('trade-login', (event, args) => {
     }
   })
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-    event.sender.send('receive-account', field);
+    if(mainWindow){
+      event.sender.send('receive-account', field);
+    }
   })
   trade.emitterOn('instrument-finish', function (list) {
     event.sender.send('receive-instrument', list);
@@ -420,7 +435,10 @@ ipcMain.on('cancel-order', (event, args) => {
      arr.push(item)
    }
  }
- infoLog('撤单')
+ if(arr.length){
+  infoLog(`撤单: ${arr.toString()}`)
+ }
+
  trade.cancel(arr);
 })
 

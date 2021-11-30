@@ -186,7 +186,7 @@ export default {
       showbar: false,
       left: 0,
       config: {
-        volume: 1,
+        volume: 10,
         type: '0',
         closeType: '0'
       },
