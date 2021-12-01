@@ -173,11 +173,11 @@ class Chart {
         const start = this.start;
         ctx.clearRect(_x-2 , y - 5 ,this.width - 30 - _x, this.height);
         const stepwidth = this.stepwidth;
-        const buyIndex = this.buyIndex - start;
+        let buyIndex = this.buyIndex - start;
         if(buyIndex < 0) {
             buyIndex = 0;
         } 
-        const askIndex = this.askIndex - start;
+        let askIndex = this.askIndex - start;
         if(askIndex  > this.count) {
             buyIndex = this.count;
         } 
@@ -276,6 +276,7 @@ class Chart {
         }
     }
     clearData(startPrice, endPrice){
+      
         const start = this.getindex(startPrice, true);
         const end = this.getindex(endPrice, true);
         for(let i = start; i < end; i++){
@@ -485,12 +486,14 @@ class Chart {
         ctx.restore();
     }
     render(arg){
-     
+        
         if(this.data.length === 0) {
             console.log(arg.LastPrice)
             this.initData(arg.LastPrice);
+            if(!this.data.length) return
             this.renderPrice();
         }
+       
         this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
         this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );

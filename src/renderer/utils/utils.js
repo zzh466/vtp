@@ -66,3 +66,5 @@ export function setClientSize(width, height){
         localStorage.setItem(`${key}-height`, height);
     }
 }
+
+export const specialExchangeId = ['CFFEX', 'INE']

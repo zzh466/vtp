@@ -17,7 +17,7 @@
 import { ipcRenderer } from 'electron';
 import Chart from './chart'
 import Gen from './hotkey';
-import {getWinName, getHoldCondition, setClientSize} from '../../utils/utils'
+import {getWinName, getHoldCondition, setClientSize, specialExchangeId} from '../../utils/utils'
 import {Notification} from 'element-ui'
 export default {
   watch:{
@@ -186,7 +186,7 @@ export default {
       showbar: false,
       left: 0,
       config: {
-        volume: 10,
+        volume: 1,
         type: '0',
         closeType: '0'
       },
@@ -223,6 +223,7 @@ export default {
       }
       const  limitPrice = +this.chart.data[index + start].price;
       let volumeTotalOriginal = this.config.volume;
+       ipcRenderer.send('info-log', `鼠标下单，${limitPrice}, 模式${this.config.type}`)
       this.putOrder(limitPrice, direction,volumeTotalOriginal)
 
     },
@@ -270,7 +271,7 @@ export default {
           }else {
             combOffsetFlag = '0';
           }
-          if(combOffsetFlag === '0' && this.exchangeId === 'CFFEX' && yesterDay){
+          if(combOffsetFlag === '0' && specialExchangeId.includes(this.exchangeId) && yesterDay){
               Notification({
               message: '锁仓模式上期所合约需要先将昨仓解锁再开仓'
             })
@@ -282,10 +283,10 @@ export default {
               combOffsetFlag = '1';
             }else if(oppositeToday >= volumeTotalOriginal + hold){
                combOffsetFlag = '1'
-              if(this.exchangeId === 'CFFEX'){
+              if(specialExchangeId.includes(this.exchangeId)){
                 combOffsetFlag = '3'
               }
-            }else if(this.exchangeId === 'CFFEX' && combOffsetFlag === '1'){
+            }else if(specialExchangeId.includes(this.exchangeId) && combOffsetFlag === '1'){
               combOffsetFlag = '3'
             }
           break;

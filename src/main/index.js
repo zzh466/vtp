@@ -436,7 +436,7 @@ ipcMain.on('cancel-order', (event, args) => {
    }
  }
  if(arr.length){
-  infoLog(`撤单: ${arr.toString()}`)
+  infoLog(`撤单: ${JSON.stringify(arr.map(({InstrumentID, LimitPrice, VolumeTotalOrigina}) => ({InstrumentID, LimitPrice, VolumeTotalOrigina})))}`)
  }
 
  trade.cancel(arr);
@@ -453,7 +453,7 @@ ipcMain.on('start-receive', (event, args) =>{
   connect();
   function connect(){
     tcp_client_list.push(tcp_client);
-    tcp_client.setKeepAlive(true);
+    // tcp_client.setKeepAlive(true);
     tcp_client.connect({host, port},function(){
       console.log('connected to Server');
       
@@ -512,7 +512,7 @@ ipcMain.on('start-receive', (event, args) =>{
       const parseData = endecodeMsg.decodeMsg(data);
       // console.log(parseData)
       const {InstrumentID,BidPrice1, AskPrice1 } = parseData; 
-      PriceData[InstrumentID] = [BidPrice1, AskPrice1 ]
+      PriceData[InstrumentID] = parseData;
       const win = findedopened(InstrumentID);
       // console.log(InstrumentID)
       if(win && win.sender){ 
@@ -564,17 +564,40 @@ ipcMain.on('start-receive', (event, args) =>{
     tcp_client.on('end',function(){
       console.log('data end!');
     })
+    tcp_client.setTimeout( 3 * 60 * 1000);
+    tcp_client.on('timeout',function(){
+      
+        const index = tcp_client_list.indexOf(tcp_client);
+        if(index > -1){
+          tcp_client_list.splice(index, 1);
+        }
+        tcp_client.destroy();
+        tcp_client = new net.Socket();
+        connect();
+        console.log('timeout');
+    })
+    tcp_client.on('close',function(hadError ){
+      if(hadError && mainWindow && !COLOSEALL){
+        const index = tcp_client_list.indexOf(tcp_client);
+        if(index > -1){
+          tcp_client_list.splice(index, 1);
+        }
+        tcp_client = new net.Socket();
+        connect();
+      }
+      console.log('data close', hadError);
+    })
   
     tcp_client.on('error', function (e) {
       console.log('tcp_client error!', e);
-      event.sender.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`, code: 'connect'});
-      const index = tcp_client_list.indexOf(tcp_client);
-      tcp_client_list.splice(index, 1);
-      // tcp_client.destroy();
-      ipcMain.once('error-msg-connect', function(){
-        tcp_client = new net.Socket();
-        connect();
-      })
+      event.sender.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`});
+      // const index = tcp_client_list.indexOf(tcp_client);
+      // tcp_client_list.splice(index, 1);
+      // // tcp_client.destroy();
+      // ipcMain.once('error-msg-connect', function(){
+      //   tcp_client = new net.Socket();
+      //   connect();
+      // })
     })
   }
   
@@ -596,7 +619,7 @@ ipcMain.on('start-receive', (event, args) =>{
   //  }, 500)
 })
 ipcMain.on('broadcast-openinterest', function(_, arg){
-  console.log(arg);
+  // console.log(arg);
   const instrument = arg.split(':');
   const win = findedopened(instrument[0]);
   const data =  {

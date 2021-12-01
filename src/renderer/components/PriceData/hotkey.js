@@ -31,6 +31,7 @@ export default function generate(hotKey){
             vue.putOrder(fixPirce(price, vue.chart.decimal), direction);
          }
          if(haskey){
+            ipcRenderer.send('info-log', `快捷键：${haskey[0]}`)
              switch(haskey[2]){
                  case '0':
                     order();
