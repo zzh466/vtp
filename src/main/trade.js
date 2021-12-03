@@ -221,7 +221,7 @@ class Trade {
         return value.toString();
     }
     trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag}){
-        console.log(this.getInstrumentList, instrumentID)
+        // console.log(this.getInstrumentList, instrumentID)
         const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
 
         var insertOrder = {

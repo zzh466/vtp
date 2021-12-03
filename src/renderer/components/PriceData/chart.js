@@ -1,5 +1,5 @@
 
-
+import { ipcRenderer } from 'electron';
 const X = 50.5;
 const Y = 20.5;
 
@@ -323,22 +323,33 @@ class Chart {
         if(pure){
             return index;
         }
-        const start = this.start;
+      
+        let offset = 0;
         if(index > this.data.length - 6){
-            this.pushData(index - this.data.length + 6);
+             offset = index - this.data.length + 6;
+            this.pushData(offset);
+          
             this.renderPrice();
         }
         if(index < 5){
-            const count = this.unshiftData(5 - index)
+            offset = 5 - index;
+            const count = this.unshiftData(offset)
            
             this.renderPrice();
             index = index + count;
         }
+        const start = this.start;
         if(index < start + 5){
+            offset = start - index;
             this.start = start - 5
         }
         if(index > start + this.count - 5){
+            offset = index - start- this.count;
             this.start = start + 5;
+        }
+        if(Math.abs(offset) >= 50){
+            ipcRenderer.send('error-log', price);
+            ipcRenderer.send('error-log', JSON.stringify(this.args));
         }
         return index;
     }
@@ -374,14 +385,17 @@ class Chart {
     renderPlaceOrder(){
         if(this.data.length===0) return;
         const pricearray = this.placeOrder.reduce((a, b) => {
-            const {LimitPrice, volume, Direction} =b;
+            const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus} =b;
+            if(OrderStatus !== '3' && OrderStatus!=='1'){
+                return a;
+            }
             const item = a.find(({price})=> price===LimitPrice)
             if(item){
-                item.volume = item.volume + volume
+                item.volume = item.volume + VolumeTotalOriginal -VolumeTraded
             }else{
                 a.push({
                     price: LimitPrice,
-                    volume: volume,
+                    volume: VolumeTotalOriginal -VolumeTraded,
                     direction: Direction
                 })
             }
@@ -493,7 +507,7 @@ class Chart {
             if(!this.data.length) return
             this.renderPrice();
         }
-       
+       this.args= arg
         this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
         this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );

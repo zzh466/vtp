@@ -6,6 +6,7 @@ const needLog = process.env.NODE_ENV !== 'development';
 const logName = `${new Date().toLocaleDateString().replace(/\//g, '')}.log`;
 log.transports.console.level = 'silly'
 log.transports.file.fileName  = logName;
+log.transports.file.maxSize = 1024*1024 *10;
 ipcMain.on('err-log', function(_, msg){
     errorLog(msg)
 })

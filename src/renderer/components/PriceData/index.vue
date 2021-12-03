@@ -115,38 +115,45 @@ export default {
        ipcRenderer.on(`receive-${id}`, (event, arg) => {
           p.then(()=>{
             if(arg){
+              // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               this.arg = arg;
               this.chart.render(arg)
             }
             
           })
         })
-      ipcRenderer.on('place-order', (_, field) => {
+      // ipcRenderer.on('place-order', (_, field) => {
        
+      //   p.then(()=>{
+      //     if(field && field.OrderSubmitStatus === '4'){
+      //       Notification({
+      //         type: 'error',
+      //         message: field.StatusMsg
+      //       })
+      //       return;
+      //     }
+      //     this.chart.placeOrder.push(field);
+      //     this.chart.renderBakcground();
+      //     this.chart.renderVolume();  
+      //     this.chart.renderPlaceOrder();
+      //     this.chart.renderHighandLow()
+      //   })
+      // })
+      ipcRenderer.on('total-order', (_, orders) => { 
         p.then(()=>{
-          if(field && field.OrderSubmitStatus === '4'){
-            Notification({
-              type: 'error',
-              message: field.StatusMsg
-            })
-            return;
+          const arr = [];const id = this.$route.query.id;
+          for(let key in orders){
+            if(orders[key].ExchangeInstID === id){
+              arr.push(orders[key])
+            }
           }
-          this.chart.placeOrder.push(field);
+           this.chart.placeOrder = arr;
           this.chart.renderBakcground();
           this.chart.renderVolume();  
           this.chart.renderPlaceOrder();
           this.chart.renderHighandLow()
-        })
-      })
-      ipcRenderer.on('total-order', (_, orders) => { 
-        const arr = [];const id = this.$route.query.id;
-        for(let key in orders){
-          if(orders[key].ExchangeInstID === id){
-            arr.push(orders[key])
-          }
-        }
-       this.orders = arr;
-       
+         
+         })
       })
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         this.instrumet = instrumet;
@@ -173,6 +180,56 @@ export default {
           console.log(this.broadcast)
         }
       })
+      // let price_ =2902.00;
+      // setInterval(()=>{
+      //   price_ = price_ - 0.5;
+      //   const arg = {
+      //     ActionDay: "20211203",
+      //     AskPrice1: price_ + 1,
+      //     AskPrice2: price_ + 1.5,
+      //     AskPrice3: price_ + 2,
+      //     AskPrice4: price_ + 2.5,
+      //     AskPrice5: price_ + 3,
+      //     AskVolume1: 2,
+      //     AskVolume2: 3,
+      //     AskVolume3: 2,
+      //     AskVolume4: 3,
+      //     AskVolume5: 2,
+      //     AveragePrice: 0,
+      //     BidPrice1: price_ - 1,
+      //     BidPrice2: price_ - 1.5,
+      //     BidPrice3: price_ - 2,
+      //     BidPrice4: price_ - 2.5,
+      //     BidPrice5:price_ - 3,
+      //     BidVolume1: 5,
+      //     BidVolume2: 4,
+      //     BidVolume3: 1,
+      //     BidVolume4: 3,
+      //     BidVolume5: 3,
+      //     ClosePrice: 3,
+      //     CurrDelta: 3,
+      //     ExchangeID: "",
+      //     ExchangeInstID: "",
+      //     HighestPrice: 0,
+      //     InstrumentID: "j2201",
+      //     LastPrice: price_,
+      //     LowerLimitPrice: 2467,
+      //     LowestPrice: 0,
+      //     OpenInterest: 9469,
+      //     OpenPrice: 0,
+      //     PreClosePrice: 2876,
+      //     PreDelta: 0,
+      //     PreOpenInterest: 9469,
+      //     PreSettlementPrice: 2902,
+      //     SettlementPrice: 0,
+      //     TradingDay: "20211203",
+      //     Turnover: 0,
+      //     UpdateMillisec: 0,
+      //     UpdateTime: "18:33:52",
+      //     UpperLimitPrice: 3337,
+      //     Volume: 0}
+      //     this.chart.render(arg)
+      // }, 500)
 
   },
   data () {

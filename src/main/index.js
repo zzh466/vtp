@@ -274,54 +274,54 @@ ipcMain.on('trade-login', (event, args) => {
   trade.on('rtnOrder', function(field){
     const key = getorderKey(field);
     const old = orderMap[key] || {}
-    const orderStatus = old.OrderStatus;
+    // const orderStatus = old.OrderStatus;
 
     orderMap[key] = Object.assign(old, field);
-    let send = false;
+    // let send = false;
     // console.log(field)
-    switch(field.OrderStatus){
-      case 'a':
-        // event.sender.send('receive-order', orderMap[key])
-        break
-      case "3":
-        if(orderStatus !== '3'){
-          send = true;
-          orderMap[key].volume = field.VolumeTotalOriginal
-        }
-        break
-      case "5":
-        send = true;
-        orderMap[key].volume = -field.VolumeTotalOriginal + field.VolumeTraded;
-        break;
-      case "0":
+    // switch(field.OrderStatus){
+    //   case 'a':
+    //     // event.sender.send('receive-order', orderMap[key])
+    //     break
+    //   case "3":
+    //     if(orderStatus !== '3'){
+    //       send = true;
+    //       orderMap[key].volume = field.VolumeTotalOriginal
+    //     }
+    //     break
+    //   case "5":
+    //     send = true;
+    //     orderMap[key].volume = -field.VolumeTotalOriginal + field.VolumeTraded;
+    //     break;
+    //   case "0":
       
-        if(orderStatus !== 'a'){
-          orderMap[key].volume =  - field.VolumeTraded
-          send = true
-        }
-        break
-      case "1":
-        send = true
-        if(orderStatus !== 'a'){
-          orderMap[key].volume =  - field.VolumeTraded
+    //     if(orderStatus !== 'a'){
+    //       orderMap[key].volume =  - field.VolumeTraded
+    //       send = true
+    //     }
+    //     break
+    //   case "1":
+    //     send = true
+    //     if(orderStatus !== 'a'){
+    //       orderMap[key].volume =  - field.VolumeTraded
           
-        }else {
-          orderMap[key].volume= field.VolumeTotalOriginal -  field.VolumeTraded
-        }
-        break
-      default:
+    //     }else {
+    //       orderMap[key].volume= field.VolumeTotalOriginal -  field.VolumeTraded
+    //     }
+    //     break
+    //   default:
 
-    }
-    if(send){
+    // }
+    // if(send){
       const {InstrumentID } = field; 
       const win = findedopened(InstrumentID);
       // console.log(InstrumentID)
       if(win && win.sender){ 
-        console.log(InstrumentID)
-        win.sender.send('place-order', orderMap[key]);
+        // console.log(InstrumentID)
+        // win.sender.send('place-order', orderMap[key]);
         win.sender.send('total-order',orderMap);
       }
-    }
+    // }
     // console.log('emmit---rtnOrder', field)
     if(!STARTTRADE){
       clearTimeout(ORDERTIME)
@@ -438,7 +438,7 @@ ipcMain.on('cancel-order', (event, args) => {
  if(arr.length){
   infoLog(`撤单: ${JSON.stringify(arr.map(({InstrumentID, LimitPrice, VolumeTotalOrigina}) => ({InstrumentID, LimitPrice, VolumeTotalOrigina})))}`)
  }
-
+ console.log('cancel', +Date.now())
  trade.cancel(arr);
 })
 
