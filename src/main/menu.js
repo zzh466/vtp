@@ -7,8 +7,12 @@ let template = [{
       label: '置顶',
       click(event, window){
         // BrowserWindow.getAllWindows().forEach(win => win.setAlwaysOnTop(false));
-     
-        window.setAlwaysOnTop(event.checked)
+        if(event.checked){
+          window.setAlwaysOnTop(true, 'screen-saver')
+        }else {
+          window.setAlwaysOnTop(false)
+        }
+       
       },
       type: 'checkbox'
     }

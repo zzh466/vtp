@@ -20,3 +20,5 @@ ipcMain.handle('request', async (event, arg) => {
     const result = await axios(arg).then(res => res.data);
     return result
 })
+
+export default axios;

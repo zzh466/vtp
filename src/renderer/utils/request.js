@@ -14,9 +14,11 @@ export class TraderSocket{
         const ws = new WebSocket(`ws://${baseURL}/ws`);
         this.ws =ws ;
         ws.onopen = function (e) {
+            count = 0;
             console.log('客户端（client）：与服务器连接')
         }
-        ws.onerror=function(){
+        ws.onerror=function(e){
+            ipcRenderer.send('err-log', `socket已断开${JSON.stringify(e)}`)
             console.log('客户端（client）：与服务器的连接已断开'+ e);
             count ++;
             if(count > 3) {

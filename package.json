@@ -24,6 +24,10 @@
   "build": {
     "productName": "vtp2021",
     "appId": "xinqi",
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "oneClick": false
+    },
     "directories": {
       "output": "electron-build"
     },

@@ -1,11 +1,12 @@
 import log from 'electron-log';
 import path from 'path';
-import {ipcMain} from 'electron';
-const needLog = process.env.NODE_ENV !== 'development';
-
+import {ipcMain, app} from 'electron';
+const needLog =process.env.NODE_ENV !== 'development';
+let homeDir =  path.dirname(app.getPath('exe'))
+console.log('1111111111111111111', homeDir)
 const logName = `${new Date().toLocaleDateString().replace(/\//g, '')}.log`;
 log.transports.console.level = 'silly'
-log.transports.file.fileName  = logName;
+log.transports.file.resolvePath  = ()=> path.join(homeDir,'/log',logName);
 log.transports.file.maxSize = 1024*1024 *10;
 ipcMain.on('err-log', function(_, msg){
     errorLog(msg)

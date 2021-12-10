@@ -29,10 +29,9 @@ ipcRenderer.on('error-msg', (event, {msg, code}) => {
       if(code){
         event.sender.send(`error-msg-${code}`)
       }
-      
     }
   })
- 
+  setTimeout(()=>MessageBox.close(), 5000)
 })
 /* eslint-disable no-new */
 Vue.use(ElementUI);

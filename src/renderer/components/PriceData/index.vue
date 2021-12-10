@@ -56,6 +56,7 @@ export default {
     config: {
       deep: true,
       handler({volume, type, closeType}) {
+        
         const id = this.$route.query.id;
         const title =getWinName(id, volume, type, closeType) + getHoldCondition(this.instrumet);
         ipcRenderer.send('change-title', {id, title});
@@ -69,7 +70,10 @@ export default {
       const {id,account} = this.$route.query;
        const config =JSON.parse(localStorage.getItem(`config-${account}`));
       console.log(config);
-      config.barWeight = config.barWeight ;
+      const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
+      this.config.type = sysCloseTStrategy.toString() ;
+      this.config.closeType=sysCloseType.toString() ;
+      this.config.volume = sysOrderVolume ;
       this.broadcastOpenInterest = config.broadcastOpenInterest;
       this.stepwidth = config.barWeight ;
       ipcRenderer.send('register-event', id);

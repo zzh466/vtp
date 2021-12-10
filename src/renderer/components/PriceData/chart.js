@@ -59,7 +59,7 @@ class Chart {
             }
         }
         if(start){
-            start = start + 0.5
+            start = Math.floor(start) + 0.5
         }
         return start ;
     }
@@ -181,6 +181,10 @@ class Chart {
         if(askIndex  > this.count) {
             buyIndex = this.count;
         } 
+        if(buyIndex > this.count || askIndex < 0){
+            ipcRenderer.send('error-log', JSON.stringify(this.args));
+            ipcRenderer.send('error-log', JSON.stringify(this.data));
+        }
         ctx.fillStyle = BUYBACKGROUND;
         ctx.fillRect(_x, y, buyIndex *stepwidth + stepwidth,this.height);
         ctx.fillStyle = ASKBACKGROUND;
@@ -277,8 +281,10 @@ class Chart {
     }
     clearData(startPrice, endPrice){
       
-        const start = this.getindex(startPrice, true);
-        const end = this.getindex(endPrice, true);
+        let start = this.getindex(startPrice, true);
+        if(start < 0) start = 0
+        let end = this.getindex(endPrice, true);
+        if(end > this.data.length -1) end = this.data.length -1;
         for(let i = start; i < end; i++){
             if(!this.data[i]){
                 console.log(i, JSON.parse(JSON.stringify(this.data)))
@@ -314,7 +320,7 @@ class Chart {
                 price:(price- i* this.step).toFixed(decimal)
             })
         }
-
+        this.start = 0;
         return count
     }
     getindex(price, pure){
@@ -325,27 +331,33 @@ class Chart {
         }
       
         let offset = 0;
+        let rerender = false;
         if(index > this.data.length - 6){
              offset = index - this.data.length + 6;
             this.pushData(offset);
           
-            this.renderPrice();
+            rerender = true;
         }
         if(index < 5){
             offset = 5 - index;
             const count = this.unshiftData(offset)
            
-            this.renderPrice();
+            rerender = true;
             index = index + count;
         }
         const start = this.start;
         if(index < start + 5){
             offset = start - index;
             this.start = start - 5
+            rerender = true;
         }
         if(index > start + this.count - 5){
             offset = index - start- this.count;
             this.start = start + 5;
+            rerender = true;
+        }
+        if(rerender){
+            this.renderPrice();
         }
         if(Math.abs(offset) >= 50){
             ipcRenderer.send('error-log', price);
@@ -371,6 +383,10 @@ class Chart {
         };
         const stepwidth = this.stepwidth;
         const x = X + 50 + (this.getindex(price, true) - this.start) * stepwidth;
+        if(x < x+50){
+            ipcRenderer.send('error-log', JSON.stringify(this.args));
+            ipcRenderer.send('error-log', JSON.stringify(this.data));
+        }
         ctx.clearRect(X,20,this.width,10)
         ctx.beginPath();
         ctx.moveTo(x, 21);
@@ -469,7 +485,7 @@ class Chart {
         }
     }
     renderHighandLow(){
-        // console.log(this.LowestPrice, this.HighestPrice)
+        if(this.data.length === 0) return;
         const lowindex = this.getindex(this.LowestPrice, true);
         const highindex = this.getindex(this.HighestPrice, true);
         const {start, ctx, count, stepwidth, height} = this;
@@ -481,8 +497,8 @@ class Chart {
         if(highindex > start + count){
             HighX = this.width - X - 51
         }
-        ctx.clearRect(X , Y + 30 ,1 , height - 10);
-        ctx.clearRect( this.width - 1, Y + 30 ,1 , height - 10);
+        ctx.clearRect(X -1, Y + 29 ,2 , height - 10);
+        ctx.clearRect( this.width - 2, Y + 29 ,2 , height - 10);
         const offset= X + 50;
         ctx.save()
         ctx.setLineDash([]);
@@ -513,18 +529,28 @@ class Chart {
         this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );
         for(let i = 5; i>= 1; i--){
             const buyPirce = arg[`BidPrice${i}`];
-            const buyIndex = this.getindex(buyPirce)
-            const buyData = this.data[buyIndex];
-            buyData.volum = arg[`BidVolume${i}`];
-            buyData.type = 'buy';
+            let buyIndex = this.start;
+            if(buyPirce){
+                buyIndex = this.getindex(buyPirce)
+                const buyData = this.data[buyIndex];
+                buyData.volum = arg[`BidVolume${i}`];
+                buyData.type = 'buy';
+            }
+          
+            
             const askPirce = arg[`AskPrice${i}`];
-            const askIndex = this.getindex(askPirce)
-            const askData = this.data[askIndex];
-            askData.volum = arg[`AskVolume${i}`];
-            askData.type = 'ask';
+            let askIndex = this.start + this.count;
+            if(askPirce){
+                askIndex = this.getindex(askPirce)
+                const askData = this.data[askIndex];
+                askData.volum = arg[`AskVolume${i}`];
+                askData.type = 'ask';
+            }
+           
             if(i === 1) {
                 this.buyIndex = buyIndex;
                 this.askIndex = askIndex;
+                
             }
         }
         this.LowestPrice = arg.LowestPrice;

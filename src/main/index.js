@@ -7,8 +7,10 @@ import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
 import meun from  './menu';
-import './requeset';
+import  request  from './request';
 import '../renderer/store';
+import {version } from '../renderer/utils/utils'
+
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
@@ -35,7 +37,7 @@ function createWindow () {
     height: 333,
     useContentSize: true,
     width: 500,
-    title: 'Vtp',
+    title: `Vtp  ${version}`,
    
     webPreferences: {
       webSecurity: false,
@@ -51,6 +53,13 @@ function createWindow () {
     mainWindow = null
   })
   mainWindow.on('close', () => {
+   
+    if(trade){
+      request({
+        url: 'access/logoutClient', 
+      })
+    }
+   
     clearInterval(Maincycle);
     closeALLsubs();
   })
@@ -445,7 +454,39 @@ ipcMain.on('cancel-order', (event, args) => {
 //行情相关
 const decodeMsg = new cppmsg.msg(receiveData['SP'])
 const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
-
+function sendParseData(parseData){
+  const {InstrumentID} = parseData; 
+  PriceData[InstrumentID] = parseData
+  const win = findedopened(InstrumentID);
+  // console.log(InstrumentID)
+  if(win && win.sender){ 
+    // console.log(InstrumentID, '11111111111111111111111111111111111')
+    
+      win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
+  }
+}
+function parseReceiveData(data){
+     
+  
+ 
+  let parseData;
+  
+  parseData = decodeMsg.decodeMsg(data);
+  sendParseData(parseData)
+  // console.log(parseData)
+  
+}
+function parseEncodeData(data){
+ 
+  const key = data[0]; 
+  for(let i = 1; i<data.length ; i++){
+    data[i] = data[i] ^ key;
+  }
+  
+  const parseData = endecodeMsg.decodeMsg(data.slice(1));
+  // console.log(parseData)
+  sendParseData(parseData)
+}
 ipcMain.on('start-receive', (event, args) =>{
   const {host, port, instrumentIDs,  iCmdID, size = 36} = args
   let tcp_client = new net.Socket();
@@ -479,85 +520,85 @@ ipcMain.on('start-receive', (event, args) =>{
     })
   
    
-    const decodeKey = new cppmsg.msg([
-      ['key', 'uint16'],
-    ])
+   
     const headMsg = new cppmsg.msg([
       ['size', 'int32'],
       ['CmdID', 'int32'],
     ])
     let cacheArr = [];
-    function parseReceiveData(data){
-      let flag = 0 
-      while(flag < data.length){
-        let parseData;
-        
-        parseData = decodeMsg.decodeMsg(data.slice(flag + 8));
-        // console.log(parseData)
-        const {InstrumentID} = parseData; 
-        PriceData[InstrumentID] = parseData
-        const win = findedopened(InstrumentID);
-        // console.log(InstrumentID)
-        if(win && win.sender){ 
-          // console.log(InstrumentID, '11111111111111111111111111111111111')
-          
-            win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
-        }
-        flag = flag + 416;
-      }
-    }
-    function parseEncodeData(data, size){
-     
-      
-      const parseData = endecodeMsg.decodeMsg(data);
-      // console.log(parseData)
-      const {InstrumentID,BidPrice1, AskPrice1 } = parseData; 
-      PriceData[InstrumentID] = parseData;
-      const win = findedopened(InstrumentID);
-      // console.log(InstrumentID)
-      if(win && win.sender){ 
-        // console.log(InstrumentID, '11111111111111111111111111111111111')
-        
-          win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
-      }
-    }
-    const HasDATA = false
-    tcp_client.on('data',function(data){
-      if(data.length % 416 === 0){
-        parseReceiveData(data);
-      }else {
-        //建立缓冲区 解析分片发送数据
-        const head  = headMsg.decodeMsg(data.slice(0, 8));
-        // console.log(head)
-        if(head.CmdID === 201){
-          return
-        }
-        if(head.CmdID === 11 ){
-          cacheArr =[];
-        }
-        if(head.CmdID === 12 ){
+   
   
-          const key = data[8]; 
-          for(let i = 9; i<data.length -1; i++){
-            data[i] = data[i] ^ key;
-          }
-          // console.log(data.length)
-          parseEncodeData(data.slice(9), 297)
+    tcp_client.on('data',function(data){
+
+      cacheArr.push(data);
+      const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+      data = Buffer.concat(cacheArr, length)
+      cacheArr = [];
+      if(data.length < 8) return
+    
+     
+   
+      while(data.length){
+        let _head = headMsg.decodeMsg(data.slice(0, 8));
+        console.log(_head)
+        const {size, CmdID } = _head;
+        if(CmdID === 201){
+          data = data.slice(_head.size + 8)
+          continue;
+        }
+        if(data.length < size + 8){
+          console.log('222222222222222222222222',data.length, _head)
+          cacheArr.push(data)
           return
         }
-        
-        // if(cacheArr.length !== 0 && head.CmdID !== 11){
-        //   return
-        // }
-        cacheArr.push(data)
-        // console.log.apply(console, cacheArr.map(e => e.length));
-        const length = cacheArr.reduce((a,b)=> a + b.length, 0);
-       
-        if(length % 416 === 0){
-          parseReceiveData(Buffer.concat(cacheArr, length));
-          cacheArr =[]
+        const parseData = data.slice(8, size+8);
+        if(CmdID === 11){
+          parseReceiveData(parseData)
+        }else if(CmdID === 12){
+          parseEncodeData(parseData)
         }
+        data = data.slice(_head.size + 8)
+        
       }
+      // if(head.CmdID === 12 ){
+        
+      //   if(data.length < 302){
+      //     console.log(data.length)
+      //   }
+      //   while(data.length > 301){
+        
+      //     let _head = headMsg.decodeMsg(data.slice(0, 8));
+      //     let end = 301;
+      //     if(_head.size + 8 <end){
+      //       console.log(_head)
+      //       return
+      //     } 
+      //     const encodeData = data.slice(8, end)
+      //     parseEncodeData(encodeData)
+      //     data = data.slice(_head.size + 8)
+      //     if(data.length < 302 && 0<data.length){
+      //       console.log(data.length)
+      //     }
+         
+          
+      //   }
+      //   // console.log(data.length)
+        
+      //   return
+      // }
+      
+      // // if(cacheArr.length !== 0 && head.CmdID !== 11){
+      // //   return
+      // // }
+      //    //建立缓冲区 解析分片发送数据
+      // cacheArr.push(data)
+      // // console.log.apply(console, cacheArr.map(e => e.length));
+      // const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+      
+      // if(length % 416 === 0){
+      //   parseReceiveData(Buffer.concat(cacheArr, length));
+      // }
+      
       // event.sender.send('receive-tarde-data', decodeMsg.decodeMsg(data.slice(8)))
     })
   
@@ -578,6 +619,7 @@ ipcMain.on('start-receive', (event, args) =>{
     })
     tcp_client.on('close',function(hadError ){
       if(hadError && mainWindow && !COLOSEALL){
+        
         const index = tcp_client_list.indexOf(tcp_client);
         if(index > -1){
           tcp_client_list.splice(index, 1);
@@ -591,6 +633,7 @@ ipcMain.on('start-receive', (event, args) =>{
     tcp_client.on('error', function (e) {
       console.log('tcp_client error!', e);
       event.sender.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`});
+      errorLog(`行情服务${host}:${port} 链接错误:${JSON.stringify(e)}`)
       // const index = tcp_client_list.indexOf(tcp_client);
       // tcp_client_list.splice(index, 1);
       // // tcp_client.destroy();

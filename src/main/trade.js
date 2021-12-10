@@ -65,7 +65,7 @@ class Trade {
                 
             });
             
-            _trader.on('rspError', function (requestId, isLast, field) {
+            _trader.on('rspError', function (requestId, isLast, field, info) {
                 console.log(JSON.stringify(field));
                 errorLog(`错误，${info.ErrorMsg}`)
                 this.emitter.emit('error',field);
@@ -105,7 +105,7 @@ class Trade {
             //   })
            
             _trader.on('errInsert', (a,b) =>{
-                errorLog(`报单错误，${b.toString()}`)
+                errorLog(`报单错误，${JSON.stringify(b)}`)
                 this.emitter.emit('error', b, true);
                 console.log(a,b)
             })
@@ -114,8 +114,7 @@ class Trade {
                 console.log("in js code:", 'connect return val is ' + result);
             });            
         })
-        let a =  {};
-        a.valueOf = undefined
+    
         this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
             console.log(field, '3333333333333333333333333' );
             if(!field.ConfirmTime)    
