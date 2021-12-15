@@ -6,6 +6,8 @@ const Y = 20.5;
 const VALUECOLOR = {
     buy: '#ffc8e6',
     ask: '#b4dcc8',
+    buy1: '#ffafc8',
+    ask1: '#a0dcb4',
     deficit: '#0000ff',
     profit: '#ff0000',
     hold: '#00ff00'
@@ -28,6 +30,8 @@ class Chart {
             volumeScaleType
         } = config
         this.ctx = dom.getContext('2d');
+     
+        
         this.stepwidth =barWeight;
         this.stepHeight = volumeScaleHeight;
         this.volumeScaleType = volumeScaleType;
@@ -104,7 +108,7 @@ class Chart {
      renderRange(range){
         const ctx= this.ctx;
         ctx.textAlign = 'right'
-        ctx.font= '12px sans-serif';
+        ctx.font= '12px 宋体';
         ctx.fillStyle= FONTCOLOR;
        
        
@@ -112,12 +116,12 @@ class Chart {
         let start = 30
         const _Y = Y + stepHeight;
         ctx.save();
-        ctx.setLineDash([1, 1])
+      
      
         range.forEach(e => {
             ctx.fillText(e.toString(), X - 10, _Y + start + 5);
             ctx.beginPath();
-            ctx.strokeStyle = FONTCOLOR
+            ctx.strokeStyle = '#404040'
             ctx.moveTo(X, _Y + start);
             ctx.lineTo(X+ 50 , _Y + start);
             ctx.stroke();
@@ -256,7 +260,7 @@ class Chart {
                 console.log(i, JSON.parse(JSON.stringify(this.data)))
                 continue;
             }
-            const { volum, type} = this.data[i];
+            const { volum, type, isone} = this.data[i];
             if(i> buyIndex && i<askIndex){
                 continue
             }
@@ -264,12 +268,19 @@ class Chart {
                 if((type === 'buy' && i > buyIndex) || (type ==='ask' && i < askIndex)){
                     continue;
                 }
-                ctx.fillStyle= VALUECOLOR[type]; 
+                if(i=== buyIndex){
+                    ctx.fillStyle= VALUECOLOR['buy1']; 
+                }else if(i===askIndex){
+                    ctx.fillStyle= VALUECOLOR['ask1']; 
+                }else{
+                    ctx.fillStyle= VALUECOLOR[type]; 
+                }
+               
                 const  x = _x + (i-this.start) * stepwidth;
                 const height = Chart.getHeight(this.range, volum, this.stepHeight); 
                 ctx.fillRect(x,y,stepwidth -1,height);
                 if(i === buyIndex || i === this.askIndex){
-                    ctx.font= '12px sans-serif';
+                    ctx.font= '12px 宋体';
                     ctx.fillStyle= FONTCOLOR;
                     ctx.fillText(volum, x , y + 10);
                 }
@@ -523,6 +534,10 @@ class Chart {
             if(!this.data.length) return
             this.renderPrice();
         }
+        //开盘会有错误数据进入
+        if(Math.abs(arg.OpenPrice) > 100000000 ){
+            return
+        }
        this.args= arg
         this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
@@ -535,6 +550,8 @@ class Chart {
                 const buyData = this.data[buyIndex];
                 buyData.volum = arg[`BidVolume${i}`];
                 buyData.type = 'buy';
+            
+               
             }
           
             
@@ -545,6 +562,7 @@ class Chart {
                 const askData = this.data[askIndex];
                 askData.volum = arg[`AskVolume${i}`];
                 askData.type = 'ask';
+               
             }
            
             if(i === 1) {

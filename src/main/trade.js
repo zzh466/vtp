@@ -57,7 +57,7 @@ class Trade {
                     reject(info.ErrorMsg)
                     return
                 }
-               
+                this.next()
                 // 拿到计算手续费和持仓
                
                 resolve()

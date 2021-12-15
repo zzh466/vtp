@@ -65,7 +65,7 @@ export default {
   },
   mounted(){
       const chartDom = document.getElementById('can');
-      
+      this.instrumet = {};
      
       const {id,account} = this.$route.query;
        const config =JSON.parse(localStorage.getItem(`config-${account}`));
@@ -116,8 +116,10 @@ export default {
          
         })
       })
-       ipcRenderer.on(`receive-${id}`, (event, arg) => {
+     
+        ipcRenderer.on(`receive-${id}`, (event, arg) => {
           p.then(()=>{
+            
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               this.arg = arg;
@@ -126,6 +128,8 @@ export default {
             
           })
         })
+      
+      
       // ipcRenderer.on('place-order', (_, field) => {
        
       //   p.then(()=>{
@@ -151,15 +155,28 @@ export default {
               arr.push(orders[key])
             }
           }
-           this.chart.placeOrder = arr;
-          this.chart.renderBakcground();
-          this.chart.renderVolume();  
-          this.chart.renderPlaceOrder();
-          this.chart.renderHighandLow()
+          if(arr.length &&this.chart.data.length ){
+             this.chart.placeOrder = arr;
+            this.chart.renderBakcground();
+            this.chart.renderVolume();  
+            this.chart.renderPlaceOrder();
+            this.chart.renderHighandLow()
+          }
+         
          
          })
       })
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
+        
+        let update = false;
+        for(let key in instrumet ){
+          if(  this.instrumet[key] !== instrumet[key]){
+            update = true;
+            break;
+          }
+        
+        }
+        if(!update) return
         this.instrumet = instrumet;
         const id = this.$route.query.id;
         const {volume, type, closeType} = this.config;

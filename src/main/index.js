@@ -45,7 +45,7 @@ function createWindow () {
       contextIsolation: false
     }
   })
-  mainWindow.setMenu(meun());
+  mainWindow.setMenu(meun(false));
   mainWindow.loadURL(winURL)
 
   mainWindow.on('closed', () => {
@@ -113,7 +113,9 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height}) => 
         evnt.sender.send('change-ins', insId)
       }
     })
-    childwin.setMenu(meun())
+    childwin.setMenu(meun(true))
+  
+    childwin.setAlwaysOnTop(true, 'screen-saver')
     opedwindow.push({
       id: insId,
       win: childwin
@@ -472,6 +474,7 @@ function parseReceiveData(data){
   let parseData;
   
   parseData = decodeMsg.decodeMsg(data);
+  console.log(parseData)
   sendParseData(parseData)
   // console.log(parseData)
   
@@ -487,6 +490,7 @@ function parseEncodeData(data){
   // console.log(parseData)
   sendParseData(parseData)
 }
+
 ipcMain.on('start-receive', (event, args) =>{
   const {host, port, instrumentIDs,  iCmdID, size = 36} = args
   let tcp_client = new net.Socket();
@@ -526,38 +530,37 @@ ipcMain.on('start-receive', (event, args) =>{
       ['CmdID', 'int32'],
     ])
     let cacheArr = [];
-   
   
     tcp_client.on('data',function(data){
-
+      // console.log(data)
+      // console.log(data.length)
       cacheArr.push(data);
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+      // console.log(length)
       data = Buffer.concat(cacheArr, length)
-      cacheArr = [];
-      if(data.length < 8) return
     
-     
-   
+      cacheArr = [];
       while(data.length){
-        let _head = headMsg.decodeMsg(data.slice(0, 8));
-        console.log(_head)
+        if(data.length < 8){
+          cacheArr.push(data)
+          return
+        } 
+        const _head = headMsg.decodeMsg(data.slice(0, 8));
         const {size, CmdID } = _head;
-        if(CmdID === 201){
-          data = data.slice(_head.size + 8)
-          continue;
-        }
+    
         if(data.length < size + 8){
           console.log('222222222222222222222222',data.length, _head)
           cacheArr.push(data)
           return
         }
+    
         const parseData = data.slice(8, size+8);
         if(CmdID === 11){
           parseReceiveData(parseData)
         }else if(CmdID === 12){
           parseEncodeData(parseData)
         }
-        data = data.slice(_head.size + 8)
+        data = data.slice(size + 8)
         
       }
       // if(head.CmdID === 12 ){

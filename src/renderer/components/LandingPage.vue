@@ -137,7 +137,7 @@
         
           return  e.VolumeTraded
         })
-        console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
+        // console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
         this.traderData.forEach(trader => {
            const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
            const item = data.find(e => e.instrumentID === InstrumentID)
@@ -342,7 +342,7 @@
         }
         const {
           tradeAddr:ctp1_TradeAddress,
-          quotAddr,
+        
           brokerId: m_BrokerId,
           authCode: m_AuthCode,
           futureUserId: m_InvestorId,
@@ -363,8 +363,7 @@
             m_AccountId,
            instruments: this.subscribelInstruments
           });
-          const _quotAddr = quotAddr.split(':')
-          ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: this.subscribelInstruments,   iCmdID: 101});
+         
       })
      
       ipcRenderer.on('receive-order', (event, orders) =>{
@@ -527,7 +526,17 @@
         if(index > -1) {
           this.loading.splice(index, 1)
         }
+        if(!this.loading.length){
+          this.startVolume()
+        }
       },
+      startVolume(){
+      
+        const {quotAddr } = this.userData;
+        // const quotAddr = '192.168.0.18:18198'
+        const _quotAddr = quotAddr.split(':')
+        ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: this.subscribelInstruments,   iCmdID: 101});
+    },
       cancel(){
         this.dialogVisible = false;
         ipcRenderer.send('close-main');
