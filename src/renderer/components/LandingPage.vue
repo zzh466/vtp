@@ -7,11 +7,14 @@
       <el-descriptions-item label="总手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="总实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
-        <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
+      <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
+    
     </el-descriptions>
+      
     <main  v-if='!loading.length'>
       
       <div class="left-side">
+        
          <div>
            <div class="label">回合信息：</div>
           <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
@@ -29,6 +32,7 @@
       </div>
      
     </main>
+    <el-button type="primary" @click="updateConfig">更新配置</el-button>
       <div class="label">订阅合约:</div>
           <Table height='300' @row-dblclick='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
@@ -93,7 +97,8 @@
          return this.$store.state.user.userData
       },
       subscribelInstruments (){
-        return this.userData.subInstruments.split(',')
+        
+        return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
       },
       activeIns() {
          return this.$store.state.PriceData.activeIns
@@ -175,8 +180,8 @@
         return data
       },
       traderData(){
-        console.log(this.traders.map(e => e.TradeTime))
-        return this.traders.slice().sort((a, b)=>{
+      
+        return this.positions.concat(this.traders).slice().sort((a, b)=>{
               const date1 = a.OpenDate || a.TradeDate
               const date2 = b.OpenDate || b.TradeDate
               return date1 - date2
@@ -265,6 +270,7 @@
             width: '200'
         }],
         traders: [],
+        positions:[],
         confirmInfo: [],
         rates: [],
         price: {},
@@ -329,7 +335,7 @@
     },
     mounted(){
       
-      this.$store.dispatch('get-config').then(()=>{
+      this.updateConfig().then(()=>{
         
         const userData = this.userData;
         const broadcast = this.$store.state.user.broadcast;
@@ -351,7 +357,7 @@
           appId: m_AppId,
           futureUserId:m_AccountId
         } = userData;
-         this.finishLoading('config')
+        
          ipcRenderer.send('trade-login', {
            ctp1_TradeAddress,
             m_BrokerId,
@@ -370,7 +376,13 @@
         
         this.orders = orders;
       });
+  
+       ipcRenderer.on('receive-position', (event, position) =>{
+        console.log(position.filter(a => a.InstrumentID==='IC2201'))
+        this.positions = position;
+      });
        ipcRenderer.on('receive-trade', (event, trader) =>{
+         
         if(this.ws && this.traders.length){
           const {futureUserId} = this.userData
           let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime} = trader[trader.length -1];
@@ -384,7 +396,7 @@
           this.ws.send(`${futureUserId}-${ExchangeID}-${OrderSysID}-${TradeID}:${InstrumentID}:${Volume}`)
         }
          
-
+        console.log(trader, '2336456')
         if(Array.isArray(trader)){
           
           this.traders = trader 
@@ -478,6 +490,9 @@
         ipcRenderer.send('stop-subscrible',`触发锁定，盈亏金额${account.CloseProfit + account.PositionProfit - account.Commission}`);
         // this.$store.dispatch('updateIns', '')
       }, 
+      updateConfig(){
+        return this.$store.dispatch('get-config').then(()=> this.finishLoading('config'));
+      },
       closeALL(){
         
         ipcRenderer.send('cancel-order');
@@ -525,10 +540,11 @@
         // console.log(tag)
         if(index > -1) {
           this.loading.splice(index, 1)
+          if(!this.loading.length){
+            this.startVolume()
+          }
         }
-        if(!this.loading.length){
-          this.startVolume()
-        }
+       
       },
       startVolume(){
       

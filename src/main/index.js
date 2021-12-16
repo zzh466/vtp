@@ -146,6 +146,7 @@ app.on('activate', () => {
 })
 const orderMap = {};
 const tradeMap = [];
+const positionMap = [];
 const rateMap =[];
 let InstrumetsData =[];
 const PriceData ={};
@@ -211,7 +212,7 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-trade', tradeMap);
     event.sender.send('finish-loading', 'trade')
     event.sender.send('receive-order', orderMap);
-    event.sender.send('receive-order', orderMap);
+    event.sender.send('receive-position', positionMap);
     event.sender.send('receive-rate', rateMap)
     event.sender.send('receive-instrument', trade.getInstrumentList);
     STARTTRADE = false;
@@ -268,6 +269,7 @@ ipcMain.on('trade-login', (event, args) => {
     }else{
       clearTimeout(TRADETIME)
       TRADETIME = setTimeout(() => {
+        console.log(123456)
         event.sender.send('receive-trade', tradeMap);
         event.sender.send('finish-loading', 'trade')
         TRADETIME= null;
@@ -348,14 +350,15 @@ ipcMain.on('trade-login', (event, args) => {
   
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
+    console.log(field)
     if(OpenDate ===TradingDay) return;  
     field.Price = LastSettlementPrice;
     field.Volume = field.Volume + field.CloseVolume;
-    tradeMap.push(field);
+    positionMap.push(field);
   
-    if(isLast && !TRADETIME){
+    if(isLast){
       console.log('111111111111111111111111111111111111111', event.sender.send)
-      event.sender.send('receive-trade', tradeMap);
+      event.sender.send('receive-position', positionMap);
     }
   })
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
@@ -474,7 +477,7 @@ function parseReceiveData(data){
   let parseData;
   
   parseData = decodeMsg.decodeMsg(data);
-  console.log(parseData)
+  // console.log(parseData)
   sendParseData(parseData)
   // console.log(parseData)
   
@@ -497,6 +500,7 @@ ipcMain.on('start-receive', (event, args) =>{
   
   connect();
   function connect(){
+    infoLog('data open');
     tcp_client_list.push(tcp_client);
     // tcp_client.setKeepAlive(true);
     tcp_client.connect({host, port},function(){
@@ -549,7 +553,7 @@ ipcMain.on('start-receive', (event, args) =>{
         const {size, CmdID } = _head;
     
         if(data.length < size + 8){
-          console.log('222222222222222222222222',data.length, _head)
+      
           cacheArr.push(data)
           return
         }
@@ -630,7 +634,7 @@ ipcMain.on('start-receive', (event, args) =>{
         tcp_client = new net.Socket();
         connect();
       }
-      console.log('data close', hadError);
+      infoLog('data close', hadError);
     })
   
     tcp_client.on('error', function (e) {
