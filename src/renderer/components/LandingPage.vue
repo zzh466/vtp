@@ -32,7 +32,7 @@
       </div>
      
     </main>
-    <el-button type="primary" @click="updateConfig">更新配置</el-button>
+    <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
       <div class="label">订阅合约:</div>
           <Table height='300' @row-dblclick='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
@@ -181,11 +181,7 @@
       },
       traderData(){
       
-        return this.positions.concat(this.traders).slice().sort((a, b)=>{
-              const date1 = a.OpenDate || a.TradeDate
-              const date2 = b.OpenDate || b.TradeDate
-              return date1 - date2
-          })
+        return this.positions.concat(this.traders).slice();
       }
     },
     data(){
@@ -382,9 +378,13 @@
         this.positions = position;
       });
        ipcRenderer.on('receive-trade', (event, trader) =>{
-         
+        if(Array.isArray(trader)){
+          
+          this.traders = trader 
+        }
         if(this.ws && this.traders.length){
           const {futureUserId} = this.userData
+         
           let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime} = trader[trader.length -1];
           if(!TradeTime ){
             return
@@ -397,10 +397,7 @@
         }
          
         console.log(trader, '2336456')
-        if(Array.isArray(trader)){
-          
-          this.traders = trader 
-        }
+        
       });
        ipcRenderer.on('receive-rate', (event, rates) =>{
         //  console.log(rates)

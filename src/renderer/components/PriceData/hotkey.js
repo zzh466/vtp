@@ -41,9 +41,9 @@ export default function generate(hotKey){
                     ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id});
                     vue.chart.holdVolume = [0, 0];
                     //保证先撤单
-                    // setTimeout(()=>{
+                    setTimeout(()=>{
                         order();
-                    // },3)
+                    },3)
                    
                     break;
                 case '3':

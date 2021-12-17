@@ -21,13 +21,13 @@ export class TraderSocket{
             ipcRenderer.send('err-log', `socket已断开${JSON.stringify(e)}`)
             console.log('客户端（client）：与服务器的连接已断开'+ e);
             count ++;
-            if(count > 3) {
+            if(count > 10) {
                 this.ws = null;
                 console.log('socket链接超时');
             };
             this.ws = new WebSocket(`ws://${baseURL}/ws`);
             if(this.onmessagefn){
-                this.ws.onmessage = fn;
+                this.ws.onmessage = this.onmessagefn;
             }
         }
     }
