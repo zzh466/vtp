@@ -11,33 +11,51 @@ export default function request(config){
 let count = 0
 export class TraderSocket{
     constructor(){
-        const ws = new WebSocket(`ws://${baseURL}/ws`);
-        this.ws =ws ;
-        ws.onopen = function (e) {
-            count = 0;
-            console.log('客户端（client）：与服务器连接')
-        }
-        ws.onerror=function(e){
-            ipcRenderer.send('err-log', `socket已断开${JSON.stringify(e)}`)
-            console.log('客户端（client）：与服务器的连接已断开'+ e);
-            count ++;
-            if(count > 10) {
-                this.ws = null;
-                console.log('socket链接超时');
-            };
-            this.ws = new WebSocket(`ws://${baseURL}/ws`);
-            if(this.onmessagefn){
-                this.ws.onmessage = this.onmessagefn;
-            }
-        }
+        this.reconnect();
+        this.task = [];
+        this.ready=false;
     }
     onmessage(fn){
         this.onmessagefn = fn;
         this.ws.onmessage = fn;
     }
+    reconnect(){
+        const ws = new WebSocket(`ws://${baseURL}/ws`);
+        this.ws =ws ;
+        count++
+        ws.onopen =  (e) =>{
+            this.ready=true;
+            console.log('客户端（client）：与服务器连接')
+            if(this.task.length){
+                this.task.forEach(e => {
+                    this.send(e)
+                });
+                this.task = [];
+            }
+        }
+        ws.onerror=(e) =>{
+            ipcRenderer.send('err-log', `socket已断开${JSON.stringify(e)}`)
+            console.log('客户端（client）：与服务器的连接已断开'+ e);
+            this.ws.close();
+        }
+        ws.onclose = ()=>{
+            this.ready=false;
+            ipcRenderer.send('err-log', `socket已关闭`)
+            this.ws = null;
+            setTimeout( ()=>{
+              
+                this.reconnect()
+            }, 2000)
+        }
+        if(this.onmessagefn){
+            this.ws.onmessage = this.onmessagefn;
+        }
+    }
     send(msg){
-        if(this.ws){
+        if(this.ready){
             this.ws.send(msg)
+        }else {
+            this.task.push(msg)
         }
     }
 }

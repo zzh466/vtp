@@ -38,13 +38,12 @@ export default function generate(hotKey){
                    
                     break;
                 case '1':
-                    ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id});
-                    vue.chart.holdVolume = [0, 0];
-                    //保证先撤单
-                    setTimeout(()=>{
+                     //保证先撤单
+
+                    ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id}).then(()=>{
+                        vue.chart.holdVolume = [0, 0];
                         order();
-                    },3)
-                   
+                    });
                     break;
                 case '3':
                      const volume = haskey[5];

@@ -2,6 +2,7 @@
 var ctp = require('../../build/Release/ctp.node');
 var events = require('events');
 ctp.settings({ log: false });
+import { resolve } from 'path';
 import { errorLog, infoLog} from './log';
 // simnow hanzhe
 
@@ -33,8 +34,9 @@ class Trade {
         this.emitter = new  events.EventEmitter();
         this.instruments = instruments;
         this.login = new Promise((resolve, reject) => {
-            _trader.on("connect", function (result) {
+            _trader.on("connect",  (result)=> {
                 console.log("in js code: ----> on connected , result=", result);
+                this.emitter.emit('connect')
                 _trader.reqAuthenticate(m_BrokerId, m_AccountId, m_AuthCode, m_AppId, function (result) {
                     console.log("in js code: reqAuthenticate result=", result);
                 });
@@ -262,28 +264,38 @@ class Trade {
           })
     }
     cancel(arr){
-        arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID}) => {
-            const cancelOrder = {
-                "RequestID": this.getKey('requestID'),
-                "BrokerID": this.m_BrokerId,
-                "InvestorID": this.m_InvestorId,
-                OrderActionRef: this.requestID.toString(),
-                OrderRef,
-                FrontID,
-                SessionID,
-                ExchangeID,
-                OrderSysID,
-                ActionFlag: '0',
-                VolumeChange: 0,
-                UserID: this.m_UserId,
-                InstrumentID
-            }
-            console.log(cancelOrder);
-            this.send('reqOrderAction',cancelOrder, function(field){
-                console.log('reqOrderAction is callback');
-                console.log(field);
-            })
-        });
+        if(!arr.length) return Promise.resolve();
+        return new Promise(resolve =>{
+            let count = 0
+            arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID}) => {
+                const cancelOrder = {
+                    "RequestID": this.getKey('requestID'),
+                    "BrokerID": this.m_BrokerId,
+                    "InvestorID": this.m_InvestorId,
+                    OrderActionRef: this.requestID.toString(),
+                    OrderRef,
+                    FrontID,
+                    SessionID,
+                    ExchangeID,
+                    OrderSysID,
+                    ActionFlag: '0',
+                    VolumeChange: 0,
+                    UserID: this.m_UserId,
+                    InstrumentID
+                }
+                console.log(cancelOrder);
+                this.send('reqOrderAction',cancelOrder, function(field){
+                    count++
+                    console.log('reqOrderAction is callback');
+                    console.log(field);
+                    if(count === arr.length){
+                        resolve()
+                    }
+                    
+                })
+            });
+        })
+        
     }
 }
 

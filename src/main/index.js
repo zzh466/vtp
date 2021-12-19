@@ -145,7 +145,7 @@ app.on('activate', () => {
   }
 })
 const orderMap = {};
-const tradeMap = [];
+let tradeMap = [];
 const positionMap = [];
 const rateMap =[];
 let InstrumetsData =[];
@@ -175,16 +175,11 @@ ipcMain.on('register-event',  (event, args) =>{
   win.sender.send('instrumet-data',instrumet);
   win.sender.send('total-order',orderMap);
   win.sender.send('receive-broadcast',broadcast_Data[args])
-  tradeMap.sort((a, b)=>{
-      const date1 = a.OpenDate || a.TradeDate
-      const date2 = b.OpenDate || b.TradeDate
-      return date1 - date2
-  }).forEach(field=>{
+  positionMap.concat(tradeMap).forEach(field=>{
     if(field.InstrumentID === args){
       win.sender.send('trade-order',field);
     }
   })
-
 })
 ipcMain.on('update-instrumentsData',  (event, args) =>{
   InstrumetsData = args;
@@ -371,6 +366,11 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('finish-loading', 'instrument')
     
   })
+  trade.emitterOn('connect', function () {
+    tradeMap = [];
+    STARTTRADE =false;
+    event.sender.send('receive-trade', tradeMap);
+  })
   trade.login.then(()=>{
     trade.chainSend('reqQryInstrument', '', function (field) {
       // console.log('reqQryInstrument is callback');
@@ -436,8 +436,7 @@ ipcMain.on('trade', (event, args) => {
   infoLog(JSON.stringify(args));
   trade.trade(args);
 })
-
-ipcMain.on('cancel-order', (event, args) => {
+function findCancelorder(args, title){
   const arr = [];
   function needCancel(order){
     return (order.OrderStatus === '1' || order.OrderStatus === 'a' || order.OrderStatus === '3') && (!args || args.value === order[args.key])
@@ -450,12 +449,20 @@ ipcMain.on('cancel-order', (event, args) => {
    }
  }
  if(arr.length){
-  infoLog(`撤单: ${JSON.stringify(arr.map(({InstrumentID, LimitPrice, VolumeTotalOrigina}) => ({InstrumentID, LimitPrice, VolumeTotalOrigina})))}`)
+  infoLog(`${title}: ${JSON.stringify(arr.map(({InstrumentID, LimitPrice, VolumeTotalOrigina}) => ({InstrumentID, LimitPrice, VolumeTotalOrigina})))}`)
  }
+ return arr;
+}
+ipcMain.on('cancel-order', (event, args) => {
+ const arr = findCancelorder(args, '撤单');
+
  console.log('cancel', +Date.now())
  trade.cancel(arr);
 })
-
+ipcMain.handle('async-cancel-order', (event, args)=>{
+  const arr = findCancelorder(args, '先撤后下');
+  return trade.cancel(arr);
+})
 //行情相关
 const decodeMsg = new cppmsg.msg(receiveData['SP'])
 const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
