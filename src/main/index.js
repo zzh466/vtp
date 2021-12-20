@@ -10,6 +10,7 @@ import meun from  './menu';
 import  request  from './request';
 import '../renderer/store';
 import {version } from '../renderer/utils/utils'
+import console from 'console';
 
 let COLOSEALL = false;
 /**
@@ -327,6 +328,9 @@ ipcMain.on('trade-login', (event, args) => {
       if(win && win.sender){ 
         // console.log(InstrumentID)
         // win.sender.send('place-order', orderMap[key]);
+        if(STARTTRADE && field.OrderStatus === '5' && field.OrderSubmitStatus==='4'){
+          win.sender.send('order-error',field.StatusMsg);
+        }
         win.sender.send('total-order',orderMap);
       }
     // }
@@ -395,7 +399,13 @@ ipcMain.on('trade-login', (event, args) => {
 
   trade.emitterOn('error', (msg, skip) =>{
     if(skip && !STARTTRADE) return;
-    event.sender.send('error-msg', {msg});
+    const win = BrowserWindow.getFocusedWindow();
+    const opened = opedwindow.find(e=> e.win === win)
+    if(win && opened){
+      opened.sender.send('order-error',msg);
+    }else {
+      event.sender.send('error-msg', {msg});
+    }
   })
   const settlementInfo = []
   trade.emitterOn('settlement-info', (islast, info) =>{

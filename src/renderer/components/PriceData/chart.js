@@ -437,11 +437,10 @@ class Chart {
         let _volume = [0, 0];
         pricearray.forEach(({price, volume, direction}) => {
             const index = this.getindex(price, true);
+            if(index < this.start || index > this.start + this.count)return;
             const  x = _x + (index-this.start) * stepwidth;
             const height = Chart.getHeight(range, volume, stepHeight); 
-            if(height < 0){
-                return
-            }
+           
             ctx.fillStyle = 'red';
             _volume[direction] = _volume[direction] + volume;
             ctx.fillRect(x,y,stepwidth -1,height);

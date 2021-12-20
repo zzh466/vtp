@@ -166,6 +166,11 @@ export default {
          
          })
       })
+      ipcRenderer.on('order-error', (_, message) => Notification({
+        type: 'error',
+        message,
+        duration: 2500
+      }))
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         
         let update = false;
