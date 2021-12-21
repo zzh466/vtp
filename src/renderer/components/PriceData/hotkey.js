@@ -42,7 +42,10 @@ export default function generate(hotKey){
 
                     ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id}).then(()=>{
                         vue.chart.holdVolume = [0, 0];
-                        order();
+                        setTimeout(()=>{
+                            order();
+                        }, 2)
+                        
                     });
                     break;
                 case '3':

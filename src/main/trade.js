@@ -35,6 +35,7 @@ class Trade {
         this.instruments = instruments;
         this.login = new Promise((resolve, reject) => {
             _trader.on("connect",  (result)=> {
+                
                 console.log("in js code: ----> on connected , result=", result);
                 this.emitter.emit('connect')
                 _trader.reqAuthenticate(m_BrokerId, m_AccountId, m_AuthCode, m_AppId, function (result) {
@@ -59,7 +60,7 @@ class Trade {
                     reject(info.ErrorMsg)
                     return
                 }
-                this.next()
+               
                 // 拿到计算手续费和持仓
                
                 resolve()
@@ -83,8 +84,14 @@ class Trade {
                     const { resolve } = item;
                     item.field = field;
                     if(resolve){
+                
                         resolve({PriceTick, ExchangeID});
                     }
+                }else {
+                    this.getInstrumentList.push({
+                        id: InstrumentID,
+                        field
+                    })
                 }
                 
                 if(isLast){
@@ -116,7 +123,7 @@ class Trade {
                 console.log("in js code:", 'connect return val is ' + result);
             });            
         })
-    
+        this.next();
         this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
             console.log(field, '3333333333333333333333333' );
             if(!field.ConfirmTime)    

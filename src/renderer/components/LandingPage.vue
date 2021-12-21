@@ -491,31 +491,34 @@
         return this.$store.dispatch('get-config').then(()=> this.finishLoading('config'));
       },
       closeALL(){
+        ipcRenderer.invoke('async-cancel-order').then(()=>{
+           const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume}) => Volume> CloseVolume);
+          if(arr.length){
+            ipcRenderer.send('info-log', `开始强平`)
+            arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
+                const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+                const instrumentinfo = this.instrumentInfo.find(e => e.id === InstrumentID)
+                const { PriceTick } = instrumentinfo.field;
+                let combOffsetFlag = '1';
+                if(order) {
+                  combOffsetFlag = order.CombOffsetFlag
+                }
+                const direction= Direction==='0'? '1': '0'
+                let over_price = this.$store.state.user.over_price * PriceTick;
+                if(direction === '1'){
+                  over_price = -over_price;
+                }
         
-        ipcRenderer.send('cancel-order');
-        const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume}) => Volume> CloseVolume);
-        if(arr.length){
-          arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
-              const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-              const instrumentinfo = this.instrumentInfo.find(e => e.id === InstrumentID)
-              const { PriceTick } = instrumentinfo.field;
-              let combOffsetFlag = '1';
-              if(order) {
-                combOffsetFlag = order.CombOffsetFlag
-              }
-              const direction= Direction==='0'? '1': '0'
-              let over_price = this.$store.state.user.over_price * PriceTick;
-              if(direction === '1'){
-                over_price = -over_price;
-              }
+                const limitPrice = this.price[InstrumentID][direction] + over_price;
+                ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction}) 
+            })
+          }else{
+            this.forcing = false;
+            clearInterval(this.forcingCloseTime)
+          }
+        })
+      
        
-              const limitPrice = this.price[InstrumentID][direction] + over_price;
-              ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction}) 
-          })
-        }else{
-           this.forcing = false;
-           clearInterval(this.forcingCloseTime)
-        }
       },
       async forceClose(){
        
@@ -528,6 +531,7 @@
             this.closeALL();
           }, 1000)
         }else{
+           ipcRenderer.send('info-log', `非强平窗口`)
           setTimeout(()=> this.forcing = false, 500 )
         }
         

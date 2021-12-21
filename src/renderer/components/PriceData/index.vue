@@ -327,10 +327,8 @@ export default {
        
       }
       if(volumeTotalOriginal <=0){
-        Notification({
-          message: '已有平仓单，请撤单后再下单'
-        })
-        return;
+        combOffsetFlag = '0';
+         volumeTotalOriginal = this.config.volume
       }
       const traderData= this.checkLock(direction, volumeTotalOriginal,combOffsetFlag);
       if(!traderData) return

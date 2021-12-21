@@ -5,7 +5,8 @@ const needLog =process.env.NODE_ENV !== 'development';
 let homeDir =  path.dirname(app.getPath('exe'))
 console.log('1111111111111111111', homeDir)
 const logName = `${new Date().toLocaleDateString().replace(/\//g, '')}.log`;
-log.transports.console.level = 'silly'
+log.transports.console.level = 'silly';
+
 log.transports.file.resolvePath  = ()=> path.join(homeDir,'/log',logName);
 log.transports.file.maxSize = 1024*1024 *10;
 ipcMain.on('err-log', function(_, msg){
@@ -23,3 +24,5 @@ export function infoLog(info){
     if(!needLog) return
     log.info(info)
 }
+
+export const logPath = path.join(homeDir,'/log')
