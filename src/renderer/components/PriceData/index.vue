@@ -155,6 +155,7 @@ export default {
               arr.push(orders[key])
             }
           }
+          
           if(arr.length &&this.chart.data.length ){
              this.chart.placeOrder = arr;
             this.chart.renderBakcground();
@@ -166,10 +167,12 @@ export default {
          
          })
       })
+ 
       ipcRenderer.on('order-error', (_, message) => Notification({
         type: 'error',
         message,
-        duration: 2500
+        duration: 1500,
+        position: 'bottom-right',
       }))
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         
@@ -199,10 +202,12 @@ export default {
           
         })
       })
+    
       ipcRenderer.on('receive-broadcast', (_, data) => {
 
         if(data && this.broadcastOpenInterest && data.volume !== undefined){
           this.broadcast[data.direction]= parseInt(data.volume);
+         
           console.log(this.broadcast)
         }
       })
@@ -286,9 +291,11 @@ export default {
     move(e){
       const {x ,y} = e;
       
-      if(x > 104 && y > 54){
+      if(x > 104 && x < this.stepwidth * this.chart.count + 105 && y > 54){
+        const left = x - (x-105)%this.stepwidth;
+       
         this.showbar = true;
-        this.left = x - (x-105)%this.stepwidth;
+        this.left = left
       }else {
         this.showbar = false;
       }
@@ -477,9 +484,7 @@ export default {
 .sell-orders {
   display: flex;
   flex-basis: 50%;
-  
-  
-  
+   width: 50%;
 }
 .buy-order {
   background-color: rgb(255, 130, 0);

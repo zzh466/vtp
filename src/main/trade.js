@@ -197,14 +197,14 @@ class Trade {
     }
     next(){
         const { tasks} = this;
-        tasks.shift();
+        var last = tasks.shift();
        if(tasks.length){
             let task = tasks[0];
             //ctp一秒只能发一个请求
             setTimeout(()=> {
                 task()
             }, 1000)
-       }else{
+       }else if(typeof last ==='function' ){
             tasks.push(setTimeout(()=>{
                 this.next()
             }, 1000))
@@ -271,7 +271,7 @@ class Trade {
           })
     }
     cancel(arr){
-        if(!arr.length) return Promise.resolve();
+        if(!arr.length) return Promise.resolve(false);
         return new Promise(resolve =>{
             let count = 0
             arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID}) => {
@@ -296,7 +296,7 @@ class Trade {
                     console.log('reqOrderAction is callback');
                     console.log(field);
                     if(count === arr.length){
-                        resolve()
+                        resolve(count)
                     }
                     
                 })

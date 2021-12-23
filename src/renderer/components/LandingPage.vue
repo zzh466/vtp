@@ -16,7 +16,7 @@
       <div class="left-side">
         
          <div>
-           <div class="label">回合信息：</div>
+           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button></div>
           <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
         </div>
          
@@ -26,7 +26,7 @@
         
        
         <div>
-          <div class="label">下单信息：</div>
+          <div class="label">下单信息：<el-button type="primary" size="small" @click="exportExcel('下单信息', orderData, orderColumns)">导出</el-button></div>
             <Table  height='280' :columns='orderColumns' :tableData='orderData'/>
         </div>
       </div>
@@ -58,12 +58,13 @@
 </template>
 
 <script>
-  import { ipcRenderer } from 'electron';
+  import { ipcRenderer, dialog } from 'electron';
 
   import {getWinName, Direction, CombOffsetFlag, getyyyyMMdd, getHoldCondition, getClientSize} from '../utils/utils';
   import {TraderSocket} from '../utils/request';
   import Round from './LandingPage/round.vue';
   import Status from './LandingPage/Status.vue';
+    import {Status as parseStatus} from '../utils/utils'
   import Vue from 'vue';
   import request from "../utils/request"; 
   Vue.component('StatusMsg', {
@@ -217,10 +218,12 @@
           }
         },{
           label: '手数',
+           type: 'number',
             prop: 'VolumeTotalOriginal'
         },{
           label: '报价',
           prop: 'LimitPrice',
+           type: 'number',
           render(item){
             return item.LimitPrice.toFixed(3);
           }
@@ -229,9 +232,16 @@
           prop: 'OrderStatus',
           component: 'Status',
           width: 80,
+          componentRender(item){
+            const msg =  parseStatus.find(({key})=> key === item.OrderStatus);
+            if(msg){
+              return msg.msg
+            }
+          }
         },{
            label: '成交均价',
             prop: 'price',
+            type: 'number',
             render(item){
               switch(item.OrderStatus){
                 case '5':
@@ -471,6 +481,30 @@
       
     },
     methods: {
+      exportroud(){
+        const {traderColumns, traderData} =  this.$refs.round
+        this.exportExcel('回合信息', traderData, traderColumns)
+      },
+      exportExcel(title ,data, row){
+        const excelData = data.map((item)=>{
+          const result = {};
+          row.forEach(({label,prop, render, component,componentRender, type}) => {
+            if(render){
+              result[label] = render(item)
+            }else if(component){
+              if(!componentRender) return;
+              result[label] = componentRender(item)
+            }else {
+              result[label] = item[prop]
+            }
+            if(type === 'number'){
+              result[label]  = parseFloat( result[label])
+            }
+          })
+          return result
+        })
+       ipcRenderer.send('export-excel', {title ,excelData});
+      },
       start(row) {
         if(this.locked){
           this.$alert('当前账号已锁定', '锁定' )
@@ -600,6 +634,8 @@
   }
   .label {
     margin: 10px 0;
+    display: flex;
+    align-items: center;
   }
   .confirm-info{
     height: 400px;

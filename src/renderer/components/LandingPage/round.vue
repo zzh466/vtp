@@ -47,6 +47,7 @@
                 {
                     label: '手数',
                     prop: 'Volume',
+                     type: 'number',
                     render(item){
             
                         const arr = [item.CloseVolume ,item.Volume];
@@ -61,6 +62,7 @@
                 {
                     label: '开仓均价',
                     prop: 'Price',
+                     type: 'number',
                     render(data){
                         return data.Price.toFixed(2)
                     }
@@ -68,6 +70,7 @@
                 {
                     label: '平仓均价',
                     prop: 'ClosePrice',
+                     type: 'number',
                     render(data){
                     
                         return data.ClosePrice.toFixed(2)
@@ -76,6 +79,7 @@
                 {
                      label: '盈亏点',
                     prop: 'range',
+                     type: 'number',
                     render(data){
 ;
                      
@@ -95,6 +99,7 @@
                 {
                      label: '手续费',
                     prop: 'commission',
+                     type: 'number',
                     render(data){
                         
                 
@@ -135,6 +140,7 @@
                 {
                      label: '持仓盈亏',
                     prop: 'optionProfit',
+                     type: 'number',
                     render(data){
                          const {  Price, Volume, CloseVolume, Direction, InstrumentID} = data;
                          let profit = 0
@@ -158,6 +164,7 @@
                 {
                      label: '平仓盈亏',
                     prop: 'closeProfit',
+                     type: 'number',
                     render(data){
                            const {  Price, CloseVolume, ClosePrice , InstrumentID, Direction} = data;
                          let profit = 0
@@ -179,6 +186,7 @@
                 {
                      label: '实际盈亏',
                     prop: 'true',
+                     type: 'number',
                     render(data){
                         return (data.closeProfit + data.optionProfit - data.commission).toFixed(2);
                     }

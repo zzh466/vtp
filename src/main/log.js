@@ -2,6 +2,7 @@ import log from 'electron-log';
 import path from 'path';
 import {ipcMain, app} from 'electron';
 const needLog =process.env.NODE_ENV !== 'development';
+// const needLog =true;
 let homeDir =  path.dirname(app.getPath('exe'))
 console.log('1111111111111111111', homeDir)
 const logName = `${new Date().toLocaleDateString().replace(/\//g, '')}.log`;

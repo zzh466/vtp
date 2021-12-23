@@ -411,6 +411,7 @@ class Chart {
     }
     renderPlaceOrder(){
         if(this.data.length===0) return;
+        
         const pricearray = this.placeOrder.reduce((a, b) => {
             const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus} =b;
             if(OrderStatus !== '3' && OrderStatus!=='1'){
