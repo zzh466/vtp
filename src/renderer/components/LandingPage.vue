@@ -575,14 +575,14 @@
         // console.log(tag)
         if(index > -1) {
           this.loading.splice(index, 1)
-          if(!this.loading.length){
+          if(!this.loading.length && !this.started){
             this.startVolume()
           }
         }
        
       },
       startVolume(){
-      
+        this.started = true;
         const {quotAddr } = this.userData;
         // const quotAddr = '192.168.0.18:18198'
         const _quotAddr = quotAddr.split(':')

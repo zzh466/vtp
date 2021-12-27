@@ -169,6 +169,7 @@ export default {
       })
  
       ipcRenderer.on('order-error', (_, message) => {
+        debugger
         if(message && message.ErrorID === 30) return;
         Notification({
         type: 'error',

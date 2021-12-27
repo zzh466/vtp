@@ -1,7 +1,9 @@
 
 var ctp = require('../../build/Release/ctp.node');
 var events = require('events');
-ctp.settings({ log: false });
+ctp.settings({ log: 
+false
+});
 
 import { errorLog, infoLog} from './log';
 // simnow hanzhe
@@ -274,7 +276,8 @@ class Trade {
         if(!arr.length) return Promise.resolve(false);
         return new Promise(resolve =>{
             let count = 0
-            arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID}) => {
+            let _combOffsetFlag = false;
+            arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID,combOffsetFlag }) => {
                 const cancelOrder = {
                     "RequestID": this.getKey('requestID'),
                     "BrokerID": this.m_BrokerId,
@@ -290,13 +293,16 @@ class Trade {
                     UserID: this.m_UserId,
                     InstrumentID
                 }
+                if(combOffsetFlag !=='0'){
+                    _combOffsetFlag = true
+                }
                 console.log(cancelOrder);
                 this.send('reqOrderAction',cancelOrder, function(field){
                     count++
                     console.log('reqOrderAction is callback');
                     console.log(field);
                     if(count === arr.length){
-                        resolve(count)
+                        resolve(_combOffsetFlag)
                     }
                     
                 })
