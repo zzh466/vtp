@@ -426,12 +426,12 @@ void WrapTrader::ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args)
 {
     Isolate *isolate = args.GetIsolate();
     Local<Context> context = isolate->GetCurrentContext();
-    std::string log = "wrap_trader ReqQryTradingAccount------>";
+    //std::string log = "wrap_trader ReqQryTradingAccount------>";
 
     if (args[0]->IsUndefined() || args[1]->IsUndefined())
     {
-        std::string _head = std::string(log);
-        logger_cout(_head.append(" Wrong arguments").c_str());
+        //std::string _head = std::string(log);
+        //logger_cout(_head.append(" Wrong arguments").c_str());
         isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
         return;
     }
@@ -441,8 +441,8 @@ void WrapTrader::ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args)
     {
         uuid = ++s_uuid;
         fun_rtncb_map[uuid].Reset(isolate, Local<Function>::Cast(args[2]));
-        std::string _head = std::string(log);
-        logger_cout(_head.append(" uuid is ").append(to_string(uuid)).c_str());
+        //std::string _head = std::string(log);
+        //logger_cout(_head.append(" uuid is ").append(to_string(uuid)).c_str());
     }
     Local<String> broker = args[0]->ToString(context).ToLocalChecked();
     Local<String> investorId = args[1]->ToString(context).ToLocalChecked();
@@ -453,7 +453,7 @@ void WrapTrader::ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args)
     memset(&req, 0, sizeof(req));
     strcpy(req.BrokerID, ((std::string)*brokerAscii).c_str());
     strcpy(req.InvestorID, ((std::string)*investorIdAscii).c_str());
-    logger_cout(log.append(" ").append((std::string)*brokerAscii).append("|").append((std::string)*investorIdAscii).c_str());
+    //logger_cout(log.append(" ").append((std::string)*brokerAscii).append("|").append((std::string)*investorIdAscii).c_str());
     obj->uvTrader->ReqQryTradingAccount(&req, FunRtnCallback, uuid);
     return;
 }
@@ -645,8 +645,7 @@ void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
     memset(req.BusinessUnit, 0, sizeof(req.BusinessUnit));
     req.UserForceClose = 0;
     req.IsSwapOrder = 0;
-    logger_cout(
-        log.append("brokerID:").append((std::string)*brokerId_).append("|").append("investorID:").append((std::string)*investorId_).append("|").append("instrumentID:").append((std::string)*instrumentId_).append("|").append("direction:").append((std::string)*direction_).append("|").append("comboffsetFlag:").append((std::string)*combOffsetFlag_).append("|").append("limitPrice:").append(to_string(limitPrice)).append("|").append("volumnTotalOriginal:").append(to_string(volumeTotalOriginal)).append("|").c_str());
+    //logger_cout(log.append("brokerID:").append((std::string)*brokerId_).append("|").append("investorID:").append((std::string)*investorId_).append("|").append("instrumentID:").append((std::string)*instrumentId_).append("|").append("direction:").append((std::string)*direction_).append("|").append("comboffsetFlag:").append((std::string)*combOffsetFlag_).append("|").append("limitPrice:").append(to_string(limitPrice)).append("|").append("volumnTotalOriginal:").append(to_string(volumeTotalOriginal)).append("|").c_str());
     obj->uvTrader->ReqOrderInsert(&req, FunRtnCallback, uuid);
     return;
 }
