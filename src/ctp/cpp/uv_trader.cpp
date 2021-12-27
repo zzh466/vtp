@@ -448,7 +448,7 @@ void uv_trader::_async(uv_work_t *work)
 {
 	LookupCtpApiBaton *baton = static_cast<LookupCtpApiBaton *>(work->data);
 	uv_trader *uv_trader_obj = static_cast<uv_trader *>(baton->uv_trader_obj);
-	// std::string log = "uv_trader _async---1--->";
+	std::string log = "uv_trader _async---1--->";
 	// logger_cout(log.append(to_string(baton->fun)).c_str());
 	switch (baton->fun)
 	{
