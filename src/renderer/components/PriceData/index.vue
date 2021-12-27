@@ -168,12 +168,14 @@ export default {
          })
       })
  
-      ipcRenderer.on('order-error', (_, message) => Notification({
+      ipcRenderer.on('order-error', (_, message) => {
+        if(message && message.ErrorID === 30) return;
+        Notification({
         type: 'error',
         message,
         duration: 1500,
         position: 'bottom-right',
-      }))
+      })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         
         let update = false;
@@ -191,13 +193,17 @@ export default {
         const title =getWinName(id, volume, type, closeType) + getHoldCondition(this.instrumet);
         ipcRenderer.send('change-title', {id, title});
       })
-   
+      let audio = new Audio()
+      audio.src = __static+ "/trade.wav";
       ipcRenderer.on('trade-order', (_, field) => {
         
         p.then(()=>{
            
            this.traded.push(field);
-       
+          if(this.startTrade){
+            audio.load();
+            audio.play();
+          }
           //  console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
           
         })
@@ -340,6 +346,7 @@ export default {
       const traderData= this.checkLock(direction, volumeTotalOriginal,combOffsetFlag);
       if(!traderData) return
       console.log({limitPrice, instrumentID, ...traderData})
+      this.startTrade = true;
       ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData})
     },
     

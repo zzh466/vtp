@@ -182,7 +182,7 @@
       },
       traderData(){
       
-        return this.positions.concat(this.traders).slice();
+        return this.positions.concat(this.traders);
       }
     },
     data(){
@@ -384,7 +384,7 @@
       });
   
        ipcRenderer.on('receive-position', (event, position) =>{
-        console.log(position.filter(a => a.InstrumentID==='IC2201'))
+        // console.log(position.filter(a => a.InstrumentID==='IC2201'))
         this.positions = position;
       });
        ipcRenderer.on('receive-trade', (event, trader) =>{

@@ -96,7 +96,8 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height}) => 
       title: title,
       webPreferences: {
         nodeIntegration: true,
-        contextIsolation: false
+        contextIsolation: false,
+        webSecurity: false
       }
     })
     childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}`)
@@ -238,15 +239,15 @@ ipcMain.on('trade-login', (event, args) => {
        win.sender.send('trade-order', field)
     }
     if(STARTTRADE){
-      const not =new Notification({
-        title: `${field.InstrumentID} ${Price}  成交 ${Volume}手`,
-        silent: false
-      })
-      not.show();
-      setTimeout(()=> {
-        not.close();
-      }, 2000)
-
+      // const not =new Notification({
+      //   title: `${field.InstrumentID} ${Price}  成交 ${Volume}手`,
+      //   silent: false
+      // })
+      // not.show();
+      // setTimeout(()=> {
+      //   not.close();
+      // }, 2000)
+      event.sender.send('receive-trade', tradeMap);
     }else{
       clearTimeout(TRADETIME)
       TRADETIME = setTimeout(() => {
@@ -259,7 +260,7 @@ ipcMain.on('trade-login', (event, args) => {
     }
    
    
-    event.sender.send('receive-trade', tradeMap);
+   
     
   })
   let ORDERTIME =  setTimeout(() => {
@@ -346,11 +347,7 @@ ipcMain.on('trade-login', (event, args) => {
       event.sender.send('receive-position', positionMap);
     }
   })
-  trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-    if(mainWindow){
-      event.sender.send('receive-account', field);
-    }
-  })
+  
   trade.emitterOn('instrument-finish', function (list) {
     event.sender.send('receive-instrument', list);
     event.sender.send('finish-loading', 'instrument')
@@ -359,6 +356,12 @@ ipcMain.on('trade-login', (event, args) => {
   trade.emitterOn('connect', function () {
     infoLog('行情已连接')
     tradeMap = [];
+    trade.tasks = [];
+    trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
+      if(mainWindow){
+        event.sender.send('receive-account', field);
+      }
+    })
     STARTTRADE =false;
     event.sender.send('receive-trade', tradeMap);
   })

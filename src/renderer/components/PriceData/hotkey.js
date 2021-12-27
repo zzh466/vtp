@@ -51,7 +51,7 @@ export default function generate(hotKey){
                             timer = setTimeout(()=>{
                                 order();
                                 timer = null;
-                            }, 20)
+                            }, 30 )
                         }else {
                             order()
                         }

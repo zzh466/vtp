@@ -2,7 +2,7 @@
 var ctp = require('../../build/Release/ctp.node');
 var events = require('events');
 ctp.settings({ log: false });
-import { resolve } from 'path';
+
 import { errorLog, infoLog} from './log';
 // simnow hanzhe
 

@@ -47,7 +47,7 @@
                 {
                     label: '手数',
                     prop: 'Volume',
-                     type: 'number',
+                   
                     render(item){
             
                         const arr = [item.CloseVolume ,item.Volume];
@@ -204,7 +204,7 @@
                  if(_volume === undefined){
                      _volume = Volume
                  }// 不能修改原数据
-                 const item =arr.slice().reverse().find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
+                 const item =arr.find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
                  if(item){
                      if( item.Direction!==Direction){
                          if(_volume + item.CloseVolume > item.Volume){
@@ -225,9 +225,9 @@
                         item.TradeTime = TradeTime;
                      }else{
                          if(TradeTime){
-                                arr.unshift({
+                                arr.push({
                                 InstrumentID,
-                                Volume: e._volume || Volume,
+                                Volume: _volume,
                                 Direction,
                                 Price,
                                 TradeDate: TradeDate,
@@ -238,7 +238,7 @@
                                 ExchangeID
                             })
                          }else {
-                             item.Volume = item.Volume + Volume; 
+                             item.Volume = item.Volume + _volume; 
                          }
                         
                          
@@ -247,9 +247,9 @@
                    
                 }else{
                    
-                    arr.unshift({
+                    arr.push({
                         InstrumentID,
-                        Volume:e._volume || Volume,
+                        Volume: _volume,
                         Direction,
                         Price,
                         TradeDate: TradeDate||OpenDate,
@@ -264,11 +264,12 @@
             }
     
             this.data.forEach(e => {
+                e._volume = undefined
                 findAnDmatch(e);
             });
             return arr.filter(a=> {
                 return a.TradeTime || a.Volume !== a.CloseVolume 
-            })
+            }).reverse()
         }
     }
   }
