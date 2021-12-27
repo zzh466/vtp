@@ -119,7 +119,6 @@ private:
 
   CThostFtdcTraderApi *m_pApi;
   int iRequestID;
-  uv_loop_t* uv_loop;
   uv_async_t async_t;
   static std::map<int, CbWrap *> cb_map;
 };

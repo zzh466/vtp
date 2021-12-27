@@ -27,8 +27,7 @@ std::map<int, CbWrap *> uv_trader::cb_map;
 uv_trader::uv_trader(void)
 {
 	iRequestID = 0;
-	uv_loop = uv_default_loop();
-	uv_async_init(uv_loop, &async_t, NULL);
+	uv_async_init(uv_default_loop(), &async_t, NULL);
 	logger_cout("uv_trader init");
 }
 
@@ -179,7 +178,7 @@ void uv_trader::OnFrontConnected()
 	CbRtnField *field = new CbRtnField();
 	field->eFlag = T_ON_CONNECT;
 	field->work.data = field;
-	uv_queue_work(uv_loop, &field->work, _on_async, _on_completed);
+	uv_queue_work(uv_default_loop(), &field->work, _on_async, _on_completed);
 }
 
 void uv_trader::OnFrontDisconnected(int nReason)
@@ -190,7 +189,7 @@ void uv_trader::OnFrontDisconnected(int nReason)
 	field->eFlag = T_ON_DISCONNECTED;
 	field->nReason = nReason;
 	field->work.data = field;
-	uv_queue_work(uv_loop, &field->work, _on_async, _on_completed);
+	uv_queue_work(uv_default_loop(), &field->work, _on_async, _on_completed);
 }
 
 void uv_trader::OnRspAuthenticate(CThostFtdcRspAuthenticateField *pRspAuthenticateField, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
@@ -199,7 +198,7 @@ void uv_trader::OnRspAuthenticate(CThostFtdcRspAuthenticateField *pRspAuthentica
 	CbRtnField *field = new CbRtnField();
 	field->eFlag = T_ON_RSPAUTHENTICATE;
 	field->work.data = field;
-	uv_queue_work(uv_loop, &field->work, _on_async, _on_completed);
+	uv_queue_work(uv_default_loop(), &field->work, _on_async, _on_completed);
 };
 
 void uv_trader::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
@@ -627,7 +626,7 @@ void uv_trader::invoke(void *field, int ret, void (*callback)(int, void *), int 
 	baton->iRequestID = iRequestID;
 	//std::string head = "uv_trader invoke------>uuid:";
 	//logger_cout(head.append(to_string(uuid)).append(",requestid:").append(to_string(baton->iRequestID)).c_str());
-	uv_queue_work(uv_loop, &baton->work, _async, _completed);
+	uv_queue_work(uv_default_loop(), &baton->work, _async, _completed);
 	//logger_cout("uv_trader invoke is finish");
 }
 
@@ -646,5 +645,5 @@ void uv_trader::on_invoke(int event_type, void *_stru, CThostFtdcRspInfoField *p
 	field->rspInfo = (void *)_pRspInfo;
 	field->nRequestID = nRequestID;
 	field->bIsLast = bIsLast;
-	uv_queue_work(uv_loop, &field->work, _on_async, _on_completed);
+	uv_queue_work(uv_default_loop(), &field->work, _on_async, _on_completed);
 }
