@@ -10,8 +10,8 @@ const VALUECOLOR = {
     ask1: '#a0dcb4',
     deficit: '#0000ff',
     profit: '#ff0000',
-    hold: '#00ff00'
-
+    hold: '#00ff00',
+    limit: '#EF2E2E'
 }
 
 const BUYBACKGROUND = '#322810'
@@ -411,6 +411,7 @@ class Chart {
     }
     renderPlaceOrder(){
         if(this.data.length===0) return;
+        
         const pricearray = this.placeOrder.reduce((a, b) => {
             const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus} =b;
             if(OrderStatus !== '3' && OrderStatus!=='1'){
@@ -437,11 +438,10 @@ class Chart {
         let _volume = [0, 0];
         pricearray.forEach(({price, volume, direction}) => {
             const index = this.getindex(price, true);
+            if(index < this.start || index > this.start + this.count)return;
             const  x = _x + (index-this.start) * stepwidth;
             const height = Chart.getHeight(range, volume, stepHeight); 
-            if(height < 0){
-                return
-            }
+           
             ctx.fillStyle = 'red';
             _volume[direction] = _volume[direction] + volume;
             ctx.fillRect(x,y,stepwidth -1,height);
@@ -526,6 +526,27 @@ class Chart {
         ctx.stroke();
         ctx.restore();
     }
+    renderLimited(low,high){
+        const lowindex = this.getindex(low, true);
+        const highindex = this.getindex(high, true);
+        const offset= X + 49.5;
+        const {start, ctx, count, stepwidth, height} = this;
+        ctx.save()
+        ctx.strokeStyle = VALUECOLOR.limit;
+        ctx.lineWidth = 2
+        function render(index){
+            if(start<index <start+count){
+                const _X = (index - start) * stepwidth;
+                ctx.beginPath();
+                ctx.moveTo(_X+offset, Y + 30);
+                ctx.lineTo(_X+offset,height - 10);
+                ctx.stroke();
+            }
+        };
+        render(lowindex);
+        render(highindex);
+        ctx.restore();
+    }
     render(arg){
         
         if(this.data.length === 0) {
@@ -538,7 +559,7 @@ class Chart {
         if(Math.abs(arg.OpenPrice) > 100000000 ){
             return
         }
-       this.args= arg
+        this.args= arg
         this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
         this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );
@@ -576,6 +597,7 @@ class Chart {
         this.renderBakcground();
         this.renderVolume();
         this.renderHighandLow()
+        this.renderLimited(arg.LowerLimitPrice,arg.UpperLimitPrice)
         this.renderCurrentPirce(arg.LastPrice);
         this.renderPlaceOrder();
         this.renderTradeOrder();

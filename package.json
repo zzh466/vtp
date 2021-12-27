@@ -1,6 +1,6 @@
 {
   "name": "vtp",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "author": "",
   "description": "trade",
   "license": null,
@@ -74,7 +74,8 @@
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0"
+    "vuex-electron": "^1.0.0",
+    "xlsx": "^0.17.4"
   },
   "devDependencies": {
     "ajv": "^6.5.0",

@@ -155,6 +155,7 @@ export default {
               arr.push(orders[key])
             }
           }
+          
           if(arr.length &&this.chart.data.length ){
              this.chart.placeOrder = arr;
             this.chart.renderBakcground();
@@ -166,6 +167,15 @@ export default {
          
          })
       })
+ 
+      ipcRenderer.on('order-error', (_, message) => {
+        if(message && message.ErrorID === 30) return;
+        Notification({
+        type: 'error',
+        message,
+        duration: 1500,
+        position: 'bottom-right',
+      })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         
         let update = false;
@@ -183,21 +193,27 @@ export default {
         const title =getWinName(id, volume, type, closeType) + getHoldCondition(this.instrumet);
         ipcRenderer.send('change-title', {id, title});
       })
-   
+      let audio = new Audio()
+      audio.src = __static+ "/trade.wav";
       ipcRenderer.on('trade-order', (_, field) => {
         
         p.then(()=>{
            
            this.traded.push(field);
-       
+          if(this.startTrade){
+            audio.load();
+            audio.play();
+          }
           //  console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
           
         })
       })
+    
       ipcRenderer.on('receive-broadcast', (_, data) => {
 
         if(data && this.broadcastOpenInterest && data.volume !== undefined){
           this.broadcast[data.direction]= parseInt(data.volume);
+         
           console.log(this.broadcast)
         }
       })
@@ -281,9 +297,11 @@ export default {
     move(e){
       const {x ,y} = e;
       
-      if(x > 104 && y > 54){
+      if(x > 104 && x < this.stepwidth * this.chart.count + 105 && y > 54){
+        const left = x - (x-105)%this.stepwidth;
+       
         this.showbar = true;
-        this.left = x - (x-105)%this.stepwidth;
+        this.left = left
       }else {
         this.showbar = false;
       }
@@ -322,14 +340,13 @@ export default {
        
       }
       if(volumeTotalOriginal <=0){
-        Notification({
-          message: '已有平仓单，请撤单后再下单'
-        })
-        return;
+        combOffsetFlag = '0';
+         volumeTotalOriginal = this.config.volume
       }
       const traderData= this.checkLock(direction, volumeTotalOriginal,combOffsetFlag);
       if(!traderData) return
       console.log({limitPrice, instrumentID, ...traderData})
+      this.startTrade = true;
       ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData})
     },
     
@@ -474,9 +491,7 @@ export default {
 .sell-orders {
   display: flex;
   flex-basis: 50%;
-  
-  
-  
+   width: 50%;
 }
 .buy-order {
   background-color: rgb(255, 130, 0);

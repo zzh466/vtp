@@ -1,5 +1,6 @@
 import {Menu,BrowserWindow, shell } from 'electron'
 import {baseURL} from '../renderer/utils/utils'
+import { logPath } from './log'
 const url = baseURL.split(':')[0]
 
 
@@ -21,6 +22,14 @@ export default function(checked){
             },
             type: 'checkbox',
             checked,
+          },
+          {
+            label: '日志',
+            click(){
+              
+              shell.showItemInFolder(logPath);
+            },
+
           }
         ]
       },{

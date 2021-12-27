@@ -3,6 +3,7 @@ function fixPirce(price, step){
     const times = Math.pow(10, step);
     return Math.round(price * times) / times;
 }
+let timer = null;
 export default function generate(hotKey){
      hotKey = hotKey.split(';').map(e => {
          return e.split(',')
@@ -38,13 +39,25 @@ export default function generate(hotKey){
                    
                     break;
                 case '1':
-                    ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id});
-                    vue.chart.holdVolume = [0, 0];
-                    //保证先撤单
-                    // setTimeout(()=>{
+                     //保证先撤单
+                    if(timer){
+                        clearTimeout(timer);
                         order();
-                    // },3)
-                   
+                        return;
+                    }
+                    ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id}).then((cancel)=>{
+                        vue.chart.holdVolume = [0, 0];
+                        if(cancel){
+                            timer = setTimeout(()=>{
+                                order();
+                                timer = null;
+                            }, 30 )
+                        }else {
+                            order()
+                        }
+                        
+                        
+                    });
                     break;
                 case '3':
                      const volume = haskey[5];
