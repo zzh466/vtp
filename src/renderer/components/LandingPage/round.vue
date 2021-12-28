@@ -51,7 +51,7 @@
                     render(item){
             
                         const arr = [item.CloseVolume ,item.Volume];
-                        return arr.join('/');
+                        return arr.join('/') ;
                     }
                 },
                  {
@@ -102,20 +102,24 @@
                      type: 'number',
                     render(data){
                         
-                
-                        const rate = _this.rates.find(e => data.InstrumentID.startsWith(e.InstrumentID))
-                        const info = _this.instrumentInfo.find(e => data.InstrumentID === e.id);
+                        
+                            
+                        const rate = _this.rates.find(e => !e.uncatch && (data.InstrumentID===e.InstrumentID || data.InstrumentID.startsWith(e.InstrumentID)))
+                        const info = _this.instrumentInfo.find(e => data.InstrumentID === e.InstrumentID );
                         if(!rate || !info){
                             data.commission = 0;
                             return 0
                         } 
+                        
                         const {OpenRatioByMoney, OpenRatioByVolume, CloseTodayRatioByMoney, CloseTodayRatioByVolume, CloseRatioByMoney, CloseRatioByVolume} = rate;
-                        const {VolumeMultiple} = info.field;
+                        const {VolumeMultiple} = info;
                         let commission  = (VolumeMultiple * OpenRatioByMoney * data.Price + OpenRatioByVolume )* data.Volume;
+                        
                         if(data.ClosePrice){
-                            if(data.closeType === '1'){
+                            if(data.closeType && data.ExchangeID!=='CFFEX'){
                                  commission = commission+ (VolumeMultiple * CloseTodayRatioByMoney * data.ClosePrice + CloseTodayRatioByVolume )* data.CloseVolume;
                             }else{
+                                
                                  commission = commission+  (VolumeMultiple * CloseRatioByMoney * data.ClosePrice + CloseRatioByVolume )* data.CloseVolume;
                             }
                         }
@@ -145,11 +149,11 @@
                          const {  Price, Volume, CloseVolume, Direction, InstrumentID} = data;
                          let profit = 0
                          if( Volume> CloseVolume){
-                              const info = _this.instrumentInfo.find(e => InstrumentID === e.id);
+                              const info = _this.instrumentInfo.find(e => InstrumentID === e.InstrumentID);
                              const volume  = Volume - CloseVolume;
                              
                              if(_this.price[InstrumentID] && info){
-                                 profit =(_this.price[InstrumentID][Direction] - Price) *volume * info.field.VolumeMultiple;
+                                 profit =(_this.price[InstrumentID][Direction] - Price) *volume * info.VolumeMultiple;
                                 
                              }
                               if(Direction==='1'){
@@ -169,9 +173,9 @@
                            const {  Price, CloseVolume, ClosePrice , InstrumentID, Direction} = data;
                          let profit = 0
                          if(CloseVolume ){
-                              const info = _this.instrumentInfo.find(e => InstrumentID === e.id);
+                              const info = _this.instrumentInfo.find(e => InstrumentID === e.InstrumentID);
                               if(info){
-                                   profit = (ClosePrice -Price) * CloseVolume* info.field.VolumeMultiple
+                                   profit = (ClosePrice -Price) * CloseVolume* info.VolumeMultiple
                               }
                             
                             if(Direction==='1'){
@@ -196,17 +200,26 @@
     },
     computed:{
         traderData(){
+            
             let arr = []
+          
             function findAnDmatch(e){
                 
-                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID} = e;
+                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID, CombOffsetFlag} = e;
+              
                  let _volume = e._volume;
                  if(_volume === undefined){
                      _volume = Volume
                  }// 不能修改原数据
                  const item =arr.find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
                  if(item){
+                     
                      if( item.Direction!==Direction){
+                         
+                         if(CombOffsetFlag !== '0' && !item.yesterDay){
+                              
+                             item.closeType = 1;
+                         }
                          if(_volume + item.CloseVolume > item.Volume){
                             const gap = item.Volume - item.CloseVolume;
                             item.ClosePrice = (gap * Price +  item.CloseVolume * item.ClosePrice) / item.Volume;
@@ -224,8 +237,11 @@
                         }
                         item.TradeTime = TradeTime;
                      }else{
+                         
+                        
                          if(TradeTime){
-                                arr.push({
+                         
+                            arr.push({
                                 InstrumentID,
                                 Volume: _volume,
                                 Direction,
@@ -234,10 +250,13 @@
                                 TradeTime,
                                 CloseVolume: 0,
                                 ClosePrice: 0,
+                                closeType: 0,
                                 OrderSysID,
-                                ExchangeID
-                            })
+                                ExchangeID,
+                                yesterDay: CombOffsetFlag !== '0'
+                            }) 
                          }else {
+                          
                              item.Volume = item.Volume + _volume; 
                          }
                         
@@ -246,6 +265,7 @@
                     
                    
                 }else{
+                    
                    
                     arr.push({
                         InstrumentID,
@@ -256,9 +276,10 @@
                         TradeTime,
                         CloseVolume: 0,
                         ClosePrice: 0,
-                        closeType: TradeTime && ExchangeID !== 'CFFEX'? '1': '0',
+                        closeType: 0,
                         OrderSysID,
-                        ExchangeID
+                        ExchangeID,
+                        yesterDay: !TradeTime || CombOffsetFlag !== '0'
                     })
                 }
             }

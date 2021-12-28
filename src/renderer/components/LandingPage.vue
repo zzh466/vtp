@@ -38,7 +38,7 @@
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
-              <el-button @click="forceClose">强平</el-button>
+              <!-- <el-button @click="forceClose">强平</el-button> -->
     <el-dialog
       title="结算单确认"
       :visible.sync="dialogVisible"
@@ -61,12 +61,13 @@
   import { ipcRenderer, dialog } from 'electron';
 
   import {getWinName, Direction, CombOffsetFlag, getyyyyMMdd, getHoldCondition, getClientSize} from '../utils/utils';
-  import {TraderSocket} from '../utils/request';
+  import request, {TraderSocket}  from '../utils/request';
   import Round from './LandingPage/round.vue';
   import Status from './LandingPage/Status.vue';
     import {Status as parseStatus} from '../utils/utils'
   import Vue from 'vue';
-  import request from "../utils/request"; 
+
+ 
   Vue.component('StatusMsg', {
     props: ['data'],
     template: `<el-popover
@@ -160,6 +161,7 @@
                return
              }
               const {CombOffsetFlag} = order;
+              trader.CombOffsetFlag = CombOffsetFlag;
             if(CombOffsetFlag === '0'){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
                 item[key] += Volume;
@@ -190,7 +192,7 @@
       return {
         dialogVisible: false,
         orders: {},
-        loading: ['order', 'trade', 'config', 'rate', 'instrument'],
+        loading: ['order', 'trade', 'config'],
         // loading: [],
         orderColumns: [{
           label: '合约',
@@ -377,7 +379,7 @@
           });
          
       })
-     
+      this.getCtpInfo();
       ipcRenderer.on('receive-order', (event, orders) =>{
         
         this.orders = orders;
@@ -386,6 +388,7 @@
        ipcRenderer.on('receive-position', (event, position) =>{
         // console.log(position.filter(a => a.InstrumentID==='IC2201'))
         this.positions = position;
+        this.finishLoading('position')
       });
        ipcRenderer.on('receive-trade', (event, trader) =>{
         if(Array.isArray(trader)){
@@ -411,7 +414,7 @@
       });
        ipcRenderer.on('receive-rate', (event, rates) =>{
         //  console.log(rates)
-          this.rates = rates;
+          this.rates = rates.sort((a,b)=> b.InstrumentID.length - a.InstrumentID.length);
       });
       ipcRenderer.on('finish-loading', (event, arg) =>{
         
@@ -423,7 +426,9 @@
         this.dialogVisible = true;
       })
        ipcRenderer.on('receive-price', (event, arg)=>{
+        //  console.log(this.instrumentsData)
          if(this.instrumentsData.some(({todayAsk, todayBuy, yesterdayBuy, yesterdayAsk})=> todayAsk+ yesterdayAsk!== yesterdayBuy+ todayBuy)){
+           
             this.price=arg;
          }
        
@@ -459,16 +464,16 @@
           }
          
         request({
-          url: '/user/funtureAccountInfo ',
+          url: '/user/funtureAccountInfo',
           method: 'PATCH',
           data
         })
       })
-      ipcRenderer.on('receive-instrument', (event, arg)=>{
-        // console.log(arg)
+      // ipcRenderer.on('receive-instrument', (event, arg)=>{
+      //   // console.log(arg)
 
-        this.instrumentInfo = arg
-      })
+      //   this.instrumentInfo = arg
+      // })
       setTimeout(()=>{
         if(this.loading.length !== 0){
           this.$alert('查询超时，不在交易时间或者网络连接有问题', '错误', {
@@ -512,8 +517,13 @@
         }
         const {instrumentID} = row;
         const {width, height} = getClientSize()
-        
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.account, width, height});
+        const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
+        if(!info){
+           this.$alert('改合约尚未订阅行情，请联系管理员订阅！');
+           return;
+        };
+        const {PriceTick, ExchangeID} = info;
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.account, width, height, tick: PriceTick, exchangeId: ExchangeID});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
@@ -524,30 +534,49 @@
       updateConfig(){
         return this.$store.dispatch('get-config').then(()=> this.finishLoading('config'));
       },
+      getCtpInfo(){
+          // if(this.loading.indexOf('rate') === -1)this.loading.push('rate');
+           if(this.loading.indexOf('instrument') === -1)this.loading.push('instrument');
+          request({
+            url: '/ctp/instrument',
+            
+          }).then(({instrumentList}) => {
+            this.instrumentInfo = instrumentList;
+            this.finishLoading('instrument')
+          })
+          // request({
+          //   url: '/ctp/instrumentCommissionRate',
+           
+          // }).then(({commissionRateList}) => {
+          //    this.rates = commissionRateList;
+          //   this.finishLoading('rate')
+          
+          // })
+      },
       closeALL(){
          const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume, InstrumentID}) => Volume> CloseVolume && this.instrumentsData.find(e => e.instrumentID ===InstrumentID));
           if(arr.length){
             ipcRenderer.invoke('async-cancel-order').then(()=>{    
                 ipcRenderer.send('info-log', `开始强平`)
-                arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
-                    const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-                    const instrumentinfo = this.instrumentInfo.find(e => e.id === InstrumentID)
-                    const { PriceTick } = instrumentinfo.field;
-                    let combOffsetFlag = '1';
-                    if(order) {
-                      combOffsetFlag = order.CombOffsetFlag
-                    }
-                    const direction= Direction==='0'? '1': '0'
-                    let over_price = this.$store.state.user.over_price * PriceTick;
-                    if(direction === '1'){
-                      over_price = -over_price;
-                    }
-            
-                    const limitPrice = this.price[InstrumentID][direction] + over_price;
-                    ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction}) 
-                })
-            
-            })
+                 arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
+                  const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+                  const instrumentinfo = this.instrumentInfo.find(e => e.InstrumentID === InstrumentID)
+                  const { PriceTick } = instrumentinfo;
+                  let combOffsetFlag = '1';
+                  if(order) {
+                    combOffsetFlag = order.CombOffsetFlag
+                  }
+                  const direction= Direction==='0'? '1': '0'
+                  let over_price = this.$store.state.user.over_price * PriceTick;
+                  if(direction === '1'){
+                    over_price = -over_price;
+                  }
+          
+                  const limitPrice = this.price[InstrumentID][direction] + over_price;
+                  ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction, ExchangeID}) 
+              
+              })
+             })
         }else{
           this.forcing = false;
           clearInterval(this.forcingCloseTime)
@@ -573,6 +602,7 @@
         
       },
       finishLoading(tag){
+        
         const index = this.loading.indexOf(tag);
         // console.log(tag)
         if(index > -1) {

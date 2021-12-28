@@ -33,7 +33,7 @@ export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
 export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '尚未触发', key: 'b'},{msg: '已触发', key: 'c'}]
 
 
-export const version = '211227';
+export const version = '211228';
 export function getyyyyMMdd(){
     var d = new Date();
     var curr_date = d.getDate();
@@ -45,7 +45,7 @@ export function getyyyyMMdd(){
     return yyyyMMdd;
 } 
 
-// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.118:8080/vtpmanagerapi': '139.196.41.155:8080/vtpmanagerapi'
+// export const baseURL = process.env.NODE_ENV === 'development'?'139.196.41.155:8099/vtpmanagerapi': '139.196.41.155:8080/vtpmanagerapi'
 export const baseURL = '139.196.41.155:8080/vtpmanagerapi'
 
 const key = 'user-client';

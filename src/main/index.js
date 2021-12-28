@@ -81,7 +81,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -100,7 +100,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height}) => 
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -205,6 +205,20 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
   
 })
 //交易相关
+function getUnCatchCommission(args){
+ 
+  const {InstrumentID: instrumentID } = args;
+  console.log(args, '1111111111')
+  const matched = instrumentID.match(/[a-zA-z]+/)[0];
+  const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
+  if(index === -1){
+    rateMap.push({InstrumentID: matched,
+      uncatch:true
+    })
+    trade.chainSend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
+  }
+  
+}
 ipcMain.on('trade-login', (event, args) => {
   if(trade){
     event.sender.send('receive-trade', tradeMap);
@@ -212,7 +226,7 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-order', orderMap);
     event.sender.send('receive-position', positionMap);
     event.sender.send('receive-rate', rateMap)
-    event.sender.send('receive-instrument', trade.getInstrumentList);
+    // event.sender.send('receive-instrument', trade.getInstrumentList);
     STARTTRADE = false;
     return
   }
@@ -232,6 +246,7 @@ ipcMain.on('trade-login', (event, args) => {
   }, 2000)
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade');
+    getUnCatchCommission(field)
     const { Volume, Price, InstrumentID} = field
     const win = findedopened(InstrumentID);
     tradeMap.push(field);
@@ -348,11 +363,11 @@ ipcMain.on('trade-login', (event, args) => {
     }
   })
   
-  trade.emitterOn('instrument-finish', function (list) {
-    event.sender.send('receive-instrument', list);
-    event.sender.send('finish-loading', 'instrument')
+  // trade.emitterOn('instrument-finish', function (list) {
+  //   event.sender.send('receive-instrument', list);
+  //   event.sender.send('finish-loading', 'instrument')
     
-  })
+  // })
   trade.emitterOn('connect', function () {
     infoLog('行情已连接')
     tradeMap = [];
@@ -365,23 +380,29 @@ ipcMain.on('trade-login', (event, args) => {
     STARTTRADE =false;
     event.sender.send('receive-trade', tradeMap);
   })
-  trade.login.then(()=>{
-    trade.chainSend('reqQryInstrument', '', function (field) {
-      // console.log('reqQryInstrument is callback');
-      // console.log(field);
-    })
-  })
+  // trade.login.then(()=>{
+  //   trade.chainSend('reqQryInstrument', '', function (field) {
+  //     // console.log('reqQryInstrument is callback');
+  //     // console.log(field);
+  //   })
+  // })
   
   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
     console.log('rqInstrumentCommissionRate is callback');
     console.log("rqInstrumentCommissionRate: isLast", isLast);
-    // console.log(field)
-    if(!rateMap.find(e => e.InstrumentID === field.InstrumentID)){
-      rateMap.push(field)
-    }
+    if(field.InstrumentID){
+      field.InstrumentID = field.InstrumentID.match(/[a-zA-z]+/)[0];
+      const index = rateMap.findIndex(e => e.InstrumentID === field.InstrumentID);
+      if(index === -1){
+        rateMap.push(field)
+      }else {
+        rateMap.splice(index, 1, field)
+      }
+    };
+   
     
     if(isLast){
-      event.sender.send('finish-loading', 'rate')
+    
       event.sender.send('receive-rate', rateMap);
       
     }
@@ -417,10 +438,10 @@ ipcMain.on('trade-login', (event, args) => {
   })
 })
 
-ipcMain.handle('get-pirceTick', async (event, arg) => {
-  const result = await trade.getInstrument(arg)
-  return result
-})
+// ipcMain.handle('get-pirceTick', async (event, arg) => {
+//   const result = await trade.getInstrument(arg)
+//   return result
+// })
 ipcMain.on('confirm-settlement', (event)=>{
   trade.chainOn('rSettlementInfoConfirm', 'reqSettlementInfoConfirm', function(){
     
@@ -428,12 +449,7 @@ ipcMain.on('confirm-settlement', (event)=>{
 })
 ipcMain.on('trade', (event, args) => {
   STARTTRADE= true;
-  const {instrumentID } = args;
-  const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
-  if(index === -1){
-    trade.chainSend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
-  }
-  
+ 
   infoLog(JSON.stringify(args));
   trade.trade(args);
 })
@@ -445,7 +461,7 @@ function findCancelorder(args, title){
  for(let key in orderMap){
    const item = orderMap[key];
    if(needCancel(item)){
-    //  console.log(item)
+     console.log(item, '123133')
      arr.push(item)
    }
  }
@@ -457,7 +473,7 @@ function findCancelorder(args, title){
 ipcMain.on('cancel-order', (event, args) => {
  const arr = findCancelorder(args, '撤单');
 
- console.log('cancel', +Date.now())
+ console.log('cancel',arr)
  trade.cancel(arr);
 })
 ipcMain.handle('async-cancel-order', (event, args)=>{

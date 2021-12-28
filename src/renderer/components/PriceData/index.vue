@@ -67,7 +67,7 @@ export default {
       const chartDom = document.getElementById('can');
       this.instrumet = {};
      
-      const {id,account} = this.$route.query;
+      const {id,account, tick, exchangeId} = this.$route.query;
        const config =JSON.parse(localStorage.getItem(`config-${account}`));
       console.log(config);
       const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
@@ -106,19 +106,20 @@ export default {
         }, 500)
       }
       
-      const p = new Promise(a => {
-         ipcRenderer.invoke('get-pirceTick', id).then(({PriceTick: tick, ExchangeID: exchangeId}) => {
-          console.log(tick, exchangeId)
-          this.exchangeId = exchangeId;
-          this.chart = new Chart(chartDom, this.width, this.height,tick, config);
-          this.loading =false;
-          a();
+      // const p = new Promise(a => {
+        //  ipcRenderer.invoke('get-pirceTick', id).then(({PriceTick: tick, ExchangeID: exchangeId}) => {
+        console.log(tick, exchangeId)
+        this.exchangeId = exchangeId;
+     
+        this.chart = new Chart(chartDom, this.width, this.height,tick, config);
          
-        })
-      })
+        //   a();
+         
+        // })
+      // })
      
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
-          p.then(()=>{
+          // p.then(()=>{
             
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
@@ -126,7 +127,7 @@ export default {
               this.chart.render(arg)
             }
             
-          })
+          // })
         })
       
       
@@ -148,7 +149,7 @@ export default {
       //   })
       // })
       ipcRenderer.on('total-order', (_, orders) => { 
-        p.then(()=>{
+        // p.then(()=>{
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
             if(orders[key].ExchangeInstID === id){
@@ -165,11 +166,10 @@ export default {
           }
          
          
-         })
+        //  })
       })
  
       ipcRenderer.on('order-error', (_, message) => {
-        debugger
         if(message && message.ErrorID === 30) return;
         Notification({
         type: 'error',
@@ -198,7 +198,7 @@ export default {
       audio.src = __static+ "/trade.wav";
       ipcRenderer.on('trade-order', (_, field) => {
         
-        p.then(()=>{
+        // p.then(()=>{
            
            this.traded.push(field);
           if(this.startTrade){
@@ -207,7 +207,7 @@ export default {
           }
           //  console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
           
-        })
+        // })
       })
     
       ipcRenderer.on('receive-broadcast', (_, data) => {
@@ -286,7 +286,7 @@ export default {
         closeType: '0'
       },
       traded: [],
-      loading: true,
+      loading: false,
       stepwidth: 10,
       broadcast: {
         '0': 0,
@@ -348,7 +348,8 @@ export default {
       if(!traderData) return
       console.log({limitPrice, instrumentID, ...traderData})
       this.startTrade = true;
-      ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData})
+      
+      ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId})
     },
     
     checkLock(direction, volumeTotalOriginal,combOffsetFlag){

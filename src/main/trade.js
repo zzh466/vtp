@@ -30,7 +30,7 @@ class Trade {
         const _trader = ctp.createTrader();
         this._trader = _trader;
         this.tasks =[];
-        this.getInstrumentList = instruments.map(id => ({id}));
+        // this.getInstrumentList = instruments.map(id => ({id}));
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
@@ -77,31 +77,31 @@ class Trade {
                 reject()
             });
             
-            _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
+            // _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
               
-                const {InstrumentID, PriceTick, ExchangeID} = field;
+            //     const {InstrumentID, PriceTick, ExchangeID} = field;
             
-                const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
-                if(item){
-                    const { resolve } = item;
-                    item.field = field;
-                    if(resolve){
+            //     const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
+            //     if(item){
+            //         const { resolve } = item;
+            //         item.field = field;
+            //         if(resolve){
                 
-                        resolve({PriceTick, ExchangeID});
-                    }
-                }else {
-                    this.getInstrumentList.push({
-                        id: InstrumentID,
-                        field
-                    })
-                }
+            //             resolve({PriceTick, ExchangeID});
+            //         }
+            //     }else {
+            //         this.getInstrumentList.push({
+            //             id: InstrumentID,
+            //             field
+            //         })
+            //     }
                 
-                if(isLast){
-                    this.next()
-                    this.emitter.emit('instrument-finish',  this.getInstrumentList)
-                }
+            //     if(isLast){
+            //         this.next()
+            //         this.emitter.emit('instrument-finish',  this.getInstrumentList)
+            //     }
                 
-            })
+            // })
             
             // _trader.on('rtnOrder',  (field) => {
             //     console.log('rtnOrder ---- receive' );
@@ -135,25 +135,25 @@ class Trade {
             
         });
     }
-    getInstrument(insId){
-        return new Promise(resolve => {
-            const item = this.getInstrumentList.find(({id}) => id===insId);
-            if( item.field.PriceTick) {
-                item.resolve = null;
-                const {PriceTick, ExchangeID} = item.field
-                resolve({PriceTick, ExchangeID});
-                return;
-            }else {
-                item.resolve = resolve
-            }
-            this.chainSend('reqQryInstrument', insId, function (field) {
-                // console.log('reqQryInstrument is callback');
-                // console.log(field);
-            })
+    // getInstrument(insId){
+    //     return new Promise(resolve => {
+    //         const item = this.getInstrumentList.find(({id}) => id===insId);
+    //         if( item.field.PriceTick) {
+    //             item.resolve = null;
+    //             const {PriceTick, ExchangeID} = item.field
+    //             resolve({PriceTick, ExchangeID});
+    //             return;
+    //         }else {
+    //             item.resolve = resolve
+    //         }
+    //         this.chainSend('reqQryInstrument', insId, function (field) {
+    //             // console.log('reqQryInstrument is callback');
+    //             // console.log(field);
+    //         })
             
            
-        })
-    }
+    //     })
+    // }
     send(event, ...args){
         this._trader[event](...args)
     }
@@ -230,9 +230,9 @@ class Trade {
         this[key]++;
         return value.toString();
     }
-    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag}){
+    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID}){
         // console.log(this.getInstrumentList, instrumentID)
-        const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
+        // const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
 
         var insertOrder = {
             "BrokerID": this.m_BrokerId,
@@ -258,7 +258,7 @@ class Trade {
             "RequestID": this.getKey('requestID'),
             //"UserForceClose": "",
             //"IsSwapOrder": "",
-            "ExchangeID": exchangeID,
+            "ExchangeID": ExchangeID,
             "InvestUnitID": "",
             "AccountID": "",
             "CurrencyID": "",
