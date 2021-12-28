@@ -38,7 +38,7 @@
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
-              <!-- <el-button @click="forceClose">强平</el-button> -->
+              <el-button @click="forceClose">强平</el-button>
     <el-dialog
       title="结算单确认"
       :visible.sync="dialogVisible"
@@ -525,49 +525,51 @@
         return this.$store.dispatch('get-config').then(()=> this.finishLoading('config'));
       },
       closeALL(){
-        ipcRenderer.invoke('async-cancel-order').then(()=>{
-           const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume}) => Volume> CloseVolume);
+         const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume, InstrumentID}) => Volume> CloseVolume && this.instrumentsData.find(e => e.instrumentID ===InstrumentID));
           if(arr.length){
-            ipcRenderer.send('info-log', `开始强平`)
-            arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
-                const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-                const instrumentinfo = this.instrumentInfo.find(e => e.id === InstrumentID)
-                const { PriceTick } = instrumentinfo.field;
-                let combOffsetFlag = '1';
-                if(order) {
-                  combOffsetFlag = order.CombOffsetFlag
-                }
-                const direction= Direction==='0'? '1': '0'
-                let over_price = this.$store.state.user.over_price * PriceTick;
-                if(direction === '1'){
-                  over_price = -over_price;
-                }
-        
-                const limitPrice = this.price[InstrumentID][direction] + over_price;
-                ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction}) 
+            ipcRenderer.invoke('async-cancel-order').then(()=>{    
+                ipcRenderer.send('info-log', `开始强平`)
+                arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
+                    const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+                    const instrumentinfo = this.instrumentInfo.find(e => e.id === InstrumentID)
+                    const { PriceTick } = instrumentinfo.field;
+                    let combOffsetFlag = '1';
+                    if(order) {
+                      combOffsetFlag = order.CombOffsetFlag
+                    }
+                    const direction= Direction==='0'? '1': '0'
+                    let over_price = this.$store.state.user.over_price * PriceTick;
+                    if(direction === '1'){
+                      over_price = -over_price;
+                    }
+            
+                    const limitPrice = this.price[InstrumentID][direction] + over_price;
+                    ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction}) 
+                })
+            
             })
-          }else{
-            this.forcing = false;
-            clearInterval(this.forcingCloseTime)
-          }
-        })
-      
+        }else{
+          this.forcing = false;
+          clearInterval(this.forcingCloseTime)
+        }
        
       },
       async forceClose(){
        
         this.forcing  = true;
         this.locked = true;
-        const force = await this.$store.dispatch('lock');
-        
-        if(force){
-          this.forcingCloseTime = setInterval(()=> {
-            this.closeALL();
-          }, 1000)
-        }else{
-           ipcRenderer.send('info-log', `非强平窗口`)
-          setTimeout(()=> this.forcing = false, 500 )
-        }
+        this.$store.dispatch('lock');
+        this.forcingCloseTime = setInterval(()=> {
+          this.closeALL();
+        }, 1000)
+        // if(force){
+        //   this.forcingCloseTime = setInterval(()=> {
+        //     this.closeALL();
+        //   }, 1000)
+        // }else{
+        //    ipcRenderer.send('info-log', `非强平窗口`)
+        //   setTimeout(()=> this.forcing = false, 500 )
+        // }
         
       },
       finishLoading(tag){
