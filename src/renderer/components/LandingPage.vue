@@ -64,7 +64,7 @@
   import request, {TraderSocket}  from '../utils/request';
   import Round from './LandingPage/round.vue';
   import Status from './LandingPage/Status.vue';
-    import {Status as parseStatus} from '../utils/utils'
+    import {Status as parseStatus, specialExchangeId} from '../utils/utils'
   import Vue from 'vue';
 
  
@@ -102,6 +102,9 @@
         
         return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
       },
+      openvolume_limit(){
+          return this.$store.state.user.openvolume_limit
+      },
       activeIns() {
          return this.$store.state.PriceData.activeIns
       },
@@ -124,6 +127,13 @@
       },
   
       instrumentsData(){
+        const openvolume_limit = this.openvolume_limit.split(';').map(e => {
+          const msg= e.split(':')
+          return {
+            instrumentID: msg[0],
+            limit : msg[1]
+          }
+        })
         const data = this.subscribelInstruments.map(e=>({
           instrumentID: e,
           yesterdayBuy: 0,
@@ -131,7 +141,8 @@
           todayBuy: 0,
           todayAsk:0,
           todayVolume: 0,
-          'todayCancel': 0
+          'todayCancel': 0,
+          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit 
         }))
         
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
@@ -336,6 +347,11 @@
           label: '今撤单',
           prop: 'todayCancel',
            width: 50,
+        },
+        {
+          label: '开仓限制',
+          prop: 'openvolume_limit',
+          width: 80
         }
         ],
         forcing: false
@@ -397,7 +413,7 @@
         }
         if(this.ws && this.traders.length){
           const {futureUserId} = this.userData
-         
+          console.log(trader[trader.length -1])
           let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime} = trader[trader.length -1];
           if(!TradeTime ){
             return
@@ -554,17 +570,23 @@
           // })
       },
       closeALL(){
+        
          const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume, InstrumentID}) => Volume> CloseVolume && this.instrumentsData.find(e => e.instrumentID ===InstrumentID));
           if(arr.length){
             ipcRenderer.invoke('async-cancel-order').then(()=>{    
                 ipcRenderer.send('info-log', `开始强平`)
-                 arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
+                arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
                   const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
                   const instrumentinfo = this.instrumentInfo.find(e => e.InstrumentID === InstrumentID)
                   const { PriceTick } = instrumentinfo;
-                  let combOffsetFlag = '1';
+                  let combOffsetFlag = specialExchangeId.includes(ExchangeID)? '3': '1';
+                 
                   if(order) {
-                    combOffsetFlag = order.CombOffsetFlag
+                    if(!this.forceCount || order.CombOffsetFlag !== '0'){
+                     
+                       combOffsetFlag = order.CombOffsetFlag
+                    }
+                   
                   }
                   const direction= Direction==='0'? '1': '0'
                   let over_price = this.$store.state.user.over_price * PriceTick;
@@ -572,11 +594,24 @@
                     over_price = -over_price;
                   }
           
-                  const limitPrice = this.price[InstrumentID][direction] + over_price;
-                  ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction, ExchangeID}) 
+                  let limitPrice = this.price[InstrumentID][direction] + over_price;
+                  if(limitPrice < this.price[InstrumentID][2]){
+                    limitPrice = this.price[InstrumentID][2]
+                  }
+                  if(limitPrice >this.price[InstrumentID][3]){
+                     limitPrice = this.price[InstrumentID][3]
+                  }
+                  if(this.forceCount) {
+                    setTimeout(()=> ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction, ExchangeID}) ,100)
+                  }else{
+                     ipcRenderer.send('trade', {limitPrice, instrumentID: InstrumentID, combOffsetFlag, volumeTotalOriginal: Volume- CloseVolume, direction, ExchangeID}) 
+                  }
+                 
               
               })
-             })
+              this.forceCount++
+          })
+           
         }else{
           this.forcing = false;
           clearInterval(this.forcingCloseTime)
@@ -588,6 +623,7 @@
         this.forcing  = true;
         this.locked = true;
         this.$store.dispatch('lock');
+        this.forceCount = 0
         this.forcingCloseTime = setInterval(()=> {
           this.closeALL();
         }, 1000)

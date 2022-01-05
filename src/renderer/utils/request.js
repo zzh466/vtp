@@ -41,6 +41,7 @@ export class TraderSocket{
         ws.onclose = ()=>{
             this.ready=false;
             ipcRenderer.send('err-log', `socket已关闭`)
+            
             this.ws = null;
             setTimeout( ()=>{
               
@@ -52,6 +53,7 @@ export class TraderSocket{
         }
     }
     send(msg){
+        console.log(msg)
         if(this.ready){
             this.ws.send(msg)
         }else {

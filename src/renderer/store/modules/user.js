@@ -4,7 +4,7 @@ const state = {
      
    },
    over_price: 0,
-    openvolume_limit: 0,
+    openvolume_limit: '',
     broadcast: true,
     config: {}
   }

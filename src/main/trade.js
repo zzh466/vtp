@@ -171,7 +171,7 @@ class Trade {
         this.login.then(()=>{
            
             const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
-            console.log(`${event} ---- register`, tasks);
+            // console.log(`${event} ---- register`, tasks);
             _trader.on(event, (requestId, isLast, field, info) =>{
                 if(isLast){
                     this.next()
@@ -183,13 +183,13 @@ class Trade {
          
             if(extend.length){
                 this.chainSend(func, m_BrokerId, m_InvestorId,...extend, function (field) {
-                    console.log(`${func} is callback`);
+                    // console.log(`${func} is callback`);
                     console.log(arguments);
                 })
             }else{
               
                 this.chainSend(func, m_BrokerId, m_InvestorId, function (field) {
-                    console.log(`${func} is callback`);
+                    // console.log(`${func} is callback`);
                     console.log(arguments);
                 })
             }

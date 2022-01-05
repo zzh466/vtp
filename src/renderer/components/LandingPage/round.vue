@@ -116,7 +116,7 @@
                         let commission  = (VolumeMultiple * OpenRatioByMoney * data.Price + OpenRatioByVolume )* data.Volume;
                         
                         if(data.ClosePrice){
-                            if(data.closeType && data.ExchangeID!=='CFFEX'){
+                            if(data.closeType ){
                                  commission = commission+ (VolumeMultiple * CloseTodayRatioByMoney * data.ClosePrice + CloseTodayRatioByVolume )* data.CloseVolume;
                             }else{
                                 
@@ -153,7 +153,11 @@
                              const volume  = Volume - CloseVolume;
                              
                              if(_this.price[InstrumentID] && info){
-                                 profit =(_this.price[InstrumentID][Direction] - Price) *volume * info.VolumeMultiple;
+                                 let currentPrice = _this.price[InstrumentID][Direction];
+                                 if(!currentPrice){
+                                     currentPrice = _this.price[InstrumentID][Direction + 2]
+                                 }
+                                 profit =(currentPrice - Price) *volume * info.VolumeMultiple;
                                 
                              }
                               if(Direction==='1'){
@@ -216,7 +220,7 @@
                      
                      if( item.Direction!==Direction){
                          
-                         if(CombOffsetFlag !== '0' && !item.yesterDay){
+                         if(CombOffsetFlag !== '0' && !item.yesterDay || (CombOffsetFlag === '0' && item.yesterDay)){
                               
                              item.closeType = 1;
                          }
@@ -240,7 +244,7 @@
                          
                         
                          if(TradeTime){
-                         
+                             
                             arr.push({
                                 InstrumentID,
                                 Volume: _volume,
@@ -256,7 +260,6 @@
                                 yesterDay: CombOffsetFlag !== '0'
                             }) 
                          }else {
-                          
                              item.Volume = item.Volume + _volume; 
                          }
                         
@@ -284,7 +287,7 @@
                 }
             }
     
-            this.data.forEach(e => {
+            this.data.filter(e => e.InstrumentID === 'IC2201').forEach(e => {
                 e._volume = undefined
                 findAnDmatch(e);
             });

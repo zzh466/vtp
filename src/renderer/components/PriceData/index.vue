@@ -162,7 +162,8 @@ export default {
             this.chart.renderBakcground();
             this.chart.renderVolume();  
             this.chart.renderPlaceOrder();
-            this.chart.renderHighandLow()
+            this.chart.renderHighandLow();
+            
           }
          
          
@@ -211,9 +212,9 @@ export default {
       })
     
       ipcRenderer.on('receive-broadcast', (_, data) => {
-
-        if(data && this.broadcastOpenInterest && data.volume !== undefined){
-          this.broadcast[data.direction]= parseInt(data.volume);
+        
+        if(data && this.broadcastOpenInterest){
+          this.broadcast= data
          
           console.log(this.broadcast)
         }
@@ -310,12 +311,12 @@ export default {
     mouseTrade(){
       if(!this.showbar || !this.chart.data.length) return;
       const index = (this.left - 105) / this.stepwidth;
-      let {buyIndex, askIndex, start} = this.chart;
+      let {buyIndex, askIndex, start, lowerLimitindex} = this.chart;
       buyIndex = buyIndex - start;
       askIndex = askIndex -start
       if(index >buyIndex  && index < askIndex) return;
       let direction = '1';
-      if(index <= buyIndex){
+      if(index <= buyIndex && index > lowerLimitindex){
         direction = '0'
       }
       const  limitPrice = +this.chart.data[index + start].price;
@@ -349,6 +350,12 @@ export default {
       console.log({limitPrice, instrumentID, ...traderData})
       this.startTrade = true;
       
+      if(limitPrice < this.chart.lowerLimitPrice){
+        limitPrice = this.chart.lowerLimitPrice;
+      }
+      if(limitPrice > this.chart.UpperLimitPrice){
+        limitPrice = this.chart.lowerLimitPrice;
+      }
       ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId})
     },
     

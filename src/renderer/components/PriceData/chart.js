@@ -53,6 +53,9 @@ class Chart {
     static getHeight(range, value, stepHeight){
         let start = 0;
         let before = 0;
+        if(value >  range[range.length - 1]){
+            return stepHeight * range.length + 30
+        }
         for(let i= 0; i < range.length; i++ ){
             if(value <= range[i]){
                 start = start + ((value-before) / (range[i]-before)) * stepHeight; 
@@ -65,6 +68,7 @@ class Chart {
         if(start){
             start = Math.floor(start) + 0.5
         }
+        
         return start ;
     }
      init(){
@@ -268,9 +272,9 @@ class Chart {
                 if((type === 'buy' && i > buyIndex) || (type ==='ask' && i < askIndex)){
                     continue;
                 }
-                if(i=== buyIndex){
+                if(i=== buyIndex && type === 'buy'){
                     ctx.fillStyle= VALUECOLOR['buy1']; 
-                }else if(i===askIndex){
+                }else if(i===askIndex && type === 'ask'){
                     ctx.fillStyle= VALUECOLOR['ask1']; 
                 }else{
                     ctx.fillStyle= VALUECOLOR[type]; 
@@ -336,6 +340,7 @@ class Chart {
     }
     getindex(price, pure){
         // console.log(price, pure);
+        if(!price) return this.start
         let index = Math.round((price - this.data[0].price) / this.step);
         if(pure){
             return index;
@@ -359,12 +364,20 @@ class Chart {
         const start = this.start;
         if(index < start + 5){
             offset = start - index;
-            this.start = start - 5
+            let min = offset;
+            if(min < 5){
+                min = 5
+            }
+            this.start = start - min
             rerender = true;
         }
         if(index > start + this.count - 5){
             offset = index - start- this.count;
-            this.start = start + 5;
+            let min = offset;
+            if(min < 5){
+                min = 5
+            }
+            this.start = start + min;
             rerender = true;
         }
         if(rerender){
@@ -525,17 +538,22 @@ class Chart {
         ctx.lineTo(HighX+offset,height - 10);
         ctx.stroke();
         ctx.restore();
+        this.renderLimited()
     }
-    renderLimited(low,high){
+    renderLimited(){
+        const low = this.lowerLimitPrice ;
+        const high =this.UpperLimitPrice ;
         const lowindex = this.getindex(low, true);
         const highindex = this.getindex(high, true);
+      
+        this.lowerLimitindex = lowindex;
         const offset= X + 49.5;
         const {start, ctx, count, stepwidth, height} = this;
         ctx.save()
         ctx.strokeStyle = VALUECOLOR.limit;
         ctx.lineWidth = 2
         function render(index){
-            if(start<index <start+count){
+            if(start<=index  && index <=start+count){
                 const _X = (index - start) * stepwidth;
                 ctx.beginPath();
                 ctx.moveTo(_X+offset, Y + 30);
@@ -563,8 +581,9 @@ class Chart {
         this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
         this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );
+        
         for(let i = 5; i>= 1; i--){
-            const buyPirce = arg[`BidPrice${i}`];
+            let buyPirce = arg[`BidPrice${i}`];
             let buyIndex = this.start;
             if(buyPirce){
                 buyIndex = this.getindex(buyPirce)
@@ -576,7 +595,7 @@ class Chart {
             }
           
             
-            const askPirce = arg[`AskPrice${i}`];
+            const askPirce = arg[`AskPrice${i}`] ;
             let askIndex = this.start + this.count;
             if(askPirce){
                 askIndex = this.getindex(askPirce)
@@ -592,12 +611,23 @@ class Chart {
                 
             }
         }
+        this.lowerLimitPrice = arg.LowerLimitPrice;
+        this.UpperLimitPrice = arg.UpperLimitPrice;
+        if(!arg.BidPrice1){
+          
+            this.buyIndex = this.getindex(arg.LowerLimitPrice)
+        }
+        if(!arg.AskPrice1){
+           
+            this.askIndex = this.getindex(arg.UpperLimitPrice)
+        }
         this.LowestPrice = arg.LowestPrice;
         this.HighestPrice = arg.HighestPrice;
         this.renderBakcground();
         this.renderVolume();
         this.renderHighandLow()
-        this.renderLimited(arg.LowerLimitPrice,arg.UpperLimitPrice)
+      
+       
         this.renderCurrentPirce(arg.LastPrice);
         this.renderPlaceOrder();
         this.renderTradeOrder();

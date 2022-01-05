@@ -13,6 +13,7 @@ import '../renderer/store';
 import {version } from '../renderer/utils/utils'
 import console from 'console';
 
+
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
@@ -131,7 +132,7 @@ ipcMain.on('change-title', (event, {id, title})=>{
   win.win.setTitle(title);
 })
 
-let tcp_client_list = [];
+
 app.on('ready', createWindow)
 
 app.on('window-all-closed', () => {
@@ -154,7 +155,7 @@ const rateMap =[];
 let InstrumetsData =[];
 const PriceData ={};
 const broadcast_Data = {};
-
+let tcp_client_list = [];
 function closeALLsubs(){
   COLOSEALL = true;
   tcp_client_list.forEach(e => e.destroy());
@@ -208,7 +209,7 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
 function getUnCatchCommission(args){
  
   const {InstrumentID: instrumentID } = args;
-  console.log(args, '1111111111')
+
   const matched = instrumentID.match(/[a-zA-z]+/)[0];
   const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
   if(index === -1){
@@ -243,16 +244,14 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-trade', tradeMap);
     event.sender.send('finish-loading', 'trade')
     TRADETIME= null;
-  }, 2000)
+  }, 3000)
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade');
     getUnCatchCommission(field)
     const { Volume, Price, InstrumentID} = field
     const win = findedopened(InstrumentID);
     tradeMap.push(field);
-    if(win  && win.sender){
-       win.sender.send('trade-order', field)
-    }
+   
     if(STARTTRADE){
       // const not =new Notification({
       //   title: `${field.InstrumentID} ${Price}  成交 ${Volume}手`,
@@ -262,6 +261,9 @@ ipcMain.on('trade-login', (event, args) => {
       // setTimeout(()=> {
       //   not.close();
       // }, 2000)
+      if(win  && win.sender){
+        win.sender.send('trade-order', field)
+      }
       event.sender.send('receive-trade', tradeMap);
     }else{
       clearTimeout(TRADETIME)
@@ -270,7 +272,7 @@ ipcMain.on('trade-login', (event, args) => {
         event.sender.send('receive-trade', tradeMap);
         event.sender.send('finish-loading', 'trade')
         TRADETIME= null;
-      }, 2000)
+      }, 3000)
       return
     }
    
@@ -280,7 +282,7 @@ ipcMain.on('trade-login', (event, args) => {
   })
   let ORDERTIME =  setTimeout(() => {
     event.sender.send('finish-loading', 'order')
-  }, 2000);
+  }, 3000);
   trade.on('rtnOrder', function(field){
     const key = getorderKey(field);
     const old = orderMap[key] || {}
@@ -368,17 +370,28 @@ ipcMain.on('trade-login', (event, args) => {
   //   event.sender.send('finish-loading', 'instrument')
     
   // })
+  let connectcount = 0;
+  trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
+    console.log(field)
+    if(mainWindow){
+      event.sender.send('receive-account', field);
+    }
+  })
   trade.emitterOn('connect', function () {
     infoLog('行情已连接')
     tradeMap = [];
     trade.tasks = [];
-    trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-      if(mainWindow){
-        event.sender.send('receive-account', field);
-      }
-    })
+    if(connectcount){
+   
+      trade.next();
+    }
+   
     STARTTRADE =false;
     event.sender.send('receive-trade', tradeMap);
+    connectcount++
+  })
+  trade.on('disconnected', (...rest) => {
+    console.log('disconnected', rest)
   })
   // trade.login.then(()=>{
   //   trade.chainSend('reqQryInstrument', '', function (field) {
@@ -412,6 +425,7 @@ ipcMain.on('trade-login', (event, args) => {
     if(skip && !STARTTRADE) return;
     const win = BrowserWindow.getFocusedWindow();
     const opened = opedwindow.find(e=> e.win === win)
+    
     if(win && opened){
       opened.sender.send('order-error',msg);
     }else {
@@ -524,7 +538,7 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      // console.log(trade.tasks)
+      console.log(trade.tasks)
       if( trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
@@ -533,7 +547,7 @@ ipcMain.on('start-receive', (event, args) =>{
       if(Object.getOwnPropertyNames(PriceData).length!==0){
         const data = {};
         for(let key in PriceData){
-          data[key] = [PriceData[key].BidPrice1, PriceData[key].AskPrice1 ]
+          data[key] = [PriceData[key].BidPrice1, PriceData[key].AskPrice1, PriceData[key].LowerLimitPrice ,PriceData[key].UpperLimitPrice]
         }
         event.sender.send('receive-price', data)
       }
@@ -653,7 +667,7 @@ ipcMain.on('start-receive', (event, args) =>{
     tcp_client.on('end',function(){
       console.log('data end!');
     })
-    tcp_client.setTimeout( 3 * 60 * 1000);
+    tcp_client.setTimeout( 3*60 * 1000);
     tcp_client.on('timeout',function(){
       
         const index = tcp_client_list.indexOf(tcp_client);
@@ -666,6 +680,7 @@ ipcMain.on('start-receive', (event, args) =>{
         console.log('timeout');
     })
     tcp_client.on('close',function(hadError ){
+      console.log('1231231')
       if(hadError && mainWindow && !COLOSEALL){
         
         const index = tcp_client_list.indexOf(tcp_client);
@@ -673,13 +688,15 @@ ipcMain.on('start-receive', (event, args) =>{
           tcp_client_list.splice(index, 1);
         }
         tcp_client = new net.Socket();
-        connect();
+        setTimeout(()=> connect(), 1000)
+      
       }
       infoLog('data close', hadError);
     })
   
     tcp_client.on('error', function (e) {
-      console.log('tcp_client error!', e);
+      // console.log('3333333333333')
+      // console.log('tcp_client error!', e);
       event.sender.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`});
       errorLog(`行情服务${host}:${port} 链接错误:${JSON.stringify(e)}`)
       // const index = tcp_client_list.indexOf(tcp_client);
@@ -713,10 +730,13 @@ ipcMain.on('broadcast-openinterest', function(_, arg){
   // console.log(arg);
   const instrument = arg.split(':');
   const win = findedopened(instrument[0]);
-  const data =  {
-    direction: instrument[1],
-    volume: instrument[2]
+  let data = {}
+  data[instrument[1]] = parseInt(instrument[2]);
+  
+  if(broadcast_Data[instrument[0]]){
+    data = Object.assign(broadcast_Data[instrument[0]], data)
   }
+  
   broadcast_Data[instrument[0]] = data;
   if(win && win.sender){
     win.sender.send('receive-broadcast',data)
