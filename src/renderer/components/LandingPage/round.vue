@@ -287,7 +287,7 @@
                 }
             }
     
-            this.data.filter(e => e.InstrumentID === 'IC2201').forEach(e => {
+            this.data.forEach(e => {
                 e._volume = undefined
                 findAnDmatch(e);
             });
