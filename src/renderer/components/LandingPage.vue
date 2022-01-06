@@ -38,7 +38,7 @@
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
-              <el-button @click="forceClose">强平</el-button>
+              <!-- <el-button @click="forceClose">强平</el-button> -->
     <el-dialog
       title="结算单确认"
       :visible.sync="dialogVisible"
