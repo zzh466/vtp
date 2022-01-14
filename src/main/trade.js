@@ -22,7 +22,7 @@ class Trade {
         m_CurrencyId = "CNY",
         m_AppId = "simnow_client_test",
         m_AuthCode = "0000000000000000",
-        instruments
+        // instruments
     }){
         this.m_BrokerId =m_BrokerId;
         this.m_UserId = m_UserId;
@@ -34,7 +34,7 @@ class Trade {
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
-        this.instruments = instruments;
+        // this.instruments = instruments;
         this.login = new Promise((resolve, reject) => {
             _trader.on("connect",  (result)=> {
                 

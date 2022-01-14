@@ -259,6 +259,7 @@ class Chart {
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
         const stepwidth = this.stepwidth;
+        
         for(let i = this.start; (i-this.start)  <= this.count; i ++ ){
             if(!this.data[i]){
                 console.log(i, JSON.parse(JSON.stringify(this.data)))

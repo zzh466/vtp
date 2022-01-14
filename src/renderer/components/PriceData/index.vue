@@ -64,12 +64,16 @@ export default {
     }
   },
   mounted(){
+      
       const chartDom = document.getElementById('can');
       this.instrumet = {};
      
-      const {id,account, tick, exchangeId} = this.$route.query;
-       const config =JSON.parse(localStorage.getItem(`config-${account}`));
-      console.log(config);
+      const {id,account, tick, exchangeId,exchangeNo} = this.$route.query;
+       const configs =JSON.parse(localStorage.getItem(`config-${account}`));
+       const config = configs.find(e => e.exchangeNo === +exchangeNo);
+       
+      console.log(configs, this.$route.query);
+      if(!config) return;
       const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
       this.config.type = sysCloseTStrategy.toString() ;
       this.config.closeType=sysCloseType.toString() ;

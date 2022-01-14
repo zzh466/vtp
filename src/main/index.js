@@ -82,7 +82,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, exchangeNo}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -101,7 +101,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&exchangeNo=${exchangeNo}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -372,7 +372,7 @@ ipcMain.on('trade-login', (event, args) => {
   // })
   let connectcount = 0;
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-    console.log(field)
+    // console.log(field)
     if(mainWindow){
       event.sender.send('receive-account', field);
     }
@@ -538,7 +538,7 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      console.log(trade.tasks)
+      // console.log(trade.tasks)
       if( trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           

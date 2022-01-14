@@ -11,8 +11,10 @@ const state = {
   
   const mutations = {
     'setstate'(state, {key, data}) {
-
-       state[key]  = data;
+        if(data ){
+          state[key]  = data;
+        }
+      
     },
 
     'lock-user'(state){
@@ -32,13 +34,12 @@ const state = {
         url: 'property/info/vtp_client_forced_liquidation_over_price',
         method: 'GET'
       }), request({
-        url: 'property/info/vtp_client_broadcast_openinterest',
+        url: 'property/info/',
         method: 'GET'
       }), request({
         url: 'property/info/vtp_client_openvolume_limit',
         method: 'GET'
       })]);
-      localStorage.setItem(`config-${state.userData.account}`, JSON.stringify(config_1));
       commit('setstate', {
         key: 'over_price',
         data: parseInt(over_price.propertyValue)

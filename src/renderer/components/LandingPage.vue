@@ -34,11 +34,13 @@
     </main>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
       <div class="label">订阅合约:</div>
-          <Table height='300' @row-dblclick='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
+      <div style="display: flex; flex">
+          <Table v-for='instrument in subscribelInstruments' :key ='instrument.exchangeNo'  height='300' @row-dblclick='start' :tableData='instrumentsData | changeNo(instrument.instruments)' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
               <!-- <el-button @click="forceClose">强平</el-button> -->
+      </div>
     <el-dialog
       title="结算单确认"
       :visible.sync="dialogVisible"
@@ -56,7 +58,7 @@
     </el-dialog>
   </div>
 </template>
-
+ 
 <script>
   import { ipcRenderer, dialog } from 'electron';
 
@@ -94,13 +96,22 @@
         }
       }
     },
+    filters: {
+      changeNo(instruments, _instruments){
+        
+        return instruments.filter(e=> _instruments.includes(e.instrumentID));
+      }
+    },
     computed: {
       userData() {
          return this.$store.state.user.userData
       },
       subscribelInstruments (){
         
-        return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
+        return this.userData.quotVOList.map(e=> ({
+          instruments: e.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, '')),
+          exchangeNo: e.exchangeNo
+        }))
       },
       openvolume_limit(){
           return this.$store.state.user.openvolume_limit
@@ -134,7 +145,7 @@
             limit : msg[1]
           }
         })
-        const data = this.subscribelInstruments.map(e=>({
+        const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments), []).map(e=>({
           instrumentID: e,
           yesterdayBuy: 0,
           yesterdayAsk: 0,
@@ -142,7 +153,8 @@
           todayAsk:0,
           todayVolume: 0,
           'todayCancel': 0,
-          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit 
+          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
+           
         }))
         
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
@@ -155,7 +167,7 @@
         
           return  e.VolumeTraded
         })
-        // console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
+        // console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))  
         this.traderData.forEach(trader => {
            const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
            const item = data.find(e => e.instrumentID === InstrumentID)
@@ -204,7 +216,7 @@
         dialogVisible: false,
         orders: {},
         loading: ['order', 'trade', 'config'],
-        // loading: [],
+        loading: [],
         orderColumns: [{
           label: '合约',
           prop: 'InstrumentID',
@@ -359,11 +371,12 @@
     },
     mounted(){
       
-      this.updateConfig().then(()=>{
+      // this.updateConfig().then(()=>{
         
         const userData = this.userData;
-        const broadcast = this.$store.state.user.broadcast;
-        if(broadcast && !this.ws){
+        localStorage.setItem(`config-${userData.id}`, JSON.stringify(userData.instrumentConfigVOList));
+
+        if(this.ws){
           this.ws = new TraderSocket();
           this.ws.onmessage((e)=>{
             console.log(e.data)
@@ -380,7 +393,8 @@
           futureUserPwd:m_PassWord,
           appId: m_AppId,
           futureUserId:m_AccountId
-        } = userData;
+        } = userData.futureAccountVOList[0];
+
         
          ipcRenderer.send('trade-login', {
            ctp1_TradeAddress,
@@ -391,10 +405,10 @@
             m_PassWord,
             m_AppId,
             m_AccountId,
-           instruments: this.subscribelInstruments
+           
           });
          
-      })
+     
       this.getCtpInfo();
       ipcRenderer.on('receive-order', (event, orders) =>{
         
@@ -465,7 +479,7 @@
         const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
         const staticBalance = arg.PreBalance + arg.Mortgage + arg.PreFundMortgageIn + arg.FundMortgageIn + arg.FundMortgageOut + arg.FundMortgageAvailable - arg.PreFundMortgageOut - arg.PreCredit - arg.PreMortgage;
         const data ={
-            date: getyyyyMMdd(),
+           
             commission: arg.Commission,
             realProfit,
             margin: arg.CurrMargin,
@@ -476,11 +490,11 @@
             openVolume: this.orderData.length,
             staticBalance,
             positionProfit: arg.PositionProfit,
-            userId: this.userData.account
+            id: this.userData.futureAccountVOList[0].id
           }
          
         request({
-          url: '/user/funtureAccountInfo',
+          url: '/future/futureAccountTradingInfo',
           method: 'PATCH',
           data
         })
@@ -538,8 +552,10 @@
            this.$alert('改合约尚未订阅行情，请联系管理员订阅！');
            return;
         };
+
+        const exchangeNo = this.subscribelInstruments.find(e => e.instruments.includes(instrumentID)).exchangeNo
         const {PriceTick, ExchangeID} = info;
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.account, width, height, tick: PriceTick, exchangeId: ExchangeID});
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, exchangeNo});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
@@ -651,10 +667,14 @@
       },
       startVolume(){
         this.started = true;
-        const {quotAddr } = this.userData;
+        const {quotVOList } = this.userData;
         // const quotAddr = '192.168.0.18:18198'
-        const _quotAddr = quotAddr.split(':')
-        ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: this.subscribelInstruments,   iCmdID: 101});
+        quotVOList.forEach((e,index) => {
+           const _quotAddr = e.quotAddr.split(':');
+             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: this.subscribelInstruments[index].instruments,   iCmdID: 101});
+        })
+       
+       
     },
       cancel(){
         this.dialogVisible = false;

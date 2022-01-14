@@ -8,6 +8,7 @@ axios.interceptors.response.use(function(config){
     if(config.headers['set-cookie']&& config.headers['set-cookie'].length){
         cookie= config.headers['set-cookie']
     }
+    console.log(config)
     return config
 })
 axios.interceptors.request.use(function(config){

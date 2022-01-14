@@ -27,8 +27,8 @@
       // }
       return {
         form: {
-          userNm: '',
-          userPwd: ''
+          userNm: 'testUserAccount',
+          userPwd: '20000000'
         },
         rules: {
           userNm: [
