@@ -185,9 +185,12 @@ class Chart {
         if(buyIndex < 0) {
             buyIndex = 0;
         } 
+        
         let askIndex = this.askIndex - start;
-        if(askIndex  > this.count) {
-            buyIndex = this.count;
+      
+        
+        if(askIndex  > this.count || askIndex === 0) {
+            askIndex = this.count ;
         } 
         if(buyIndex > this.count || askIndex < 0){
             ipcRenderer.send('error-log', JSON.stringify(this.args));
@@ -340,6 +343,9 @@ class Chart {
     }
     getindex(price, pure){
         // console.log(price, pure);
+        if(Math.abs(price) >= 10000000){
+           return 0
+        }
         if(!price) return this.start
         let index = Math.round((price - this.data[0].price) / this.step);
         if(pure){
@@ -585,24 +591,26 @@ class Chart {
         for(let i = 5; i>= 1; i--){
             let buyPirce = arg[`BidPrice${i}`];
             let buyIndex = this.start;
+            const flag = i > 3;
             if(buyPirce){
-                buyIndex = this.getindex(buyPirce)
+                buyIndex = this.getindex(buyPirce, flag)
                 const buyData = this.data[buyIndex];
-                buyData.volum = arg[`BidVolume${i}`];
-                buyData.type = 'buy';
-            
-               
+                if(buyData){
+                    buyData.volum = arg[`BidVolume${i}`];
+                    buyData.type = 'buy';
+                }                                        
             }
           
             
             const askPirce = arg[`AskPrice${i}`] ;
             let askIndex = this.start + this.count;
             if(askPirce){
-                askIndex = this.getindex(askPirce)
+                askIndex = this.getindex(askPirce, flag)
                 const askData = this.data[askIndex];
-                askData.volum = arg[`AskVolume${i}`];
-                askData.type = 'ask';
-               
+                if(askData){
+                    askData.volum = arg[`AskVolume${i}`];
+                    askData.type = 'ask';
+                }                              
             }
            
             if(i === 1) {

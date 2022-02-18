@@ -17,7 +17,7 @@
         
          <div>
            <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button></div>
-          <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo=instrumentInfo></Round>
+          <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
         </div>
          
       </div>
@@ -38,7 +38,8 @@
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
-              <!-- <el-button @click="forceClose">强平</el-button> -->
+              <!-- <el-button @click="reset">刷新回合信息和下单信息</el-button> -->
+               <!-- <el-button @click="forceClose">强平</el-button> -->
     <el-dialog
       title="结算单确认"
       :visible.sync="dialogVisible"
@@ -87,13 +88,13 @@
   export default {
     name: 'landing-page',
     components: {  Round },
-    watch:{
-      'userData.locked'(val, old){
-        if(val){
-          this.stop()
-        }
-      }
-    },
+    // watch:{
+    //   'userData.locked'(val, old){
+    //     if(val){
+    //       this.stop()
+    //     }
+    //   }
+    // },
     computed: {
       userData() {
          return this.$store.state.user.userData
@@ -158,6 +159,16 @@
         // console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
         this.traderData.forEach(trader => {
            const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
+           let CombOffsetFlag;
+           if(TradeTime){
+              const order = orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+            if(order) {
+              CombOffsetFlag = order.CombOffsetFlag;
+              trader.CombOffsetFlag = CombOffsetFlag;
+            }
+           }
+           
+           
            const item = data.find(e => e.instrumentID === InstrumentID)
            if(!item)return;
            if(!TradeTime){
@@ -166,13 +177,7 @@
               item[key] += Volume
            }else {
             
-             const order = orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-             if(!order) {
-               
-               return
-             }
-              const {CombOffsetFlag} = order;
-              trader.CombOffsetFlag = CombOffsetFlag;
+           
             if(CombOffsetFlag === '0'){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
                 item[key] += Volume;
@@ -357,11 +362,11 @@
         forcing: false
       }
     },
-    mounted(){
+    created(){
       
       this.updateConfig().then(()=>{
         
-        const userData = this.userData;
+      
         const broadcast = this.$store.state.user.broadcast;
         if(broadcast && !this.ws){
           this.ws = new TraderSocket();
@@ -370,29 +375,7 @@
             ipcRenderer.send('broadcast-openinterest', e.data);
           })
         }
-        const {
-          tradeAddr:ctp1_TradeAddress,
-        
-          brokerId: m_BrokerId,
-          authCode: m_AuthCode,
-          futureUserId: m_InvestorId,
-          futureUserId: m_UserId,
-          futureUserPwd:m_PassWord,
-          appId: m_AppId,
-          futureUserId:m_AccountId
-        } = userData;
-        
-         ipcRenderer.send('trade-login', {
-           ctp1_TradeAddress,
-            m_BrokerId,
-            m_AuthCode,
-            m_InvestorId,
-            m_UserId,
-            m_PassWord,
-            m_AppId,
-            m_AccountId,
-           instruments: this.subscribelInstruments
-          });
+        this.login()
          
       })
       this.getCtpInfo();
@@ -411,12 +394,17 @@
           
           this.traders = trader 
         }
+        
         if(this.ws && this.traders.length){
           const {futureUserId} = this.userData
-          console.log(trader[trader.length -1])
-          let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime} = trader[trader.length -1];
+        
+          let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime, TradingDay} = trader[trader.length -1];
           if(!TradeTime ){
             return
+          }else {
+            
+            const time = +new Date(`${(new Date()).toDateString()} ${TradeTime}`);
+            if(Math.abs(time - new Date()) > 1000 * 30 *60 )return;
           }
         
           if(Direction === '1'){
@@ -429,8 +417,9 @@
         
       });
        ipcRenderer.on('receive-rate', (event, rates) =>{
-        //  console.log(rates)
+        
           this.rates = rates.sort((a,b)=> b.InstrumentID.length - a.InstrumentID.length);
+           console.log(this.rates.map(a => a.InstrumentID))
       });
       ipcRenderer.on('finish-loading', (event, arg) =>{
         
@@ -451,15 +440,19 @@
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
          this.account=arg
-         if(!this.locked && this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
-           if(!this.forceCloseTime){
-             this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
-           }
-           
-         }else{
-           clearTimeout(this.forceCloseTime)
-           this.forceCloseTime = null;
+         if(!this.locked){
+            if( this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
+              if(!this.forceCloseTime){
+                this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+              }
+              
+            }else{
+              clearTimeout(this.forceCloseTime)
+            
+              this.forceCloseTime = null;
+            }
          }
+        
         
      
         const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
@@ -524,6 +517,7 @@
           })
           return result
         })
+        title = this.userData.account + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
       start(row) {
@@ -539,12 +533,18 @@
            return;
         };
         const {PriceTick, ExchangeID} = info;
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.account, width, height, tick: PriceTick, exchangeId: ExchangeID});
+        //给王曼妮做的hardcode 后期从配置里面取
+        let checked  = true;
+        if(this.userData.account.includes('wmn')){
+          checked = false;
+        }
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.account, width, height, tick: PriceTick, exchangeId: ExchangeID, checked});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
         const account = this.account;
-        ipcRenderer.send('stop-subscrible',`触发锁定，盈亏金额${account.CloseProfit + account.PositionProfit - account.Commission}`);
+        ipcRenderer.send('close-all-sub');
+         ipcRenderer.send('error-log', `触发锁定，盈亏金额${account.CloseProfit + account.PositionProfit - account.Commission}`)
         // this.$store.dispatch('updateIns', '')
       }, 
       updateConfig(){
@@ -574,7 +574,7 @@
          const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume, InstrumentID}) => Volume> CloseVolume && this.instrumentsData.find(e => e.instrumentID ===InstrumentID));
           if(arr.length){
             ipcRenderer.invoke('async-cancel-order').then(()=>{    
-                ipcRenderer.send('info-log', `开始强平`)
+                ipcRenderer.send('info-log', `${this.userData.account}开始强平`)
                 arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
                   const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
                   const instrumentinfo = this.instrumentInfo.find(e => e.InstrumentID === InstrumentID)
@@ -613,7 +613,9 @@
           })
            
         }else{
+           ipcRenderer.send('info-log', `${this.userData.account}结束强平`)
           this.forcing = false;
+          ipcRenderer.send('stop-subscrible')
           clearInterval(this.forcingCloseTime)
         }
        
@@ -623,10 +625,12 @@
         this.forcing  = true;
         this.locked = true;
         this.$store.dispatch('lock');
+        this.stop();
         this.forceCount = 0
+        clearInterval(this.forcingCloseTime)
         this.forcingCloseTime = setInterval(()=> {
           this.closeALL();
-        }, 1000)
+        }, 1300)
         // if(force){
         //   this.forcingCloseTime = setInterval(()=> {
         //     this.closeALL();
@@ -665,7 +669,39 @@
          ipcRenderer.send('confirm-settlement');
         
       },
+      reset(){
       
+        this.loading.push('order');
+        this.loading.push('trade');
+        this.login();
+      },
+      login(){
+        
+        const userData = this.userData;
+        const {
+          tradeAddr:ctp1_TradeAddress,
+        
+          brokerId: m_BrokerId,
+          authCode: m_AuthCode,
+          futureUserId: m_InvestorId,
+          futureUserId: m_UserId,
+          futureUserPwd:m_PassWord,
+          appId: m_AppId,
+          futureUserId:m_AccountId
+        } = userData;
+        
+         ipcRenderer.send('trade-login', {
+           ctp1_TradeAddress,
+            m_BrokerId,
+            m_AuthCode,
+            m_InvestorId,
+            m_UserId,
+            m_PassWord,
+            m_AppId,
+            m_AccountId,
+           instruments: this.subscribelInstruments
+          });
+      }
     }
   }
 </script>

@@ -121,6 +121,7 @@ export default {
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
             
+            console.log(arg)
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               this.arg = arg;
@@ -316,7 +317,7 @@ export default {
       askIndex = askIndex -start
       if(index >buyIndex  && index < askIndex) return;
       let direction = '1';
-      if(index <= buyIndex && index > lowerLimitindex){
+      if(index <= buyIndex && index > lowerLimitindex- start){
         direction = '0'
       }
       const  limitPrice = +this.chart.data[index + start].price;
@@ -354,9 +355,16 @@ export default {
         limitPrice = this.chart.lowerLimitPrice;
       }
       if(limitPrice > this.chart.UpperLimitPrice){
-        limitPrice = this.chart.lowerLimitPrice;
+        limitPrice = this.chart.lowerLimitPrice; 
       }
-      ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId})
+      if(Array.isArray(traderData.volumeTotalOriginal)){
+         ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId})
+        ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal: traderData.volumeTotalOriginal[1],combOffsetFlag: '3', ExchangeID: this.exchangeId})
+
+      }else{
+        ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId})
+      }
+      
     },
     
     checkLock(direction, volumeTotalOriginal,combOffsetFlag){
@@ -375,14 +383,16 @@ export default {
           }else {
             combOffsetFlag = '0';
           }
-          if(combOffsetFlag === '0' && specialExchangeId.includes(this.exchangeId) && yesterDay){
+          if(combOffsetFlag === '0' && this.exchangeId === 'CFFEX' && yesterDay){
               Notification({
-              message: '锁仓模式上期所合约需要先将昨仓解锁再开仓'
+              message: '锁仓模式中金合约合约需要先将昨仓解锁再开仓'
             })
             return ;
           }
           break;
+            
         case '1':
+          
            if(oppositeYesterDay>= volumeTotalOriginal + hold){
               combOffsetFlag = '1';
             }else if(oppositeToday >= volumeTotalOriginal + hold){
@@ -391,7 +401,7 @@ export default {
                 combOffsetFlag = '3'
               }
             }else if(specialExchangeId.includes(this.exchangeId) && combOffsetFlag === '1'){
-              combOffsetFlag = '3'
+              volumeTotalOriginal=[oppositeYesterDay, volumeTotalOriginal-oppositeYesterDay];
             }
           break;
         case '2':

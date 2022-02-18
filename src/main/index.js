@@ -64,6 +64,7 @@ function createWindow () {
     }
    
     clearInterval(Maincycle);
+    closeALLData();
     closeALLsubs();
   })
 }
@@ -82,7 +83,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -117,9 +118,9 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         evnt.sender.send('change-ins', insId)
       }
     })
-    childwin.setMenu(meun(true))
-  
-    childwin.setAlwaysOnTop(true, 'screen-saver')
+    childwin.setMenu(meun(checked))
+    
+    childwin.setAlwaysOnTop(checked, 'screen-saver')
     opedwindow.push({
       id: insId,
       win: childwin
@@ -148,21 +149,25 @@ app.on('activate', () => {
     createWindow()
   }
 })
-const orderMap = {};
+let orderMap = {};
 let tradeMap = [];
-const positionMap = [];
-const rateMap =[];
+let positionMap = [];
+let rateMap =[];
+const catchRate  = new Set()
 let InstrumetsData =[];
 const PriceData ={};
 const broadcast_Data = {};
 let tcp_client_list = [];
 function closeALLsubs(){
   COLOSEALL = true;
-  tcp_client_list.forEach(e => e.destroy());
-  tcp_client_list = []
+  
   opedwindow.forEach(({win}) => win.close())
   opedwindow=[]
   
+}
+function closeALLData(){
+  tcp_client_list.forEach(e => e.destroy());
+  tcp_client_list = []
 }
 //为了给不同的页面注册sender
 ipcMain.on('register-event',  (event, args) =>{
@@ -197,47 +202,43 @@ ipcMain.on('update-instrumentsData',  (event, args) =>{
 })
 
 //停止订阅
+ipcMain.on('close-all-sub',  (event, args) =>{
+  console.log('stop-subscrible')
+
+  closeALLsubs();
+  
+})
 ipcMain.on('stop-subscrible',  (event, args) =>{
   console.log('stop-subscrible')
-  if(args){
-    errorLog(args)
-  }
-  closeALLsubs();
+ 
+  closeALLData();
   
 })
 //交易相关
 function getUnCatchCommission(args){
  
   const {InstrumentID: instrumentID } = args;
-
-  const matched = instrumentID.match(/[a-zA-z]+/)[0];
-  const index = rateMap.findIndex(e => instrumentID.startsWith(e.InstrumentID));
-  if(index === -1){
-    rateMap.push({InstrumentID: matched,
-      uncatch:true
-    })
+  if(!catchRate.has(instrumentID)){
+    catchRate.add(instrumentID)
     trade.chainSend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
   }
   
+  
 }
+
+
 ipcMain.on('trade-login', (event, args) => {
-  if(trade){
-    event.sender.send('receive-trade', tradeMap);
-    event.sender.send('finish-loading', 'trade')
-    event.sender.send('receive-order', orderMap);
-    event.sender.send('receive-position', positionMap);
-    event.sender.send('receive-rate', rateMap)
-    // event.sender.send('receive-instrument', trade.getInstrumentList);
-    STARTTRADE = false;
-    return
-  }
+  orderMap = {};
+  tradeMap = [];
+  positionMap = [];
+  rateMap =[];
   trade = new Trade(args);
 
   function getorderKey(obj){
     const {FrontID, SessionID,  OrderRef} = obj;
     const frontId = FrontID.toString();
     const sessionId = SessionID.toString();
-    const orderRef = OrderRef.trim();
+    const orderRef = OrderRef;
     return frontId + sessionId + orderRef;
   }
   let TRADETIME = setTimeout(() => {
@@ -247,11 +248,16 @@ ipcMain.on('trade-login', (event, args) => {
   }, 3000)
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade');
-    getUnCatchCommission(field)
+    
+    infoLog(JSON.stringify(field));
     const { Volume, Price, InstrumentID} = field
+    if(args.instruments.includes(InstrumentID)){
+      infoLog(JSON.stringify(field));
+    }
     const win = findedopened(InstrumentID);
     tradeMap.push(field);
-   
+    getUnCatchCommission(field)
+
     if(STARTTRADE){
       // const not =new Notification({
       //   title: `${field.InstrumentID} ${Price}  成交 ${Volume}手`,
@@ -266,6 +272,8 @@ ipcMain.on('trade-login', (event, args) => {
       }
       event.sender.send('receive-trade', tradeMap);
     }else{
+     
+    
       clearTimeout(TRADETIME)
       TRADETIME = setTimeout(() => {
         console.log(123456)
@@ -287,9 +295,18 @@ ipcMain.on('trade-login', (event, args) => {
     const key = getorderKey(field);
     const old = orderMap[key] || {}
     // const orderStatus = old.OrderStatus;
-
+    if(args.instruments.includes(field.InstrumentID)){
+      infoLog(JSON.stringify(field));
+    }
+    //返回可能不按时序 先返回已完成的后返回中间状态，所以一旦订单已经完成就要将中间状态舍弃
+    if(old.OrderStatus){
+      const status = old.OrderStatus;
+      if(['5', '0', '2'].includes(status)){
+        return
+      }
+    }
     orderMap[key] = Object.assign(old, field);
-    // let send = false;
+    // let send = false;  
     // console.log(field)
     // switch(field.OrderStatus){
     //   case 'a':
@@ -372,7 +389,7 @@ ipcMain.on('trade-login', (event, args) => {
   // })
   let connectcount = 0;
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-    console.log(field)
+    // console.log(field)
     if(mainWindow){
       event.sender.send('receive-account', field);
     }
@@ -392,6 +409,7 @@ ipcMain.on('trade-login', (event, args) => {
   })
   trade.on('disconnected', (...rest) => {
     console.log('disconnected', rest)
+    errorLog('disconnected');
   })
   // trade.login.then(()=>{
   //   trade.chainSend('reqQryInstrument', '', function (field) {
@@ -404,7 +422,7 @@ ipcMain.on('trade-login', (event, args) => {
     console.log('rqInstrumentCommissionRate is callback');
     console.log("rqInstrumentCommissionRate: isLast", isLast);
     if(field.InstrumentID){
-      field.InstrumentID = field.InstrumentID.match(/[a-zA-z]+/)[0];
+    
       const index = rateMap.findIndex(e => e.InstrumentID === field.InstrumentID);
       if(index === -1){
         rateMap.push(field)
@@ -538,7 +556,7 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      console.log(trade.tasks)
+      // console.log(trade.tasks)
       if( trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
@@ -667,7 +685,7 @@ ipcMain.on('start-receive', (event, args) =>{
     tcp_client.on('end',function(){
       console.log('data end!');
     })
-    tcp_client.setTimeout( 3*60 * 1000);
+    tcp_client.setTimeout( 5 * 1000);
     tcp_client.on('timeout',function(){
       
         const index = tcp_client_list.indexOf(tcp_client);

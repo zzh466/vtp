@@ -20,7 +20,7 @@
     })
 
   export default {
-    props: ['data', 'rates', 'price', 'instrumentInfo'],
+    props: ['data', 'rates', 'price', 'instrumentInfo', 'positions'],
     data(){
         const _this = this;
         return {
@@ -103,8 +103,9 @@
                     render(data){
                         
                         
-                            
+                        
                         const rate = _this.rates.find(e => !e.uncatch && (data.InstrumentID===e.InstrumentID || data.InstrumentID.startsWith(e.InstrumentID)))
+                        
                         const info = _this.instrumentInfo.find(e => data.InstrumentID === e.InstrumentID );
                         if(!rate || !info){
                             data.commission = 0;
@@ -113,16 +114,9 @@
                         
                         const {OpenRatioByMoney, OpenRatioByVolume, CloseTodayRatioByMoney, CloseTodayRatioByVolume, CloseRatioByMoney, CloseRatioByVolume} = rate;
                         const {VolumeMultiple} = info;
-                        let commission  = (VolumeMultiple * OpenRatioByMoney * data.Price + OpenRatioByVolume )* data.Volume;
+                        let commission  = (VolumeMultiple * OpenRatioByMoney * data.Price + OpenRatioByVolume )* data.open +  (VolumeMultiple * CloseTodayRatioByMoney * data.ClosePrice + CloseTodayRatioByVolume )* data.closeToady +
+                         (VolumeMultiple * CloseRatioByMoney * data.ClosePrice + CloseRatioByVolume )* data.close;
                         
-                        if(data.ClosePrice){
-                            if(data.closeType ){
-                                 commission = commission+ (VolumeMultiple * CloseTodayRatioByMoney * data.ClosePrice + CloseTodayRatioByVolume )* data.CloseVolume;
-                            }else{
-                                
-                                 commission = commission+  (VolumeMultiple * CloseRatioByMoney * data.ClosePrice + CloseRatioByVolume )* data.CloseVolume;
-                            }
-                        }
                         // switch (data.closeType) {
                         //     case "0":
                         //         // 开仓手续费
@@ -138,7 +132,7 @@
                         //         break;
                         // }
                         data.commission = commission;
-                        return commission.toFixed(2);
+                        return commission.toFixed(2) ;
                     }
                 },
                 {
@@ -198,7 +192,15 @@
                     render(data){
                         return (data.closeProfit + data.optionProfit - data.commission).toFixed(2);
                     }
-                }
+                },
+                //   {
+                //      label: 'pp',
+                //     prop: 'true',
+                //      type: 'number',
+                //     render(data){
+                //         return data.open +'/'+ data.close +'/'+ data.closeToady
+                //     }
+                // }
             ]
         }
     },
@@ -206,34 +208,69 @@
         traderData(){
             
             let arr = []
-          
+            const yesterday = {};
+            this.positions.forEach(({ Volume, Direction, InstrumentID}) => {
+                if(!yesterday[InstrumentID]){
+                    yesterday[InstrumentID] = [0,0]
+                }
+                yesterday[InstrumentID][Direction] += Volume;
+            })
+            
             function findAnDmatch(e){
-                
                  const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID, CombOffsetFlag} = e;
-              
+                
                  let _volume = e._volume;
                  if(_volume === undefined){
                      _volume = Volume
                  }// 不能修改原数据
                  const item =arr.find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
+                 const combOffsetFlag = !TradeTime || CombOffsetFlag === '0';
+                 let open = 0, close = 0, closeToady = 0;
+                 if(combOffsetFlag){
+                     open = _volume;
+                 }else {
+                     
+                     const _d = Direction === '0'? '1': '0';
+                     if(yesterday[InstrumentID] &&yesterday[InstrumentID][_d] >= _volume){
+                         close = _volume
+                         yesterday[InstrumentID][_d] -= _volume
+                     }else{
+                         closeToady = _volume;
+                     }
+                 }
+
                  if(item){
                      
                      if( item.Direction!==Direction){
-                         
-                         if(CombOffsetFlag !== '0' && !item.yesterDay || (CombOffsetFlag === '0' && item.yesterDay)){
-                              
-                             item.closeType = 1;
-                         }
+                     
                          if(_volume + item.CloseVolume > item.Volume){
                             const gap = item.Volume - item.CloseVolume;
                             item.ClosePrice = (gap * Price +  item.CloseVolume * item.ClosePrice) / item.Volume;
                             e._volume = _volume - gap;
+                            if(open){
+                                item.open += gap;
+                            }
+                            if(close){
+                                //多计算的平昨要给他加回去
+                                item.close += gap;
+                                const _d = Direction === '0'? '1': '0';
+                                yesterday[InstrumentID][_d] += e._volume
+                            }
+                             if(closeToady){
+                                item.closeToady += gap;
+                            }
+                           
+                        
                             item.CloseVolume = item.Volume;
                             findAnDmatch(e)
                         }else{
                             if(!TradeTime){
+                                 item.open -= open ;
                                 item.Volume = item.Volume - _volume;
                             }else{
+                                item.open += open;
+                                 item.close += close;
+                                item.closeToady += closeToady;
                                 item.ClosePrice = (item.CloseVolume * item.ClosePrice  + Price*_volume )/ (item.CloseVolume + _volume);
                                 item.CloseVolume = item.CloseVolume + _volume;
                             }
@@ -254,12 +291,16 @@
                                 TradeTime,
                                 CloseVolume: 0,
                                 ClosePrice: 0,
-                                closeType: 0,
+                              
                                 OrderSysID,
                                 ExchangeID,
-                                yesterDay: CombOffsetFlag !== '0'
+                                combOffsetFlag,
+                                open,
+                                close,
+                                closeToady
                             }) 
                          }else {
+                              item.open += open ;
                              item.Volume = item.Volume + _volume; 
                          }
                         
@@ -279,18 +320,24 @@
                         TradeTime,
                         CloseVolume: 0,
                         ClosePrice: 0,
-                        closeType: 0,
+                    
                         OrderSysID,
                         ExchangeID,
-                        yesterDay: !TradeTime || CombOffsetFlag !== '0'
+                        combOffsetFlag,
+                        open,
+                        close,
+                        closeToady
+                        
                     })
                 }
             }
-    
+                
             this.data.forEach(e => {
                 e._volume = undefined
                 findAnDmatch(e);
             });
+            
+            
             return arr.filter(a=> {
                 return a.TradeTime || a.Volume !== a.CloseVolume 
             }).reverse()
