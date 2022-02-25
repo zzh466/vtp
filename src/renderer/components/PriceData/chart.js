@@ -30,8 +30,8 @@ class Chart {
             volumeScaleType
         } = config
         this.ctx = dom.getContext('2d');
-     
         
+        this.barToBorder = barToBorder;
         this.stepwidth =barWeight;
         this.stepHeight = volumeScaleHeight;
         this.volumeScaleType = volumeScaleType;
@@ -351,38 +351,34 @@ class Chart {
         if(pure){
             return index;
         }
-      
+        const barToBorder = parseInt(this.barToBorder);
         let offset = 0;
         let rerender = false;
-        if(index > this.data.length - 6){
-             offset = index - this.data.length + 6;
+        if(index > this.data.length - barToBorder){
+             offset = index - this.data.length + barToBorder;
             this.pushData(offset);
           
             rerender = true;
         }
-        if(index < 5){
-            offset = 5 - index;
+        if(index < barToBorder){
+            offset = barToBorder - index;
             const count = this.unshiftData(offset)
            
             rerender = true;
             index = index + count;
         }
         const start = this.start;
-        if(index < start + 5){
-            offset = start - index;
+        if(index < start + barToBorder){
+            offset =  barToBorder+start - index;
             let min = offset;
-            if(min < 5){
-                min = 5
-            }
+           
             this.start = start - min
             rerender = true;
         }
-        if(index > start + this.count - 5){
-            offset = index - start- this.count;
+        if(index > start + this.count - barToBorder){
+            offset = index - start- this.count+barToBorder;
             let min = offset;
-            if(min < 5){
-                min = 5
-            }
+            
             this.start = start + min;
             rerender = true;
         }
@@ -588,10 +584,10 @@ class Chart {
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
         this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );
         
-        for(let i = 5; i>= 1; i--){
+        for(let i=1; i<= 5; i++){
             let buyPirce = arg[`BidPrice${i}`];
             let buyIndex = this.start;
-            const flag = i > 3;
+            const flag = i > 1;
             if(buyPirce){
                 buyIndex = this.getindex(buyPirce, flag)
                 const buyData = this.data[buyIndex];

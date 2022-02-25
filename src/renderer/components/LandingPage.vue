@@ -199,7 +199,7 @@
         return data
       },
       traderData(){
-      
+        
         return this.positions.concat(this.traders);
       }
     },
@@ -366,8 +366,10 @@
       
       this.updateConfig().then(()=>{
         
-      
-        const broadcast = this.$store.state.user.broadcast;
+        const config =JSON.parse(localStorage.getItem(`config-${this.userData.account}`));
+
+        
+        const broadcast = config.broadcastOpenInterest;
         if(broadcast && !this.ws){
           this.ws = new TraderSocket();
           this.ws.onmessage((e)=>{
@@ -386,6 +388,7 @@
   
        ipcRenderer.on('receive-position', (event, position) =>{
         // console.log(position.filter(a => a.InstrumentID==='IC2201'))
+        
         this.positions = position;
         this.finishLoading('position')
       });

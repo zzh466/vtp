@@ -370,14 +370,14 @@ ipcMain.on('trade-login', (event, args) => {
   
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    // console.log(field)
-    if(OpenDate ===TradingDay) return;  
-    field.Price = LastSettlementPrice;
-    field.Volume = field.Volume + field.CloseVolume;
-    positionMap.push(field);
-  
+   
+    if(OpenDate !==TradingDay) {
+      field.Price = LastSettlementPrice;
+      field.Volume = field.Volume + field.CloseVolume;
+      positionMap.push(field);
+    };  
     if(isLast){
-      // console.log('111111111111111111111111111111111111111', event.sender.send)
+      console.log('111111111111111111111111111111111111111')
       event.sender.send('receive-position', positionMap);
     }
   })
@@ -556,7 +556,7 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      // console.log(trade.tasks)
+      console.log(trade.tasks)
       if( trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
@@ -685,7 +685,7 @@ ipcMain.on('start-receive', (event, args) =>{
     tcp_client.on('end',function(){
       console.log('data end!');
     })
-    tcp_client.setTimeout( 5 * 1000);
+    tcp_client.setTimeout(3 *60 * 1000);
     tcp_client.on('timeout',function(){
       
         const index = tcp_client_list.indexOf(tcp_client);
