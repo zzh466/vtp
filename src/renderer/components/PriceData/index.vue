@@ -316,12 +316,15 @@ export default {
     mouseTrade(){
       if(!this.showbar || !this.chart.data.length) return;
       const index = (this.left - 105) / this.stepwidth;
-      let {buyIndex, askIndex, start, lowerLimitindex} = this.chart;
+      let {buyIndex, askIndex, start, lowerLimitindex, UpperLimitindex} = this.chart;
       buyIndex = buyIndex - start;
       askIndex = askIndex -start
+      lowerLimitindex= lowerLimitindex- start;
+      UpperLimitindex = UpperLimitindex -start;
+      if(index < lowerLimitindex || index > UpperLimitindex) return;
       if(index >buyIndex  && index < askIndex) return;
       let direction = '1';
-      if(index <= buyIndex && index > lowerLimitindex- start){
+      if(index <= buyIndex && index > lowerLimitindex){
         direction = '0'
       }
       const  limitPrice = +this.chart.data[index + start].price;
@@ -359,7 +362,7 @@ export default {
         limitPrice = this.chart.lowerLimitPrice;
       }
       if(limitPrice > this.chart.UpperLimitPrice){
-        limitPrice = this.chart.lowerLimitPrice; 
+        limitPrice = this.chart.UpperLimitPrice; 
       }
       if(Array.isArray(traderData.volumeTotalOriginal)){
          ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId})

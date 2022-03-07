@@ -549,6 +549,7 @@ class Chart {
         const highindex = this.getindex(high, true);
       
         this.lowerLimitindex = lowindex;
+        this.UpperLimitindex = highindex;
         const offset= X + 49.5;
         const {start, ctx, count, stepwidth, height} = this;
         ctx.save()
