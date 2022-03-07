@@ -67,12 +67,16 @@ export default {
       const chartDom = document.getElementById('can');
       this.instrumet = {};
      
-      const {id,account, tick, exchangeId} = this.$route.query;
-       const config =JSON.parse(localStorage.getItem(`config-${account}`));
+     const {id,account, tick, exchangeId,exchangeNo} = this.$route.query;
+       const configs =JSON.parse(localStorage.getItem(`config-${account}`));
+       const config = configs.find(e => e.exchangeNo === +exchangeNo);
+       
+      console.log(configs, this.$route.query);
+      if(!config) return;
       console.log(config);
       const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
-      this.config.type = sysCloseTStrategy.toString() ;
-      this.config.closeType=sysCloseType.toString() ;
+      this.config.type = sysCloseTStrategy.toString();
+      this.config.closeType=sysCloseType.toString();
       this.config.volume = sysOrderVolume ;
       this.broadcastOpenInterest = config.broadcastOpenInterest;
       this.stepwidth = config.barWeight ;

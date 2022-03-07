@@ -25,10 +25,7 @@ const state = {
    
     async 'get-config'({ commit,state }){
     
-      const [config_1, over_price, broadcast, openvolume_limit] = await Promise.all([request({
-        url: 'user/config',
-        method: 'GET'
-      }), request({
+      const [over_price, broadcast, openvolume_limit] = await Promise.all([ request({
         url: 'property/info/vtp_client_forced_liquidation_over_price',
         method: 'GET'
       }), request({
@@ -38,7 +35,8 @@ const state = {
         url: 'property/info/vtp_client_openvolume_limit',
         method: 'GET'
       })]);
-      localStorage.setItem(`config-${state.userData.account}`, JSON.stringify(config_1));
+      
+      localStorage.setItem(`config-${state.userData.id}`, JSON.stringify(state.userData.instrumentConfigVOList));
       commit('setstate', {
         key: 'over_price',
         data: parseInt(over_price.propertyValue)

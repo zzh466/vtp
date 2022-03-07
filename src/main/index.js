@@ -83,7 +83,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, exchangeNo}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -102,7 +102,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&exchangeNo=${exchangeNo}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -251,9 +251,9 @@ ipcMain.on('trade-login', (event, args) => {
     
     infoLog(JSON.stringify(field));
     const { Volume, Price, InstrumentID} = field
-    if(args.instruments.includes(InstrumentID)){
+    // if(args.instruments.includes(InstrumentID)){
       infoLog(JSON.stringify(field));
-    }
+    // }
     const win = findedopened(InstrumentID);
     tradeMap.push(field);
     getUnCatchCommission(field)
@@ -295,9 +295,9 @@ ipcMain.on('trade-login', (event, args) => {
     const key = getorderKey(field);
     const old = orderMap[key] || {}
     // const orderStatus = old.OrderStatus;
-    if(args.instruments.includes(field.InstrumentID)){
+    // if(args.instruments.includes(field.InstrumentID)){
       infoLog(JSON.stringify(field));
-    }
+    // }
     //返回可能不按时序 先返回已完成的后返回中间状态，所以一旦订单已经完成就要将中间状态舍弃
     if(old.OrderStatus){
       const status = old.OrderStatus;

@@ -4,7 +4,7 @@ import { baseURL } from './utils';
 export default function request(config){
     
     return ipcRenderer.invoke('request', config).then(res=>{
-        console.log(res);
+        console.log(res, config);
         return res;
     })
 } 
