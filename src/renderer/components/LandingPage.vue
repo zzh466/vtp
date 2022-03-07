@@ -185,11 +185,17 @@
             }else {
                const keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
                const keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
-               if(item[keyYesterDay] >= Volume){
+               if(item[keyYesterDay] ){
+                 if(item[keyYesterDay] >= Volume){
+                   item[keyYesterDay] -= Volume
+                 }else {
+                    item[keyToady] -= Volume -  item[keyYesterDay];
+                   item[keyYesterDay]  = 0;
+                   
+                 }
                  
-                 item[keyYesterDay] -= Volume
-               }else {
-                 
+               }else{
+                
                  item[keyToady] -= Volume;
                }
             }
