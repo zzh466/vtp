@@ -10,17 +10,32 @@ export default function request(config){
 } 
 let count = 0
 export class TraderSocket{
-    constructor(){
+    constructor(id){
+        this.id = id;
         this.reconnect();
         this.task = [];
         this.ready=false;
     }
     onmessage(fn){
         this.onmessagefn = fn;
-        this.ws.onmessage = fn;
+        this.ws.onmessage = this.onmessageResolve.bind(this);
+    }
+    onmessageResolve(msg){
+        console.log(msg)
+        msg = msg.data.split('@');
+        switch(msg[0]){
+            case 'BroadcastOpenInterest': 
+            
+              this.onmessagefn(msg[1]);
+              break;
+            case "UpdateForceLiquidationThreshold":
+            case 'UpdateKeymap':
+            case 'LockUser':
+            case 'UnLockUser':
+        }
     }
     reconnect(){
-        const ws = new WebSocket(`ws://${baseURL}/ws`);
+        const ws = new WebSocket(`ws://${baseURL}/ws/${this.id}`);
         this.ws =ws ;
         count++
         ws.onopen =  (e) =>{
@@ -49,11 +64,12 @@ export class TraderSocket{
             }, 2000)
         }
         if(this.onmessagefn){
-            this.ws.onmessage = this.onmessagefn;
+            this.ws.onmessage = this.onmessageResolve.bind(this);
         }
     }
     send(msg){
         console.log(msg)
+        msg = `NotifyOpenInterest@${msg}`
         if(this.ready){
             this.ws.send(msg)
         }else {

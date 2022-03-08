@@ -79,7 +79,7 @@ export default {
       this.config.closeType=sysCloseType.toString();
       this.config.volume = sysOrderVolume ;
       this.broadcastOpenInterest = config.broadcastOpenInterest;
-      this.stepwidth = config.barWeight ;
+      this.stepwidth = config.barWidth ;
       ipcRenderer.send('register-event', id);
 
        this.func = Gen(config.hotKey)
@@ -184,7 +184,7 @@ export default {
         position: 'bottom-right',
       })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
-        
+        0
         let update = false;
         for(let key in instrumet ){
           if(  this.instrumet[key] !== instrumet[key]){
