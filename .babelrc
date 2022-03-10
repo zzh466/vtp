@@ -35,5 +35,11 @@
       ]
     }
   },
-  "plugins": ["transform-runtime"]
+  "plugins": ["transform-runtime", [
+    "import",
+    {
+      "libraryName": "vxe-table",
+      "style": true // 样式是否也按需加载
+    }
+  ]]
 }

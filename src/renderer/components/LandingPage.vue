@@ -17,7 +17,7 @@
         
          <div>
            <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button></div>
-          <Round ref="round" :data='traderData' :rates='rates' :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
+          <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
         </div>
          
       </div>
@@ -27,7 +27,7 @@
        
         <div>
           <div class="label">下单信息：<el-button type="primary" size="small" @click="exportExcel('下单信息', orderData, orderColumns)">导出</el-button></div>
-            <Table  height='280' :columns='orderColumns' :tableData='orderData'/>
+            <Table  height='280' :columns='orderColumns' row-key='key' :tableData='orderData'/>
         </div>
       </div>
      
@@ -116,98 +116,8 @@
         set(){
           this.$store.commit('lock-user');
         }
-      },
-      orderData(){
-        
-        const arr = []
-        for(let key in this.orders){
-          this.orders[key].key =key;
-          arr.unshift(this.orders[key])
-        }
-        return arr;
-      },
-  
-      instrumentsData(){
-        const openvolume_limit = this.openvolume_limit.split(';').map(e => {
-          const msg= e.split(':')
-          return {
-            instrumentID: msg[0],
-            limit : msg[1]
-          }
-        })
-        const data = this.subscribelInstruments.map(e=>({
-          instrumentID: e,
-          yesterdayBuy: 0,
-          yesterdayAsk: 0,
-          todayBuy: 0,
-          todayAsk:0,
-          todayVolume: 0,
-          'todayCancel': 0,
-          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit 
-        }))
-        
-        this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
-          const {InstrumentID} = order;
-          const item = data.find(e => e.instrumentID === InstrumentID);
-          if(item)item.todayCancel += 1;
-        })
-        //过滤
-        const orderData = this.orderData.filter(e => {
-        
-          return  e.VolumeTraded
-        })
-        // console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
-        this.traderData.forEach(trader => {
-           const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
-           let CombOffsetFlag;
-           if(TradeTime){
-              const order = orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-            if(order) {
-              CombOffsetFlag = order.CombOffsetFlag;
-              trader.CombOffsetFlag = CombOffsetFlag;
-            }
-           }
-           
-           
-           const item = data.find(e => e.instrumentID === InstrumentID)
-           if(!item)return;
-           if(!TradeTime){
-            //  console.log(JSON.parse(JSON.stringify(trader)))
-             const key = Direction === '0'? 'yesterdayBuy': 'yesterdayAsk';
-              item[key] += Volume
-           }else {
-            
-           
-            if(CombOffsetFlag === '0'){
-                const key = Direction === '0'? 'todayBuy': 'todayAsk';
-                item[key] += Volume;
-                item.todayVolume += Volume;
-            }else {
-               const keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
-               const keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
-               if(item[keyYesterDay] ){
-                 if(item[keyYesterDay] >= Volume){
-                   item[keyYesterDay] -= Volume
-                 }else {
-                    item[keyToady] -= Volume -  item[keyYesterDay];
-                   item[keyYesterDay]  = 0;
-                   
-                 }
-                 
-               }else{
-                
-                 item[keyToady] -= Volume;
-               }
-            }
-           }
-        })
-        ipcRenderer.send('update-instrumentsData', data);
-        return data
-      },
-      traderData(){
-        
-        return this.positions.concat(this.traders);
       }
+   
     },
     data(){
       const _this = this;
@@ -215,6 +125,9 @@
         dialogVisible: false,
         orders: {},
         loading: ['order', 'trade', 'config'],
+        orderData: [],
+        instrumentsData: [],
+        traderData: [],
         // loading: [],
         orderColumns: [{
           label: '合约',
@@ -387,9 +300,15 @@
          
       })
       this.getCtpInfo();
-      ipcRenderer.on('receive-order', (event, orders) =>{
+      ipcRenderer.on('receive-order', (event, orders, key, needUpdate) =>{
+        console.log(orders, key, needUpdate)
+       if(key){
+         
+         this.upddateOrder(orders, key, needUpdate)
+       }else{
+         this.orders = orders;
+       }
         
-        this.orders = orders;
       });
   
        ipcRenderer.on('receive-position', (event, position) =>{
@@ -402,26 +321,28 @@
         if(Array.isArray(trader)){
           
           this.traders = trader 
-        }
-        
-        if(this.ws && this.traders.length){
-          const {futureUserId} = this.userData
-        
-          let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime, TradingDay} = trader[trader.length -1];
-          if(!TradeTime ){
-            return
-          }else {
-            
-            const time = +new Date(`${(new Date()).toDateString()} ${TradeTime}`);
-            if(Math.abs(time - new Date()) > 1000 * 30 *60 )return;
-          }
-        
-          if(Direction === '1'){
-            Volume = -Volume;
-          }
-          this.ws.send(`${futureUserId}-${ExchangeID}-${OrderSysID}-${TradeID}:${InstrumentID}:${Volume}`)
-        }
+        }else{
          
+          this.updateTrader(trader);
+        
+          if(this.ws && this.traders.length){
+            const {futureUserId} = this.userData
+          
+            let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime, TradingDay} = trader;
+            if(!TradeTime ){
+              return
+            }else {
+              
+              const time = +new Date(`${(new Date()).toDateString()} ${TradeTime}`);
+              if(Math.abs(time - new Date()) > 1000 * 30 *60 )return;
+            }
+          
+            if(Direction === '1'){
+              Volume = -Volume;
+            }
+            this.ws.send(`${futureUserId}-${ExchangeID}-${OrderSysID}-${TradeID}:${InstrumentID}:${Volume}`)
+          }
+        }
         console.log(trader, '2336456')
         
       });
@@ -433,6 +354,14 @@
       ipcRenderer.on('finish-loading', (event, arg) =>{
         
         this.finishLoading(arg);
+      });
+       ipcRenderer.on('add-loading', (event, arg) =>{
+        
+         const index = this.loading.indexOf(arg);
+        // console.log(tag)
+        if(index  === -1) {
+          this.loading.push(arg)
+        }
       });
       ipcRenderer.on('receive-info', (event, arg)=>{
         
@@ -508,6 +437,131 @@
         const {traderColumns, traderData} =  this.$refs.round
         this.exportExcel('回合信息', traderData, traderColumns)
       },
+      init(){
+        
+        console.log(1111111111111111111111111111111)
+        const arr = []
+        for(let key in this.orders){
+          this.orders[key].key =key;
+          arr.unshift(this.orders[key])
+        }
+        this.orderData = arr;
+        
+        this.traderData = this.positions.concat(this.traders);
+
+    
+        const openvolume_limit = this.openvolume_limit.split(';').map(e => {
+          const msg= e.split(':')
+          return {
+            instrumentID: msg[0],
+            limit : msg[1]
+          }
+        })
+        const data = this.subscribelInstruments.map(e=>({
+          instrumentID: e,
+          yesterdayBuy: 0,
+          yesterdayAsk: 0,
+          todayBuy: 0,
+          todayAsk:0,
+          todayVolume: 0,
+          'todayCancel': 0,
+          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit 
+        }))
+        
+        this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
+          const {InstrumentID} = order;
+          const item = data.find(e => e.instrumentID === InstrumentID);
+          if(item)item.todayCancel += 1;
+        })
+        //过滤
+        const orderData = this.orderData.filter(e => {
+        
+          return  e.VolumeTraded
+        })
+        // console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
+        this.traderData.forEach(trader => {
+           this.setTradeItem(trader, orderData, data);
+        })
+        ipcRenderer.send('update-instrumentsData', data);
+        this.instrumentsData = data;
+        this.$nextTick(function(){
+          this.$refs.round.init();
+        })
+      },
+      setTradeItem(trader, orderData, data= this.instrumentsData){
+        const {TradeTime, Direction, Volume, ExchangeID , OrderSysID, InstrumentID} = trader;
+           let CombOffsetFlag;
+           if(TradeTime){
+              const order = orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+            if(order) {
+              CombOffsetFlag = order.CombOffsetFlag;
+              trader.CombOffsetFlag = CombOffsetFlag;
+            }
+           }
+           
+           
+           const item = data.find(e => e.instrumentID === InstrumentID)
+           if(!item)return;
+           if(!TradeTime){
+            //  console.log(JSON.parse(JSON.stringify(trader)))
+             const key = Direction === '0'? 'yesterdayBuy': 'yesterdayAsk';
+              item[key] += Volume
+           }else {
+            
+           
+            if(CombOffsetFlag === '0'){
+                const key = Direction === '0'? 'todayBuy': 'todayAsk';
+                item[key] += Volume;
+                item.todayVolume += Volume;
+            }else {
+               const keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
+               const keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
+               if(item[keyYesterDay] ){
+                 if(item[keyYesterDay] >= Volume){
+                   item[keyYesterDay] -= Volume
+                 }else {
+                    item[keyToady] -= Volume -  item[keyYesterDay];
+                   item[keyYesterDay]  = 0;
+                   
+                 }
+                 
+               }else{
+                
+                 item[keyToady] -= Volume;
+               }
+            }
+           }
+      },
+      updateTrader(trade){
+        this.traderData.push(trade);
+        this.setTradeItem(trade,  this.orderData.filter(e => {
+          return  e.VolumeTraded
+        }))
+         ipcRenderer.send('update-instrumentsData', this.instrumentsData);
+         this.$forceUpdate()
+         this.$refs.round.update(trade);
+      },
+      upddateOrder(order, key, needUpdate){
+        
+          order.key = key;
+        if(needUpdate){
+          
+          const index = this.orderData.findIndex(e =>e.key === key);
+          console.log(index)
+          this.orderData.splice(index, 1 , order);
+        }else{
+        
+          this.orderData.unshift(order)
+        }
+        if( order.OrderStatus === '5'){
+         
+          const {InstrumentID} = order;
+          const item = this.instrumentsData.find(e => e.instrumentID === InstrumentID);
+          if(item)item.todayCancel += 1;
+          ipcRenderer.send('update-instrumentsData', this.instrumentsData);
+          this.$forceUpdate()
+        }
+      },
       exportExcel(title ,data, row){
         const excelData = data.map((item)=>{
           const result = {};
@@ -529,7 +583,7 @@
         title = this.userData.account + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
-      start(row) {
+      start({row}) {
         if(this.locked){
           this.$alert('当前账号已锁定', '锁定' )
           return
@@ -656,13 +710,18 @@
         // console.log(tag)
         if(index > -1) {
           this.loading.splice(index, 1)
+          
           if(!this.loading.length && !this.started){
-            this.startVolume()
+            
+            this.startVolume();
+            
+            this.init()
           }
         }
        
       },
       startVolume(){
+        
         this.started = true;
         const {quotAddr } = this.userData;
         // const quotAddr = '192.168.0.18:18198'
@@ -808,10 +867,10 @@
     color: #42b983;
     background-color: transparent;
   }
-  .cell {
+  .vxe-cell {
     padding: 0 4px !important;
   }
-  .el-table__cell {
+  .vxe-body--column {
     padding: 2px 0 !important;;
   }
   .sell-direction {
