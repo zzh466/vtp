@@ -201,12 +201,13 @@
                 //         return data.open +'/'+ data.close +'/'+ data.closeToady
                 //     }
                 // }
-            ]
+            ],
+            traderData: []
         }
     },
-    computed:{
-        traderData(){
-            
+  
+    methods: {
+        init(){
             let arr = []
             const yesterday = {};
             this.positions.forEach(({ Volume, Direction, InstrumentID}) => {
@@ -215,15 +216,40 @@
                 }
                 yesterday[InstrumentID][Direction] += Volume;
             })
+            this.yesterday = yesterday;
+           
+                
+            this.data.forEach(e => {
+                e._volume = undefined
+                this.findAnDmatch(e, arr);
+            });
             
-            function findAnDmatch(e){
-                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID, CombOffsetFlag} = e;
+            
+            this.traderData = arr.filter(a=> {
+                return a.TradeTime || a.Volume !== a.CloseVolume 
+            })
+        },
+        update(data){
+            this.findAnDmatch(data, this.traderData);
+        },
+        findAnDmatch(e, arr){
+                const yesterday = this.yesterday;
+                const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID, CombOffsetFlag} = e;
                 
                  let _volume = e._volume;
                  if(_volume === undefined){
                      _volume = Volume
                  }// 不能修改原数据
-                 const item =arr.find(trade => trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume)
+                 let item;
+                 for(let i = arr.length -1; i >=0 ;i--){
+                     const trade = arr[i];
+                     if(trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume){
+                         item = trade;
+                         break;
+                     }
+                   
+                 }
+               
                  const combOffsetFlag = !TradeTime || CombOffsetFlag === '0';
                  let open = 0, close = 0, closeToady = 0;
                  if(combOffsetFlag){
@@ -262,7 +288,7 @@
                            
                         
                             item.CloseVolume = item.Volume;
-                            findAnDmatch(e)
+                            this.findAnDmatch(e, arr)
                         }else{
                             if(!TradeTime){
                                  item.open -= open ;
@@ -282,7 +308,7 @@
                         
                          if(TradeTime){
                              
-                            arr.push({
+                            arr.unshift({
                                 InstrumentID,
                                 Volume: _volume,
                                 Direction,
@@ -311,7 +337,7 @@
                 }else{
                     
                    
-                    arr.push({
+                    arr.unshift({
                         InstrumentID,
                         Volume: _volume,
                         Direction,
@@ -331,17 +357,6 @@
                     })
                 }
             }
-                
-            this.data.forEach(e => {
-                e._volume = undefined
-                findAnDmatch(e);
-            });
-            
-            
-            return arr.filter(a=> {
-                return a.TradeTime || a.Volume !== a.CloseVolume 
-            }).reverse()
-        }
     }
   }
 </script>

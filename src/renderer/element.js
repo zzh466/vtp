@@ -24,21 +24,21 @@ import {
   OptionGroup,
   Button,
   ButtonGroup,
-  Table,
-  TableColumn,
-  DatePicker,
-  TimeSelect,
-  TimePicker,
+  // Table,
+  // TableColumn,
+  // DatePicker,
+  // TimeSelect,
+  // TimePicker,
   Popover,
   Tooltip,
-  Breadcrumb,
-  BreadcrumbItem,
+  // Breadcrumb,
+  // BreadcrumbItem,
   Form,
   FormItem,
   Tabs,
   TabPane,
   Tag,
-  Tree,
+  // Tree,
   Alert,
   Slider,
   Icon,
@@ -69,7 +69,7 @@ import {
   Link,
   Divider,
   Image,
-  Calendar,
+  // Calendar,
   Backtop,
   PageHeader,
   CascaderPanel,
@@ -103,21 +103,21 @@ Vue.use(Option);
 Vue.use(OptionGroup);
 Vue.use(Button);
 Vue.use(ButtonGroup);
-Vue.use(Table);
-Vue.use(TableColumn);
-Vue.use(DatePicker);
-Vue.use(TimeSelect);
-Vue.use(TimePicker);
+// Vue.use(Table);
+// Vue.use(TableColumn);
+// Vue.use(DatePicker);
+// Vue.use(TimeSelect);
+// Vue.use(TimePicker);
 Vue.use(Popover);
 Vue.use(Tooltip);
-Vue.use(Breadcrumb);
-Vue.use(BreadcrumbItem);
+// Vue.use(Breadcrumb);
+// Vue.use(BreadcrumbItem);
 Vue.use(Form);
 Vue.use(FormItem);
 Vue.use(Tabs);
 Vue.use(TabPane);
 Vue.use(Tag);
-Vue.use(Tree);
+// Vue.use(Tree);
 Vue.use(Alert);
 Vue.use(Slider);
 Vue.use(Icon);
@@ -148,7 +148,7 @@ Vue.use(TimelineItem);
 Vue.use(Link);
 Vue.use(Divider);
 Vue.use(Image);
-Vue.use(Calendar);
+// Vue.use(Calendar);
 Vue.use(Backtop);
 Vue.use(PageHeader);
 Vue.use(CascaderPanel);

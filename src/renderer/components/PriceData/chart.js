@@ -413,7 +413,7 @@ class Chart {
             ipcRenderer.send('error-log', JSON.stringify(this.args));
             ipcRenderer.send('error-log', JSON.stringify(this.data));
         }
-        ctx.clearRect(X,20,this.width,10)
+        ctx.clearRect(0,20,this.width,10)
         ctx.beginPath();
         ctx.moveTo(x, 21);
         ctx.lineTo(x+stepwidth, 21);

@@ -155,6 +155,7 @@ export default {
       // })
       ipcRenderer.on('total-order', (_, orders) => { 
         // p.then(()=>{
+          
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
             if(orders[key].ExchangeInstID === id){
@@ -163,6 +164,22 @@ export default {
           }
           
           if(arr.length &&this.chart.data.length ){
+            let cancel = 0;
+            let open = 0
+            arr.forEach(e => {
+              const {OrderStatus, CombOffsetFlag, VolumeTraded} = e;
+              if(CombOffsetFlag === '0'){
+                open = VolumeTraded + open;
+              }
+              if(OrderStatus === '5'){
+                cancel += 1;
+              }
+             
+            })
+
+            this.instrumet.todayVolume = open;
+            this.instrumet.todayCancel = cancel;
+            this.update();
              this.chart.placeOrder = arr;
             this.chart.renderBakcground();
             this.chart.renderVolume();  
@@ -184,29 +201,35 @@ export default {
         position: 'bottom-right',
       })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
-        0
-        let update = false;
-        for(let key in instrumet ){
-          if(  this.instrumet[key] !== instrumet[key]){
-            update = true;
-            break;
-          }
-        
-        }
-        if(!update) return
         this.instrumet = instrumet;
-        const id = this.$route.query.id;
-        const {volume, type, closeType} = this.config;
-        const title =getWinName(id, volume, type, closeType) + getHoldCondition(this.instrumet);
-        ipcRenderer.send('change-title', {id, title});
+        this.update(instrumet)
+       
+       
       })
       let audio = new Audio()
       audio.src = __static+ "/trade.wav";
-      ipcRenderer.on('trade-order', (_, field) => {
-        
-        // p.then(()=>{
+      ipcRenderer.on('trade-order', (_, field, flag) => {
+          
+          if(!flag){
+            const {Direction, Volume, OrderSysID, ExchangeID} = field;
+            const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+            const CombOffsetFlag = item.CombOffsetFlag;
+            if(CombOffsetFlag === '0'){
+              const key = Direction  === '0' ? 'todayBuy': 'todayAsk';
+              this.instrumet[key] += Volume;
+            }else{
+              const yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
+              const todayAsk = Direction  === '0' ? 'todayAsk': 'todayBuy';
+              if( this.instrumet[yesterDay] >= Volume){
+                this.instrumet[yesterDay] -= Volume;
+              }else{
+                this.instrumet[todayAsk] -= Volume;
+              }
+            }
+            this.update();
+          }
            
-           this.traded.push(field);
+          this.traded.push(field);
           if(this.startTrade){
             audio.load();
             audio.play();
@@ -313,6 +336,13 @@ export default {
         this.showbar = false;
       }
     },
+    update(){
+        const instrumet =  this.instrumet;
+        const id = this.$route.query.id;
+        const {volume, type, closeType} = this.config;
+        const title =getWinName(id, volume, type, closeType) + getHoldCondition(instrumet);
+        ipcRenderer.send('change-title', {id, title});
+    },
     mouseTrade(){
       if(!this.showbar || !this.chart.data.length) return;
       const index = (this.left - 105) / this.stepwidth;
@@ -324,7 +354,7 @@ export default {
       if(index < lowerLimitindex || index > UpperLimitindex) return;
       if(index >buyIndex  && index < askIndex) return;
       let direction = '1';
-      if(index <= buyIndex && index > lowerLimitindex){
+      if(index <= buyIndex &&  (buyIndex && buyIndex > lowerLimitindex)){
         direction = '0'
       }
       const  limitPrice = +this.chart.data[index + start].price;
@@ -365,7 +395,10 @@ export default {
         limitPrice = this.chart.UpperLimitPrice; 
       }
       if(Array.isArray(traderData.volumeTotalOriginal)){
-         ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId})
+        if(traderData.volumeTotalOriginal[0]){
+          ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId})
+        }
+         
         ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal: traderData.volumeTotalOriginal[1],combOffsetFlag: '3', ExchangeID: this.exchangeId})
 
       }else{
