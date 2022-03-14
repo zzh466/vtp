@@ -468,8 +468,9 @@
             limit : msg[1]
           }
         })
-        const data = this.subscribelInstruments.map(e=>({
+        const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments), []).map(e=>({
           instrumentID: e,
+          exchangeNo: e.exchangeNo,
           yesterdayBuy: 0,
           yesterdayAsk: 0,
           todayBuy: 0,
