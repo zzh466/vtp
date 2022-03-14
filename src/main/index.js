@@ -248,6 +248,7 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('finish-loading', 'trade')
     TRADETIME= null;
   }, 5000)
+  let connectcount = 0;
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade');
     
@@ -281,6 +282,10 @@ ipcMain.on('trade-login', (event, args) => {
         console.log(123456)
         event.sender.send('receive-trade', tradeMap);
         event.sender.send('finish-loading', 'trade')
+        console.log('connectcount', connectcount)
+        if(connectcount > 1 ){
+          STARTTRADE = true;
+        }
         TRADETIME= null;
       }, 5000)
       return
@@ -293,6 +298,7 @@ ipcMain.on('trade-login', (event, args) => {
   let ORDERTIME =  setTimeout(() => {
     event.sender.send('finish-loading', 'order')
   }, 5000);
+  
   trade.on('rtnOrder', function(field){
     const key = getorderKey(field);
     const needUpdate = !!orderMap[key];
@@ -358,12 +364,13 @@ ipcMain.on('trade-login', (event, args) => {
         win.sender.send('total-order',orderMap);
       }
     // }
-    // console.log('emmit---rtnOrder', field)
+    console.log('StarSTARTTRADE', STARTTRADE)
     if(!STARTTRADE){
       clearTimeout(ORDERTIME)
       ORDERTIME = setTimeout(() => {
         event.sender.send('receive-order', orderMap);
         event.sender.send('finish-loading', 'order')
+        
       }, 5000)
       return
     }
@@ -392,7 +399,7 @@ ipcMain.on('trade-login', (event, args) => {
   //   event.sender.send('finish-loading', 'instrument')
     
   // })
-  let connectcount = 0;
+  
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
     // console.log(field)
     if(mainWindow){
@@ -405,10 +412,13 @@ ipcMain.on('trade-login', (event, args) => {
     trade.tasks = [];
     if(connectcount){
    
-      trade.next();
+      trade.tasks.push(setTimeout(()=>{
+        trade.next()
+    }, 1500))
     }
    
     STARTTRADE =false;
+    event.sender.send('add-loading', 'trade')
     event.sender.send('receive-trade', tradeMap);
     connectcount++
   })
@@ -561,7 +571,7 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      console.log(trade.tasks)
+      // console.log(trade.tasks)
       if( trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           

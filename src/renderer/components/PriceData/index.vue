@@ -151,6 +151,7 @@ export default {
       // })
       ipcRenderer.on('total-order', (_, orders) => { 
         // p.then(()=>{
+          
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
             if(orders[key].ExchangeInstID === id){
@@ -162,16 +163,16 @@ export default {
             let cancel = 0;
             let open = 0
             arr.forEach(e => {
-              const {OrderStatus, CombOffsetFlag, VolumeTotalOriginal} = e;
+              const {OrderStatus, CombOffsetFlag, VolumeTraded} = e;
               if(CombOffsetFlag === '0'){
-                open += VolumeTotalOriginal;
+                open = VolumeTraded + open;
               }
               if(OrderStatus === '5'){
-                cancel += VolumeTotalOriginal;
+                cancel += 1;
               }
              
             })
-            
+
             this.instrumet.todayVolume = open;
             this.instrumet.todayCancel = cancel;
             this.update();
@@ -204,7 +205,7 @@ export default {
       let audio = new Audio()
       audio.src = __static+ "/trade.wav";
       ipcRenderer.on('trade-order', (_, field, flag) => {
-          debugger
+          
           if(!flag){
             const {Direction, Volume, OrderSysID, ExchangeID} = field;
             const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
@@ -215,7 +216,7 @@ export default {
             }else{
               const yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
               const todayAsk = Direction  === '0' ? 'todayAsk': 'todayBuy';
-              if(yesterDay >= Volume){
+              if( this.instrumet[yesterDay] >= Volume){
                 this.instrumet[yesterDay] -= Volume;
               }else{
                 this.instrumet[todayAsk] -= Volume;

@@ -325,7 +325,7 @@
          
           this.updateTrader(trader);
         
-          if(this.ws && this.traders.length){
+          if(this.ws){
             const {futureUserId} = this.userData
           
             let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime, TradingDay} = trader;
@@ -711,7 +711,7 @@
         if(index > -1) {
           this.loading.splice(index, 1)
           
-          if(!this.loading.length && !this.started){
+          if(!this.loading.length){
             
             this.startVolume();
             
@@ -721,7 +721,7 @@
        
       },
       startVolume(){
-        
+         if(this.started)return;
         this.started = true;
         const {quotAddr } = this.userData;
         // const quotAddr = '192.168.0.18:18198'
