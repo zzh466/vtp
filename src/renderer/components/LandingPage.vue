@@ -509,14 +509,15 @@
            }else {
             
            
-            if(CombOffsetFlag === '0'){
+            if(CombOffsetFlag === '0' ){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
                 item[key] += Volume;
                 item.todayVolume += Volume;
             }else {
                const keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
                const keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
-               if(item[keyYesterDay] ){
+              
+               if(item[keyYesterDay] && CombOffsetFlag!== '3'){
                  if(item[keyYesterDay] >= Volume){
                    item[keyYesterDay] -= Volume
                  }else {
