@@ -22,7 +22,7 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "vtp2021",
+    "productName": "vtp 3 in 1",
     "appId": "xinqi",
     "nsis": {
       "allowToChangeInstallationDirectory": true,

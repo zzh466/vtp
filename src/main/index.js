@@ -10,7 +10,7 @@ import meun from  './menu';
 import  './export';
 import  request  from './request';
 import '../renderer/store';
-import {version } from '../renderer/utils/utils'
+import {version, winURL } from '../renderer/utils/utils'
 import console from 'console';
 
 
@@ -27,9 +27,6 @@ let mainWindow;
 let trade;
 let STARTTRADE = false;
 let Maincycle;
-const winURL = process.env.NODE_ENV === 'development'
-  ? `http://localhost:9080`
-  : `file://${__dirname}/index.html`
 
 function createWindow () {
   /**
@@ -48,11 +45,11 @@ function createWindow () {
       contextIsolation: false
     }
   })
-  mainWindow.setMenu(meun(false));
+  
   // mainWindow.webContents.openDevTools({mode:'detach'});
   console.log('start')
   mainWindow.loadURL(winURL)
-
+  mainWindow.removeMenu()
   mainWindow.on('closed', () => {
   
     mainWindow = null
@@ -73,6 +70,7 @@ function createWindow () {
 
 ipcMain.on('resize-main', (evnt, {width, height}) => {
   mainWindow.setSize(width, height)
+  mainWindow.setMenu(meun(false));
 })
 ipcMain.on('close-main', (event, arg) => {
   if(arg){
@@ -775,6 +773,10 @@ ipcMain.on('broadcast-openinterest', function(_, arg){
     win.sender.send('receive-broadcast',data)
   }
   
+})
+ipcMain.on('update-all-config', function(_, arg){
+  // console.log(arg);
+  opedwindow.forEach(({sender}) => sender.send('update-config') )
 })
 
 /**

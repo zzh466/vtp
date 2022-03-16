@@ -35,7 +35,7 @@ const state = {
         url: 'property/info/vtp_client_openvolume_limit',
         method: 'GET'
       })]);
-      
+      localStorage.setItem('user-account', state.userData.id)
       localStorage.setItem(`config-${state.userData.id}`, JSON.stringify(state.userData.instrumentConfigVOList));
       commit('setstate', {
         key: 'over_price',

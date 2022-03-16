@@ -67,22 +67,9 @@ export default {
       const chartDom = document.getElementById('can');
       this.instrumet = {};
      
-     const {id,account, tick, exchangeId,exchangeNo} = this.$route.query;
-       const configs =JSON.parse(localStorage.getItem(`config-${account}`));
-       const config = configs.find(e => e.exchangeNo === +exchangeNo);
-       
-      console.log(configs, this.$route.query);
-      if(!config) return;
-      console.log(config);
-      const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
-      this.config.type = sysCloseTStrategy.toString();
-      this.config.closeType=sysCloseType.toString();
-      this.config.volume = sysOrderVolume ;
-      this.broadcastOpenInterest = config.broadcastOpenInterest;
-      this.stepwidth = config.barWidth ;
+     const {id, tick, exchangeId} = this.$route.query;
+      const config = this.setConfig()
       ipcRenderer.send('register-event', id);
-
-       this.func = Gen(config.hotKey)
      
       window.onkeydown =(e)=>{
         this.func(e, this);
@@ -133,6 +120,31 @@ export default {
             }
             
           // })
+        })
+        ipcRenderer.on(`update-config`, (event, arg) => {
+          const config = this.setConfig();
+          const {
+              barToBorder,
+              
+              barWidth = 10,
+              
+              volumeScaleCount,
+              volumeScaleHeight = 30,
+              volumeScaleTick,
+              volumeScaleType
+          } = config
+        
+          
+          this.chart.barToBorder = barToBorder;
+          this.chart.stepwidth =barWidth;
+          this.chart.stepHeight = volumeScaleHeight;
+          this.chart.volumeScaleType = volumeScaleType;
+          this.chart.volumeScaleCount =volumeScaleCount;
+          this.chart.volumeScaleTick = volumeScaleTick;
+          this.chart.resize( this.width, this.height);
+          if(this.arg){
+              this.chart.render(this.arg)
+          }
         })
       
       
@@ -324,6 +336,25 @@ export default {
     }
   },
   methods: {
+    setConfig(){
+      const {account,exchangeNo} = this.$route.query;
+       const configs =JSON.parse(localStorage.getItem(`config-${account}`));
+       const config = configs.find(e => e.exchangeNo === +exchangeNo);
+       
+      console.log(configs, this.$route.query);
+      if(!config) return;
+      console.log(config);
+      const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
+      this.config.type = sysCloseTStrategy.toString();
+      this.config.closeType=sysCloseType.toString();
+      this.config.volume = sysOrderVolume ;
+      this.broadcastOpenInterest = config.broadcastOpenInterest;
+      this.stepwidth = config.barWidth ;
+    
+
+       this.func = Gen(config.hotKey)
+       return config;
+    },
     move(e){
       const {x ,y} = e;
       
