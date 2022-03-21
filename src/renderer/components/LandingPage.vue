@@ -296,7 +296,7 @@
       this.updateConfig().then(()=>{
         
         const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
-
+        ipcRenderer.send('set-account', this.userData.id);
         
         const broadcast = config.some(e => e.broadcastOpenInterest);
         if(broadcast && !this.ws){
@@ -790,7 +790,9 @@
   }
 </script>
 
-<style>
+<style >
+
+
   @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
 
   * {
@@ -806,8 +808,14 @@
     padding: 0 10px 10px 10px;
     width: 100vw;
     overflow-x: hidden;
+   
   }
-
+  #wrapper .vxe-cell {
+      padding: 0 4px !important;
+    }
+  #wrapper  .vxe-body--column {
+      padding: 2px 0 !important;;
+    }
   #logo {
     height: auto;
     margin-bottom: 20px;
@@ -883,12 +891,7 @@
     color: #42b983;
     background-color: transparent;
   }
-  .vxe-cell {
-    padding: 0 4px !important;
-  }
-  .vxe-body--column {
-    padding: 2px 0 !important;;
-  }
+
   .sell-direction {
     text-align: right;
   }

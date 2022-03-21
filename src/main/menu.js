@@ -1,10 +1,11 @@
-import {Menu,BrowserWindow, shell } from 'electron'
+import {Menu,BrowserWindow, shell, ipcMain } from 'electron'
 import {baseURL, winURL} from '../renderer/utils/utils'
-import { logPath } from './log'
-const url = baseURL.split(':')[0]
+import { logPath } from './log';
+let account;
+ipcMain.on('set-account', (_, args) => account = args);
 
 let childwin = null;
-
+export { childwin};
 export default function(checked){
   // console.log(checked)
   return Menu.buildFromTemplate([{
@@ -50,7 +51,7 @@ export default function(checked){
                 webSecurity: false
               }
             })
-            childwin.loadURL(`${winURL}#config`)
+            childwin.loadURL(`${winURL}#config?id=${account}`)
             childwin.removeMenu()
             childwin.on('closed', function(){
               childwin = null;

@@ -6,7 +6,7 @@ import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
-import meun from  './menu';
+import meun, {childwin} from  './menu';
 import  './export';
 import  request  from './request';
 import '../renderer/store';
@@ -61,7 +61,9 @@ function createWindow () {
         url: 'access/logoutClient', 
       })
     }
-   
+    if(childwin){
+      childwin.close();
+    }
     clearInterval(Maincycle);
     closeALLData();
     closeALLsubs();

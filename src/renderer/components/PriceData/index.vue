@@ -141,6 +141,8 @@ export default {
           this.chart.volumeScaleType = volumeScaleType;
           this.chart.volumeScaleCount =volumeScaleCount;
           this.chart.volumeScaleTick = volumeScaleTick;
+          
+          this.chart.ctx.clearRect(0, 0, this.width, this.height);
           this.chart.resize( this.width, this.height);
           if(this.arg){
               this.chart.render(this.arg)
