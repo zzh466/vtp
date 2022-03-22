@@ -1,7 +1,7 @@
 <template>
   <div class="config-content" v-loading='loading'>
     <div style="margin: 0px 15px">
-    <el-tabs v-model="active" @tab-click="change"  type="card" >
+    <el-tabs  @tab-click="change"  type="card" >
       <el-tab-pane :label="getName(key.exchangeNo, index)" v-for='key,index in configs' :key='key.exchangeNo' :prop="key.exchangeNo.toString()"></el-tab-pane>
       
     </el-tabs>
@@ -169,13 +169,13 @@
          return key.split(',')
       })}))
       
-      this.active = this.configs[0].exchangeNo.toString();
+     
      
       this.config = this.configs[0]
       this.hotKey = this.configs[0].hotKey;
       request({
         url: '/qout/info',
-        methods: 'GET'
+        method: 'GET'
       }).then(res => {
         this.quotInfoVOList = res.quotInfoVOList
         this.loading = false;
@@ -188,7 +188,7 @@
           loading: true,
           config: {},
           hotKey: [],
-          active: [],
+       
           columns,
           formItem,
           quotInfoVOList: [],
@@ -216,8 +216,24 @@
         })
          const {id} =this.$route.query;
          console.log(config)
-        localStorage.setItem(`config-${id}`, JSON.stringify(config));
-        ipcRenderer.send('update-all-config');
+         this.loading = true;
+         request({
+           method: 'PATCH',
+           url: '/user/config',
+           data: {
+             configVOList: config
+           }
+         }).then(res=> {
+            this.loading = false;
+             if(res.code === 'REQ_SUCCESS'){
+               this.$message.success('修改成功');
+              localStorage.setItem(`config-${id}`, JSON.stringify(config));
+              ipcRenderer.send('update-all-config');
+             }else {
+                this.$message.error(res.msg);
+             }
+         })
+      
       }, 
       edit({type, index}){
         switch(type){
@@ -237,6 +253,7 @@
       },
       update(arr){
         const code =arr[1]
+  
         const key = this.hotKey.some((e,index)=> index !== this.editIndex && e[1]===code);
         if(key){
           this.$alert('当前快捷键已存在');

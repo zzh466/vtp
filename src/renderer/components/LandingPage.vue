@@ -389,18 +389,18 @@
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
          this.account=arg
-        //  if(!this.locked){
-        //     if( this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
-        //       if(!this.forceCloseTime){
-        //         this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
-        //       }
+         if(!this.locked){
+            if( this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
+              if(!this.forceCloseTime){
+                this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+              }
               
-        //     }else{
-        //       clearTimeout(this.forceCloseTime)
+            }else{
+              clearTimeout(this.forceCloseTime)
             
-        //       this.forceCloseTime = null;
-        //     }
-        //  }
+              this.forceCloseTime = null;
+            }
+         }
         
         
      

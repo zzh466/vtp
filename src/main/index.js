@@ -571,7 +571,7 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      // console.log(trade.tasks)
+      console.log(trade.tasks)
       if( trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           

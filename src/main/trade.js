@@ -200,16 +200,17 @@ class Trade {
     next(){
         const { tasks} = this;
         var last = tasks.shift();
+        const timeout = 1000
        if(tasks.length){
             let task = tasks[0];
             //ctp一秒只能发一个请求
             setTimeout(()=> {
                 task()
-            }, 1000)
+            }, timeout)
        }else if(typeof last ==='function' ){
             tasks.push(setTimeout(()=>{
                 this.next()
-            }, 1000))
+            }, timeout))
        }
     }
     chainSend(event, ...args){

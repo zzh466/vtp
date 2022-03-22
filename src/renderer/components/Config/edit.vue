@@ -64,7 +64,7 @@ export default {
                         
             e.preventDefault();
             this.config.key = e.key;
-            this.config.code = e.keyCode;
+            this.config.code = e.keyCode.toString();
             
         },
         cofirm(){
