@@ -317,6 +317,9 @@
         this.positions = position;
         this.finishLoading('position')
       });
+      ipcRenderer.on('force-close-finish', ()=>{
+        this.forcing = false
+      })
        ipcRenderer.on('receive-trade', (event, trader) =>{
         if(Array.isArray(trader)){
           
@@ -539,8 +542,11 @@
           return  e.VolumeTraded
         }))
          ipcRenderer.send('update-instrumentsData', this.instrumentsData);
-         this.$forceUpdate()
+         
          this.$refs.round.update(trade);
+          // if(!this.forceCloseTime){
+          //   this.$forceUpdate()
+          // }
       },
       upddateOrder(order, key, needUpdate){
         
@@ -560,7 +566,10 @@
           const item = this.instrumentsData.find(e => e.instrumentID === InstrumentID);
           if(item)item.todayCancel += 1;
           ipcRenderer.send('update-instrumentsData', this.instrumentsData);
-          this.$forceUpdate()
+          // if(!this.forceCloseTime){
+          //   this.$forceUpdate()
+          // }
+          
         }
       },
       exportExcel(title ,data, row){
@@ -681,20 +690,25 @@
           this.forcing = false;
           ipcRenderer.send('stop-subscrible')
           clearInterval(this.forcingCloseTime)
+          this.forcingCloseTime = null;
+          this.$forceUpdate()
         }
        
       },
       async forceClose(){
-       
+        console.log('强平')
         this.forcing  = true;
         this.locked = true;
         this.$store.dispatch('lock');
         this.stop();
-        this.forceCount = 0
-        clearInterval(this.forcingCloseTime)
-        this.forcingCloseTime = setInterval(()=> {
-          this.closeALL();
-        }, 1300)
+     
+        ipcRenderer.send('info-log', `${this.userData.account}触发强平`)
+        ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: this.instrumentInfo})
+      
+        // this.forcingCloseTime = setInterval(()=> {
+         
+        //   this.closeALL();
+        // }, 1300)
         // if(force){
         //   this.forcingCloseTime = setInterval(()=> {
         //     this.closeALL();

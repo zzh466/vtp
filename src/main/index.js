@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Notification } from 'electron'
+import { app, BrowserWindow, ipcMain, ipcRenderer, Notification } from 'electron'
 import  { receiveData }  from '../ctp/dataStruct';
 import { errorLog, infoLog} from './log';
 
@@ -10,7 +10,7 @@ import meun from  './menu';
 import  './export';
 import  request  from './request';
 import '../renderer/store';
-import {version } from '../renderer/utils/utils'
+import {version,specialExchangeId } from '../renderer/utils/utils'
 import console from 'console';
 
 
@@ -526,6 +526,137 @@ ipcMain.on('cancel-order', (event, args) => {
 ipcMain.handle('async-cancel-order', (event, args)=>{
   const arr = findCancelorder(args, '先撤后下');
   return trade.cancel(arr);
+})
+ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
+
+  const tarderarr = positionMap.concat(tradeMap);
+  let length = tradeMap.length;
+  let count = 0;
+  const combOffsetFlagMap = {};
+  const map = {
+
+  }
+  let interval = null;
+  cancel()
+  function cancel(){
+    const arr = findCancelorder('', '撤单');
+    trade.cancel(arr);
+  }
+  function closeALL(){
+    let tradering = []
+    console.log(map);
+
+    for(let key in map){
+        let direction = '1',
+        arr = map[key].buy;
+        if(map[key].ask.length){
+          direction = '0';
+          arr=map[key].ask
+        }
+       
+        if(arr.length){
+          const _arr = [];
+          arr.reduce((a,b) => {
+            const c= a.find(e=>e.id === b);
+            if(c){
+              c.volume ++
+            }else{
+              a.push({
+                instrumentID: key,
+                volume: 1,
+                id: b,
+                direction
+              })
+            }
+            return a
+          }, _arr);
+        
+          tradering= tradering.concat(_arr);
+        }
+    }
+    console.log(tradering, 'tradering')
+  
+    const tradeList = [];
+    tradering.forEach(({instrumentID, volume, direction, id}) => {
+        const priceData = PriceData[instrumentID];
+        const info = instrumentInfo.find(e => e.InstrumentID === instrumentID);
+      
+        if(!priceData || !info) return;
+        const price = direction === '0'?priceData.BidPrice1 : priceData.AskPrice1;
+        let _over_price = over_price;
+        if(direction === '1'){
+          _over_price = -over_price;
+        }
+        const { PriceTick , ExchangeID} = info;
+        const limitPrice = price + _over_price * PriceTick;
+       
+        let combOffsetFlag = ( specialExchangeId.includes(ExchangeID)  && combOffsetFlagMap[id]!=='1')? '3': '1';
+        if(!count){
+          combOffsetFlag = '0';
+          for(let key in orderMap){
+         
+            if(orderMap[key].ExchangeID + orderMap[key].OrderSysID == id){
+              combOffsetFlag = orderMap[key].CombOffsetFlag;
+              combOffsetFlagMap[id] = combOffsetFlag;
+              break;
+            }
+          }
+         
+        }
+      tradeList.push( {limitPrice, instrumentID, combOffsetFlag, volumeTotalOriginal: volume, direction, ExchangeID});
+    })
+    console.log(tradeList, 'tradeList')
+    if(!tradeList.length){
+        event.sender.send('force-close-finish');
+        clearInterval(interval);
+        console.log('结束')
+        infoLog('强平结束')
+        
+    }else{
+      infoLog(`开始第${count+1}次强平`);
+      if(count){
+        setTimeout(()=>{
+          tradeList.forEach(e => trade.trade(e))
+        }, 100)
+      }else{
+        tradeList.forEach(e => trade.trade(e))
+      }
+    }
+  }
+  function fixMap({Direction, Volume, ExchangeID , OrderSysID, InstrumentID}){
+    if(!map[InstrumentID]){
+      map[InstrumentID] = {
+        buy: [],
+        ask: []
+      }
+    }
+    let same = 'buy', other='ask';
+    if(Direction === '1'){
+        same = 'ask';
+        other = 'buy';
+    }
+    while(Volume){
+      if(map[InstrumentID][other].length){
+        map[InstrumentID][other].shift();
+      }else{
+        map[InstrumentID][same].push(ExchangeID + OrderSysID)
+      }
+      Volume--
+    }
+  }
+  tarderarr.forEach(fixMap);
+  closeALL()
+  interval = setInterval(function(){
+    cancel()
+    let arr = [];
+    if(tradeMap.length> length){
+      arr = tradeMap.slice(length);
+      length = tradeMap.length;
+    };
+    arr.forEach(fixMap)
+    count ++;
+    closeALL();
+  }, 1500)
 })
 //行情相关
 const decodeMsg = new cppmsg.msg(receiveData['SP'])

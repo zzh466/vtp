@@ -399,12 +399,14 @@ class Chart {
         ctx.fillText(time, 0, 20);
         ctx.restore();
     }
-    renderCurrentPirce(price){
+    renderCurrentPirce(price, volume){
         const ctx =this.ctx;
         ctx.save();
         ctx.setLineDash([]);
         ctx.strokeStyle = FONTCOLOR;
-        if(this.currentPrice !== price){
+
+        console.log(volume, this.volume)
+        if(this.volume < volume){
             ctx.strokeStyle = '#ffff00';
         };
         const stepwidth = this.stepwidth;
@@ -423,6 +425,7 @@ class Chart {
         ctx.stroke()
         ctx.restore();
         this.currentPrice = price;
+        this.volume=volume
     }
     renderPlaceOrder(){
         if(this.data.length===0) return;
@@ -632,8 +635,8 @@ class Chart {
         this.renderVolume();
         this.renderHighandLow()
       
-       
-        this.renderCurrentPirce(arg.LastPrice);
+        
+        this.renderCurrentPirce(arg.LastPrice, arg.Volume);
         this.renderPlaceOrder();
         this.renderTradeOrder();
 
