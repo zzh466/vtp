@@ -25,7 +25,7 @@ const state = {
    
     async 'get-config'({ commit,state }){
     
-      const [config_1, over_price, broadcast, openvolume_limit] = await Promise.all([request({
+      const [config_1, over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit] = await Promise.all([request({
         url: 'user/config',
         method: 'GET'
       }), request({
@@ -36,6 +36,9 @@ const state = {
         method: 'GET'
       }), request({
         url: 'property/info/vtp_client_openvolume_limit',
+        method: 'GET'
+      }), request({
+        url: 'property/info/vtp_client_cancelvolume_limit',
         method: 'GET'
       })]);
       localStorage.setItem(`config-${state.userData.account}`, JSON.stringify(config_1));
@@ -50,6 +53,10 @@ const state = {
       commit('setstate', {
         key: 'openvolume_limit',
         data: openvolume_limit.propertyValue
+      })
+      commit('setstate', {
+        key: 'vtp_client_cancelvolume_limit',
+        data: vtp_client_cancelvolume_limit.propertyValue
       })
      
     },
