@@ -160,6 +160,7 @@ let InstrumetsData =[];
 const PriceData ={};
 const broadcast_Data = {};
 let tcp_client_list = [];
+let tcp_reconnct_count = 0;
 function closeALLsubs(){
   COLOSEALL = true;
   
@@ -845,11 +846,14 @@ ipcMain.on('start-receive', (event, args) =>{
     })
     tcp_client.on('close',function(hadError ){
       console.log('1231231')
-      if(hadError && mainWindow && !COLOSEALL){
+      if((hadError || tcp_reconnct_count) && mainWindow && !COLOSEALL){
         
         const index = tcp_client_list.indexOf(tcp_client);
         if(index > -1){
           tcp_client_list.splice(index, 1);
+        }
+        if(tcp_reconnct_count){
+          tcp_reconnct_count--;
         }
         tcp_client = new net.Socket();
         setTimeout(()=> connect(), 1000)
@@ -890,6 +894,15 @@ ipcMain.on('start-receive', (event, args) =>{
   //   a++
   //  }, 500)
 })
+//强制重连
+ipcMain.on('tcp-reconnect', function(){
+  tcp_reconnct_count = tcp_client_list.length;
+  tcp_client_list.forEach(e=>{
+    e.destroy();
+  })
+  tcp_client_list= [];
+})
+
 ipcMain.on('broadcast-openinterest', function(_, arg){
   // console.log(arg);
   const instrument = arg.split(':');

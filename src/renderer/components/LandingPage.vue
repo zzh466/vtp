@@ -34,6 +34,7 @@
     </main>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
       <div style="display: flex; flex">
+         <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button>
           <Table v-for='instrument in subscribelInstruments' :key ='instrument.exchangeNo'  height='300' @row-dblclick='start' :tableData='instrumentsData | changeNo(instrument.instruments)' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
@@ -115,6 +116,9 @@
       },
       openvolume_limit(){
           return this.$store.state.user.openvolume_limit
+      },
+      vtp_client_cancelvolume_limit(){
+          return this.$store.state.user.vtp_client_cancelvolume_limit
       },
       activeIns() {
          return this.$store.state.PriceData.activeIns
@@ -285,6 +289,11 @@
         {
           label: '开仓限制',
           prop: 'openvolume_limit',
+          width: 80
+        },
+        {
+          label: '撤单限制',
+          prop: 'vtp_client_cancelvolume_limit',
           width: 80
         }
         ],
@@ -464,7 +473,14 @@
         this.traderData = this.positions.concat(this.traders);
 
     
-        const openvolume_limit = this.openvolume_limit.split(';').map(e => {
+        const openvolume_limit = this.openvolume_limit.split(';').filter(e=>e).map(e => {
+          const msg= e.split(':')
+          return {
+            instrumentID: msg[0],
+            limit : msg[1]
+          }
+        })
+        const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit.split(';').filter(e=>e).map(e => {
           const msg= e.split(':')
           return {
             instrumentID: msg[0],
@@ -480,7 +496,8 @@
           todayAsk:0,
           todayVolume: 0,
           'todayCancel': 0,
-          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit 
+          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
+          vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
         }))
         
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
@@ -772,6 +789,9 @@
         this.loading.push('order');
         this.loading.push('trade');
         this.login();
+      },
+      reconnect(){
+        ipcRenderer.send('tcp-reconnect')
       },
       login(){
         
