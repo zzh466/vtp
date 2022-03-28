@@ -33,8 +33,10 @@
      
     </main>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
-      <div style="display: flex; flex">
-         <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button>
+       <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button></div>
+      <div style="display: flex;">
+         
+      
           <Table v-for='instrument in subscribelInstruments' :key ='instrument.exchangeNo'  height='300' @row-dblclick='start' :tableData='instrumentsData | changeNo(instrument.instruments)' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
@@ -289,12 +291,12 @@
         {
           label: '开仓限制',
           prop: 'openvolume_limit',
-          width: 80
+          width: 60
         },
         {
           label: '撤单限制',
           prop: 'vtp_client_cancelvolume_limit',
-          width: 80
+          width: 60
         }
         ],
         forcing: false
@@ -404,7 +406,7 @@
          if(!this.locked){
             if( this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
               if(!this.forceCloseTime){
-                this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+                // this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
               }
               
             }else{
@@ -430,7 +432,7 @@
             openVolume: this.orderData.length,
             staticBalance,
             positionProfit: arg.PositionProfit,
-            id: this.userData.futureAccountVOList[0].id
+            id: this.$store.state.user.activeCtpaccount
           }
          
         request({
@@ -796,6 +798,8 @@
       login(){
         
         const userData = this.userData;
+        const active = this.$store.state.user.activeCtpaccount;
+        const account = userData.futureAccountVOList.find(e => e.id === active);
         const {
           tradeAddr:ctp1_TradeAddress,
         
@@ -806,7 +810,7 @@
           futureUserPwd:m_PassWord,
           appId: m_AppId,
           futureUserId:m_AccountId
-        } = userData.futureAccountVOList[0];;
+        } = account;;
         
          ipcRenderer.send('trade-login', {
            ctp1_TradeAddress,

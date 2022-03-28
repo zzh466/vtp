@@ -6,12 +6,13 @@ const state = {
    over_price: 0,
     openvolume_limit: '',
     broadcast: true,
-    config: {}
+    config: {},
+    activeCtpaccount: 0
   }
   
   const mutations = {
     'setstate'(state, {key, data}) {
-
+      
        state[key]  = data;
     },
 
@@ -24,11 +25,8 @@ const state = {
   const actions = {
    
     async 'get-config'({ commit,state }){
-    
-      const [config_1, over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit] = await Promise.all([request({
-        url: 'user/config',
-        method: 'GET'
-      }), request({
+     
+      const [ over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit ] = await Promise.all([request({
         url: 'property/info/vtp_client_forced_liquidation_over_price',
         method: 'GET'
       }), request({
@@ -53,11 +51,11 @@ const state = {
       })
       commit('setstate', {
         key: 'openvolume_limit',
-        data: openvolume_limit.propertyValue
+        data: openvolume_limit.propertyValue || ''
       })
       commit('setstate', {
         key: 'vtp_client_cancelvolume_limit',
-        data: vtp_client_cancelvolume_limit.propertyValue
+        data: vtp_client_cancelvolume_limit.propertyValue || ''
       })
      
     },
