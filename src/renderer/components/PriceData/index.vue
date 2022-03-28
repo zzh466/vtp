@@ -234,11 +234,18 @@ export default {
             }else{
               const yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
               const todayAsk = Direction  === '0' ? 'todayAsk': 'todayBuy';
-              if( this.instrumet[yesterDay] >= Volume){
-                this.instrumet[yesterDay] -= Volume;
-              }else{
-                this.instrumet[todayAsk] -= Volume;
-              }
+              if(this.instrumet[yesterDay] && CombOffsetFlag!== '3'){
+                 if(this.instrumet[yesterDay] >= Volume){
+                   this.instrumet[yesterDay] -= Volume
+                 }else {
+                    this.instrumet[todayAsk] -= Volume -  this.instrumet[yesterDay];
+                   this.instrumet[yesterDay]  = 0;
+                   
+                 }
+                 
+               }else{
+                 this.instrumet[todayAsk] -= Volume;
+               }
             }
             this.update();
           }
