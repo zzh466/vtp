@@ -588,15 +588,20 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
         if(direction === '1'){
           _over_price = -over_price;
         }
-        if(over_price < priceData.LowerLimitPrice){
-          over_price = priceData.LowerLimitPrice;
-        }
-        if(over_price > priceData.UpperLimitPrice){
-          over_price = priceData.UpperLimitPrice;
-        }
+        // if(over_price < priceData.LowerLimitPrice){
+        //   over_price = priceData.LowerLimitPrice;
+        // }
+        // if(over_price > priceData.UpperLimitPrice){
+        //   over_price = priceData.UpperLimitPrice;
+        // }
         const { PriceTick , ExchangeID} = info;
-        const limitPrice = price + _over_price * PriceTick;
-       
+        let limitPrice = price + _over_price * PriceTick;
+        if(limitPrice < priceData.LowerLimitPrice){
+          limitPrice = priceData.LowerLimitPrice;
+        }
+        if(limitPrice > priceData.UpperLimitPrice){
+          limitPrice = priceData.UpperLimitPrice;
+        }
         let combOffsetFlag = ( specialExchangeId.includes(ExchangeID)  && combOffsetFlagMap[id]!=='1')? '3': '1';
         if(!count){
           combOffsetFlag = '0';

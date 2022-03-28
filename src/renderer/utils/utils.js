@@ -33,7 +33,7 @@ export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
 export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '尚未触发', key: 'b'},{msg: '已触发', key: 'c'}]
 
 
-export const version = '220328a';
+export const version = '220328b';
 export function getyyyyMMdd(){
     var d = new Date();
     var curr_date = d.getDate();
