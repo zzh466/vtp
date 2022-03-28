@@ -588,21 +588,12 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
         if(direction === '1'){
           _over_price = -over_price;
         }
-<<<<<<< HEAD
-        if(over_price < priceData.LowerLimitPrice){
-          over_price = priceData.LowerLimitPrice;
-        }
-        if(over_price > priceData.UpperLimitPrice){
-          over_price = priceData.UpperLimitPrice;
-        }
-=======
         // if(over_price < priceData.LowerLimitPrice){
         //   over_price = priceData.LowerLimitPrice;
         // }
         // if(over_price > priceData.UpperLimitPrice){
         //   over_price = priceData.UpperLimitPrice;
         // }
->>>>>>> 7e258d462c9fa6fee8ed8acb4b3a888d063c12cd
         const { PriceTick , ExchangeID} = info;
         let limitPrice = price + _over_price * PriceTick;
         if(limitPrice < priceData.LowerLimitPrice){
