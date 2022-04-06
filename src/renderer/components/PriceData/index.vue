@@ -57,8 +57,8 @@ export default {
       deep: true,
       handler({volume, type, closeType}) {
         
-        const id = this.$route.query.id;
-        const title =getWinName(id, volume, type, closeType) + getHoldCondition(this.instrumet);
+        const {id,accountIndex} = this.$route.query;
+        const title =getWinName(id, accountIndex, volume, type, closeType) + getHoldCondition(this.instrumet);
         ipcRenderer.send('change-title', {id, title});
       }
     }
@@ -346,11 +346,11 @@ export default {
   },
   methods: {
     setConfig(){
-      const {account,exchangeNo} = this.$route.query;
+      const {account,configId} = this.$route.query;
        const configs =JSON.parse(localStorage.getItem(`config-${account}`));
-       const config = configs.find(e => e.exchangeNo === +exchangeNo);
-       
-      console.log(configs, this.$route.query);
+       const config = configs.find(e => e.id === +configId);
+    
+      console.log(config, this.$route.query);
       if(!config) return;
       console.log(config);
       const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
@@ -378,9 +378,9 @@ export default {
     },
     update(){
         const instrumet =  this.instrumet;
-        const id = this.$route.query.id;
+        const {id, accountIndex} = this.$route.query;
         const {volume, type, closeType} = this.config;
-        const title =getWinName(id, volume, type, closeType) + getHoldCondition(instrumet);
+        const title =getWinName(id, accountIndex, volume, type, closeType) + getHoldCondition(instrumet);
         ipcRenderer.send('change-title', {id, title});
     },
     mouseTrade(){

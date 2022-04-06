@@ -12,8 +12,8 @@
       </el-form-item>
    </el-form>
   
-      <el-form label-width="160px" :rules="rules" v-if='step === 2'>
-      <el-form-item label="选择交易账户" prop="userNm">
+      <el-form label-width="160px" :rules="rules" v-else-if='step === 2'>
+      <el-form-item label="选择交易账户" >
         <el-radio-group v-model="active">
           <el-radio v-for='account,index in accountList' :label="account.id" :key='account.id' >账户{{index+1}}</el-radio>
         </el-radio-group>
@@ -82,8 +82,13 @@
                 if(futureAccountVOList.length > 1){
                   this.accountList = futureAccountVOList;
                   this.active = futureAccountVOList[0].id;
-                  this.step = 2
+                  this.$nextTick(()=>  this.step = 2)
+                 
                 }else{
+                  this.$store.commit('setstate', {
+                      key: 'activeCtpaccount',
+                      data:futureAccountVOList[0].id
+                  })
                   ipcRenderer.send('resize-main',  {width: 1600, height: 770});
                     this.$router.push('main');
                 }

@@ -2,7 +2,7 @@
   <div class="config-content" v-loading='loading'>
     <div style="margin: 0px 15px">
     <el-tabs  @tab-click="change"  type="card" >
-      <el-tab-pane :label="getName(key.exchangeNo, index)" v-for='key,index in configs' :key='key.exchangeNo' :prop="key.exchangeNo.toString()"></el-tab-pane>
+      <el-tab-pane :label="`配置${index+1}`" v-for='key,index in configs' :key='key.id' :prop="key.id.toString()"></el-tab-pane>
       
     </el-tabs>
      <Table :columns='columns' :tableData='hotKey' @config-action='edit' :height='400' row-key='key'/>
@@ -14,6 +14,10 @@
             { required: true, message: `请输入${item.name}`, trigger: 'blur' }]">
           <el-input v-model="config[item.key]" type="number"></el-input>
         </el-form-item>
+          <el-form-item label='订阅合约' prop='instruments'  :rules='[{ required: true, message: `请选择订阅合约`}]'>
+            <el-transfer filterable :titles= "['全部合约', '已订阅合约']" v-model="config.instruments" :data="subsInstruments"></el-transfer>
+          </el-form-item>
+       
         <el-form-item label='默认平仓方式' prop='sysCloseType'  :rules='[{ required: true, message: `请选择默认平仓方式`}]'>
             <el-select v-model='config.sysCloseType'>
             <el-option :value='0' label="一键全平"></el-option>
@@ -165,7 +169,7 @@
       const {id} =this.$route.query;
       const config = JSON.parse(localStorage.getItem(`config-${id}`));
       console.log(config); 
-      this.configs = config.map(e => ({...e, hotKey: e.hotKey.split(';').filter(e => e).map(key => {
+      this.configs = config.map(e => ({...e, instruments: (e.instruments||'').split(',').filter(e=>e),hotKey: e.hotKey.split(';').filter(e => e).map(key => {
          return key.split(',')
       })}))
       
@@ -173,11 +177,12 @@
      
       this.config = this.configs[0]
       this.hotKey = this.configs[0].hotKey;
+    
       request({
         url: '/qout/info',
         method: 'GET'
       }).then(res => {
-        this.quotInfoVOList = res.quotInfoVOList
+        this.subsInstruments = res.quotInfoVOList.reduce((a,b) =>  a.concat(b.instrumentList.map(e => ({key: e, label: e}))), [])
         this.loading = false;
       })
 
@@ -191,7 +196,7 @@
        
           columns,
           formItem,
-          quotInfoVOList: [],
+          subsInstruments: [],
           showModal: false,
           editItem: {},
           vlomeaction,
@@ -212,6 +217,7 @@
             }
           }
           data.hotKey= e.hotKey.map(key=>key.join(',')).join(';');
+          data.instruments =e.instruments.join(',');
           return data;
         })
          const {id} =this.$route.query;
@@ -272,13 +278,7 @@
         this.config = this.configs[index];
         this.hotKey = this.configs[index].hotKey;
       },
-      getName(exchangeNo, index){
-         const exchange = this.quotInfoVOList.find(e => e.exchangeNo === exchangeNo);
-        if(exchange){
-          index = exchange.quotName
-        }
-         return `${index}配置`
-      }
+      
     }
   }
 </script>

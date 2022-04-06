@@ -85,7 +85,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, exchangeNo}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -104,7 +104,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&exchangeNo=${exchangeNo}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -379,10 +379,14 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-order', orderMap[key], key, needUpdate);
   })
  
-  
+  let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    event.sender.send('add-loading', 'position')
+    if(!isLast && !send){
+      event.sender.send('add-loading', 'position')
+      send = true;
+    }
+  
     if(OpenDate !==TradingDay) {
       field.Price = LastSettlementPrice;
       field.Volume = field.Volume + field.CloseVolume;

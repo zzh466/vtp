@@ -2,13 +2,15 @@
   <div id="wrapper" v-loading='loading.length || forcing'  :element-loading-text="forcing?'触发强平操作，正在强平中':'正在获取账号信息'" >
     <el-descriptions size= 'samll' direction="vertical" :column="10" border class="account">
       <el-descriptions-item label="账号">{{userData.account}}</el-descriptions-item>
-      <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
+         <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
+      <el-descriptions-item label="当前账户">{{`账户${accountIndex}`}}</el-descriptions-item>
+   
     
-      <el-descriptions-item label="总手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
-      <el-descriptions-item label="总实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
+      <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
+      <el-descriptions-item label="当前账户实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
       <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
-    
+       <el-descriptions-item label="总实际盈亏">{{totalProfit}}</el-descriptions-item>
     </el-descriptions>
       
     <main  v-if='!loading.length'>
@@ -37,7 +39,7 @@
       <div style="display: flex;">
          
       
-          <Table v-for='instrument in subscribelInstruments' :key ='instrument.exchangeNo'  height='300' @row-dblclick='start' :tableData='instrumentsData | changeNo(instrument.instruments)' :columns= 'instrumentsColumns'/>
+          <Table v-for='instrument in subscribelInstruments' :key ='instrument.id'  height='300' @row-dblclick='start' :tableData='instrumentsData | changeNo(instrument.instruments)' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
@@ -100,7 +102,7 @@
     // },
       filters: {
       changeNo(instruments, _instruments){
-
+        
         return instruments.filter(e=> _instruments.includes(e.instrumentID));
       }
     },
@@ -111,9 +113,9 @@
       subscribelInstruments (){
         
         // return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
-         return this.userData.quotVOList.map(e=> ({
-          instruments: e.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, '')),
-          exchangeNo: e.exchangeNo
+         return this.userData.instrumentConfigVOList.map(e=> ({
+          instruments: (e.instruments|| '').split(',').map(e => e.replace(/[\n\r]/g, '')).filter(e=>e),
+          configId: e.id
         }))
       },
       openvolume_limit(){
@@ -299,7 +301,9 @@
           width: 60
         }
         ],
-        forcing: false
+        forcing: false,
+        accountIndex: 1,
+        totalProfit: 0
       }
     },
     created(){
@@ -385,7 +389,9 @@
          const index = this.loading.indexOf(arg);
         // console.log(tag)
         if(index  === -1) {
+
           this.loading.push(arg)
+            ipcRenderer.send('info-log', `增加查询${arg}`)
         }
       });
       ipcRenderer.on('receive-info', (event, arg)=>{
@@ -403,19 +409,6 @@
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
          this.account=arg
-         if(!this.locked){
-            if( this.userData.thrRealProfit && arg.CloseProfit + arg.PositionProfit - arg.Commission < -this.userData.thrRealProfit){
-              if(!this.forceCloseTime){
-                // this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
-              }
-              
-            }else{
-              clearTimeout(this.forceCloseTime)
-            
-              this.forceCloseTime = null;
-            }
-         }
-        
         
      
         const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
@@ -439,6 +432,22 @@
           url:  '/future/futureAccountTradingInfo',
           method: 'PATCH',
           data
+        }).then(res => {
+          this.totalProfit =  res.futureAccountVOList.reduce((a,b) => a + b.realProfit, 0).toFixed(2)
+           if(!this.locked){
+            if( this.userData.thrRealProfit && this.totalProfit < -this.userData.thrRealProfit){
+              if(!this.forceCloseTime){
+                this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+              }
+              
+            }else{
+              clearTimeout(this.forceCloseTime)
+            
+              this.forceCloseTime = null;
+            }
+         }
+        
+        
         })
       })
       // ipcRenderer.on('receive-instrument', (event, arg)=>{
@@ -491,7 +500,7 @@
         })
         const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments), []).map(e=>({
           instrumentID: e,
-          exchangeNo: e.exchangeNo,
+          configId: e.configId,
           yesterdayBuy: 0,
           yesterdayAsk: 0,
           todayBuy: 0,
@@ -642,9 +651,9 @@
         if(this.userData.account.includes('wmn')){
           checked = false;
         }
-        const exchangeNo = this.subscribelInstruments.find(e => e.instruments.includes(instrumentID)).exchangeNo
-
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,exchangeNo});
+        const configId = this.subscribelInstruments.find(e => e.instruments.includes(instrumentID)).configId
+        const accountIndex = this.accountIndex;
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId, accountIndex});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
@@ -772,9 +781,10 @@
         this.started = true;
         const {quotVOList } = this.userData;
         // const quotAddr = '192.168.0.18:18198'
-        quotVOList.forEach((e,index) => {
+        quotVOList.forEach((e) => {
            const _quotAddr = e.quotAddr.split(':');
-             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: this.subscribelInstruments[index].instruments,   iCmdID: 101});
+            const instruments = e.subInstruments.split(',')
+             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101});
         })
     },
       cancel(){
@@ -799,7 +809,9 @@
         
         const userData = this.userData;
         const active = this.$store.state.user.activeCtpaccount;
-        const account = userData.futureAccountVOList.find(e => e.id === active);
+        const index = userData.futureAccountVOList.findIndex(e => e.id === active);
+       this.accountIndex = index + 1;
+       const account = userData.futureAccountVOList[index];
         const {
           tradeAddr:ctp1_TradeAddress,
         

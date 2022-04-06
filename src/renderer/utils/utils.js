@@ -17,8 +17,8 @@ export const hostname = os.hostname();//主机名
 console.log(hostname);
 export const typeMap = ['锁仓', '平今', '开仓', '平仓'];
 export const closeTypeMap = ['一键全平', '按指定手数平仓']
-export function getWinName(instrumentID, volume = 1, type = 0, closeType=0){
-    return `${instrumentID}   （手数：${volume} 平仓方式：${closeTypeMap[closeType]} 平今策略：${typeMap[type]} ）`
+export function getWinName(instrumentID, accountIndex, volume = 1, type = 0, closeType=0){
+    return `${instrumentID}-账户${accountIndex}   （手数：${volume} 平仓方式：${closeTypeMap[closeType]} 平今策略：${typeMap[type]} ）`
 }
 
 export function getHoldCondition(data={}){
@@ -45,7 +45,7 @@ export function getyyyyMMdd(){
     return yyyyMMdd;
 } 
 
-// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.18:8080/vtpmanagerapi': '139.196.41.155:8080/vtpmanagerapi'
+// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.18:8082/vtpmanagerapi': '139.196.41.155:8080/vtpmanagerapi'
 export const baseURL = '139.196.41.155:8082/vtpmanagerapi'
 
 const key = 'user-client';
