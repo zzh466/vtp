@@ -443,6 +443,18 @@ void uv_trader::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, boo
 	on_invoke(T_ON_RSPERROR, _pRspInfo, pRspInfo, nRequestID, bIsLast);
 }
 
+void uv_trader::OnRtnErrorConditionalOrder(CThostFtdcErrorConditionalOrderField *pErrorConditionalOrder) {
+	CThostFtdcErrorConditionalOrderField *_pErrorConditionalOrder = NULL;
+	if (pErrorConditionalOrder)
+	{
+		_pErrorConditionalOrder = new CThostFtdcErrorConditionalOrderField();
+		memcpy(_pErrorConditionalOrder, pErrorConditionalOrder, sizeof(CThostFtdcErrorConditionalOrderField));
+	}
+	std::string log = "uv_trader OnRtnErrorConditionalOrder------>";
+	logger_cout(log.append("").c_str());
+	on_invoke(T_ON_RTNERRORCONDITIONALORDER, _pErrorConditionalOrder, new CThostFtdcRspInfoField(), 0, 0);
+};
+
 void uv_trader::_async(uv_work_t *work)
 {
 	LookupCtpApiBaton *baton = static_cast<LookupCtpApiBaton *>(work->data);

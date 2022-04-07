@@ -164,6 +164,7 @@ void WrapTrader::initEventMap()
     event_map["rqInstrumentCommissionRate"] = T_ON_RQINSTRUMENTCOMMISSIONRATE;
     event_map["rqSettlementInfoConfirm"] = T_ON_RQSETTLEMENTINFOCONFIRM;
     event_map["rspError"] = T_ON_RSPERROR;
+    event_map["rtnErrorConditionalOrder"] = T_ON_RTNERRORCONDITIONALORDER;
 }
 
 void WrapTrader::GetTradingDay(const FunctionCallbackInfo<Value> &args)
@@ -605,26 +606,46 @@ void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
         strcpy(req.OrderRef, ((std::string)*orderRef_).c_str());
         log.append("orderRef:").append((std::string)*orderRef_).append("|");
     }
-    /*Local<Value> vstopPrice = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "stopPrice").ToLocalChecked()).ToLocalChecked();
-    if (!vstopPrice->IsUndefined())
-    {
-        double stopPrice = vstopPrice.As<Number>()->Value();
-        req.StopPrice = stopPrice;
-        log.append("stopPrice:").append(to_string(stopPrice)).append("|");
-    }*/
-    /*Local<Value> contingentCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "contingentCondition").ToLocalChecked()).ToLocalChecked();
+    Local<Value> contingentCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "ContingentCondition").ToLocalChecked()).ToLocalChecked();
     if (!contingentCondition->IsUndefined())
     {
         String::Utf8Value contingentCondition_(isolate, contingentCondition->ToString(context).ToLocalChecked());
         req.ContingentCondition = ((std::string)*contingentCondition_)[0];
-        log.append("contingentCondition:").append((std::string)*contingentCondition_).append("|");
-    }*/
+        // log.append("contingentCondition:").append(req.ContingentCondition).append("|");
+
+        Local<Value> vStopPrice = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "StopPrice").ToLocalChecked()).ToLocalChecked();
+        if (!vStopPrice->IsUndefined())
+        {
+            req.StopPrice = vStopPrice.As<Number>()->Value();
+        } else {
+            isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments->StopPrice").ToLocalChecked()));
+            return;
+        }
+    } else {
+        req.ContingentCondition = THOST_FTDC_CC_Immediately;
+    }
+    Local<Value> timeCondition = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "TimeCondition").ToLocalChecked()).ToLocalChecked();
+    if (!timeCondition->IsUndefined())
+    {
+        String::Utf8Value timeCondition_(isolate, timeCondition->ToString(context).ToLocalChecked());
+        req.TimeCondition = ((std::string)*timeCondition_)[0];
+        // log.append("timeCondition:").append(((std::string)*timeCondition_)[0]).append("|");
+    } else {
+        req.TimeCondition = THOST_FTDC_TC_GFD;
+    }
+    Local<Value> orderPriceType = jsonObj->Get(context, v8::String::NewFromUtf8(isolate, "OrderPriceType").ToLocalChecked()).ToLocalChecked();
+    if (!orderPriceType->IsUndefined())
+    {
+        String::Utf8Value orderPriceType_(isolate, orderPriceType->ToString(context).ToLocalChecked());
+        req.OrderPriceType = ((std::string)*orderPriceType_)[0];
+        // log.append("orderPriceType:").append(((std::string)*orderPriceType_)[0]).append("|");
+    } else {
+        req.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
+    }
     strcpy(req.BrokerID, ((std::string)*brokerId_).c_str());
     strcpy(req.InvestorID, ((std::string)*investorId_).c_str());
     strcpy(req.UserID, ((std::string)*userId_).c_str());
     strcpy(req.InstrumentID, ((std::string)*instrumentId_).c_str());
-    req.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-    //req.OrderPriceType = ((std::string)*priceType_)[0];
     req.Direction = ((std::string)*direction_)[0];
     req.CombOffsetFlag[0] = ((std::string)*combOffsetFlag_)[0];
     memset(req.CombHedgeFlag, 0, sizeof(req.CombHedgeFlag));
@@ -632,13 +653,11 @@ void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
     //req.CombHedgeFlag[0] = ((std::string)*combHedgeFlag_)[0];
     req.LimitPrice = limitPrice;
     req.VolumeTotalOriginal = volumeTotalOriginal;
-    req.TimeCondition = THOST_FTDC_TC_GFD;
     memset(req.GTDDate, 0, sizeof(req.GTDDate));
-    //req.TimeCondition = ((std::string)*timeCondition_)[0];
     req.VolumeCondition = THOST_FTDC_VC_AV;
     //req.VolumeCondition = ((std::string)*volumeCondition_)[0];
     req.MinVolume = 1;
-    req.ContingentCondition = THOST_FTDC_CC_Immediately;
+    
     memset(&(req.StopPrice), 0, sizeof(req.StopPrice));
     req.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
     req.IsAutoSuspend = 0;
@@ -1013,201 +1032,209 @@ void WrapTrader::FunCallback(CbRtnField *data)
 
     switch (data->eFlag)
     {
-    case T_ON_CONNECT:
-    {
-        Local<Value> argv[1] = {Undefined(isolate)};
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
-        break;
-    }
-    case T_ON_DISCONNECTED:
-    {
-        Local<Value> argv[1] = {Integer::New(isolate, data->nReason)};
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
-        break;
-    }
-    case T_ON_RSPAUTHENTICATE:
-    {
-        Local<Value> argv[1] = {Integer::New(isolate, data->nReason)};
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
-        break;
-    }
-    case T_ON_RSPUSERLOGIN:
-    {
-        Local<Value> argv[4];
-        pkg_cb_userlogin(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_RSPUSERLOGOUT:
-    {
-        Local<Value> argv[4];
-        pkg_cb_userlogout(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-        //        case T_ON_RSPINFOCONFIRM: {
-        //            Local <Value> argv[4];
-        //            pkg_cb_confirm(data, argv);
-        //            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        //			fn->Call(isolate->GetCurrentContext()->Global(), 4, argv);
-        //            break;
-        //        }
-    case T_ON_RSPINSERT:
-    {
-        Local<Value> argv[4];
-        pkg_cb_orderinsert(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_ERRINSERT:
-    {
-        Local<Value> argv[2];
-        pkg_cb_errorderinsert(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 2, argv);
-        break;
-    }
-    case T_ON_RSPACTION:
-    {
-        Local<Value> argv[4];
-        pkg_cb_orderaction(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_ERRACTION:
-    {
-        Local<Value> argv[2];
-        pkg_cb_errorderaction(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 2, argv);
+        case T_ON_CONNECT:
+        {
+            Local<Value> argv[1] = {Undefined(isolate)};
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
+            break;
+        }
+        case T_ON_DISCONNECTED:
+        {
+            Local<Value> argv[1] = {Integer::New(isolate, data->nReason)};
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
+            break;
+        }
+        case T_ON_RSPAUTHENTICATE:
+        {
+            Local<Value> argv[1] = {Integer::New(isolate, data->nReason)};
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
+            break;
+        }
+        case T_ON_RSPUSERLOGIN:
+        {
+            Local<Value> argv[4];
+            pkg_cb_userlogin(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RSPUSERLOGOUT:
+        {
+            Local<Value> argv[4];
+            pkg_cb_userlogout(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+            //        case T_ON_RSPINFOCONFIRM: {
+            //            Local <Value> argv[4];
+            //            pkg_cb_confirm(data, argv);
+            //            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            //			fn->Call(isolate->GetCurrentContext()->Global(), 4, argv);
+            //            break;
+            //        }
+        case T_ON_RSPINSERT:
+        {
+            Local<Value> argv[4];
+            pkg_cb_orderinsert(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_ERRINSERT:
+        {
+            Local<Value> argv[2];
+            pkg_cb_errorderinsert(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 2, argv);
+            break;
+        }
+        case T_ON_RSPACTION:
+        {
+            Local<Value> argv[4];
+            pkg_cb_orderaction(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_ERRACTION:
+        {
+            Local<Value> argv[2];
+            pkg_cb_errorderaction(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 2, argv);
 
-        break;
-    }
-    case T_ON_RQORDER:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rspqryorder(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_RTNORDER:
-    {
-        Local<Value> argv[1];
-        pkg_cb_rtnorder(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
+            break;
+        }
+        case T_ON_RQORDER:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rspqryorder(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RTNORDER:
+        {
+            Local<Value> argv[1];
+            pkg_cb_rtnorder(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
 
-        break;
-    }
-    case T_ON_RQTRADE:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rqtrade(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RQTRADE:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rqtrade(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
 
-        break;
-    }
-    case T_ON_RTNTRADE:
-    {
-        Local<Value> argv[1];
-        pkg_cb_rtntrade(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
+            break;
+        }
+        case T_ON_RTNTRADE:
+        {
+            Local<Value> argv[1];
+            pkg_cb_rtntrade(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
 
-        break;
-    }
-        //        case T_ON_RQINVESTORPOSITION: {
-        //            Local <Value> argv[4];
-        //            pkg_cb_rqinvestorposition(data, argv);
-        //            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        //			fn->Call(isolate->GetCurrentContext()->Global(), 4, argv);
-        //
-        //            break;
-        //        }
-    case T_ON_RQINVESTORPOSITIONDETAIL:
-    {
-        Local <Value> argv[4];
-        pkg_cb_rqinvestorpositiondetail(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_RQTRADINGACCOUNT:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rqtradingaccount(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+            //        case T_ON_RQINVESTORPOSITION: {
+            //            Local <Value> argv[4];
+            //            pkg_cb_rqinvestorposition(data, argv);
+            //            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            //			fn->Call(isolate->GetCurrentContext()->Global(), 4, argv);
+            //
+            //            break;
+            //        }
+        case T_ON_RQINVESTORPOSITIONDETAIL:
+        {
+            Local <Value> argv[4];
+            pkg_cb_rqinvestorpositiondetail(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RQTRADINGACCOUNT:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rqtradingaccount(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
 
-        break;
-    }
-    case T_ON_RQINSTRUMENT:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rqinstrument(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RQINSTRUMENT:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rqinstrument(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
 
-        break;
-    }
-    case T_ON_RQDEPTHMARKETDATA:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rqdepthmarketdata(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_RQSETTLEMENTINFO:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rqsettlementinfo(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_RSPERROR:
-    {
-        Local<Value> argv[3];
-        pkg_cb_rsperror(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 3, argv);
+            break;
+        }
+        case T_ON_RQDEPTHMARKETDATA:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rqdepthmarketdata(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RQSETTLEMENTINFO:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rqsettlementinfo(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RSPERROR:
+        {
+            Local<Value> argv[3];
+            pkg_cb_rsperror(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 3, argv);
 
-        break;
-    }
-    case T_ON_RSETTLEMENTINFOCONFIRM:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rsettlementinfoconfirm(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_RQINSTRUMENTCOMMISSIONRATE:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rqinstrumentcommissionrate(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
-    case T_ON_RQSETTLEMENTINFOCONFIRM:
-    {
-        Local<Value> argv[4];
-        pkg_cb_rqsettlementinfoconfirm(data, argv);
-        Local<Function> fn = Local<Function>::New(isolate, cIt->second);
-        fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
-        break;
-    }
+            break;
+        }
+        case T_ON_RSETTLEMENTINFOCONFIRM:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rsettlementinfoconfirm(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RQINSTRUMENTCOMMISSIONRATE:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rqinstrumentcommissionrate(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RQSETTLEMENTINFOCONFIRM:
+        {
+            Local<Value> argv[4];
+            pkg_cb_rqsettlementinfoconfirm(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 4, argv);
+            break;
+        }
+        case T_ON_RTNERRORCONDITIONALORDER:
+        {
+            Local<Value> argv[1];
+            pkg_cb_rtnerrorconditionalorder(data, argv);
+            Local<Function> fn = Local<Function>::New(isolate, cIt->second);
+            fn->Call(context, isolate->GetCurrentContext()->Global(), 1, argv);
+            break;
+        }
     }
 }
 
@@ -2101,6 +2128,94 @@ void WrapTrader::pkg_cb_rsperror(CbRtnField *data, Local<Value> *cbArray)
     *cbArray = Number::New(isolate, data->nRequestID);
     *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
     *(cbArray + 2) = pkg_rspinfo(data->rspInfo);
+    return;
+}
+
+void WrapTrader::pkg_cb_rtnerrorconditionalorder(CbRtnField *data, Local<Value> *cbArray) 
+{
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    Local<Context> context = isolate->GetCurrentContext();
+
+    Local<Object> jsonRtn = Object::New(isolate);
+    if (data->rtnField)
+    {
+        CThostFtdcErrorConditionalOrderField *pTrade = static_cast<CThostFtdcErrorConditionalOrderField *>(data->rtnField);
+        jsonRtn = Object::New(isolate);
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->BrokerID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InvestorID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "reserve1").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->reserve1).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderRef").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->OrderRef).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "UserID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->UserID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderPriceType").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->OrderPriceType).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "Direction").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->Direction).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "CombOffsetFlag").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->CombOffsetFlag).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "CombHedgeFlag").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->CombHedgeFlag).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "LimitPrice").ToLocalChecked(), Number::New(isolate, pTrade->LimitPrice));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "VolumeTotalOriginal").ToLocalChecked(), Number::New(isolate, pTrade->VolumeTotalOriginal));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "TimeCondition").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->TimeCondition).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "GTDDate").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->GTDDate).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "VolumeCondition").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->VolumeCondition).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "MinVolume").ToLocalChecked(), Number::New(isolate, pTrade->MinVolume));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ContingentCondition").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->ContingentCondition).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "StopPrice").ToLocalChecked(), Number::New(isolate, pTrade->StopPrice));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ForceCloseReason").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->ForceCloseReason).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "IsAutoSuspend").ToLocalChecked(), Number::New(isolate, pTrade->IsAutoSuspend));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "BusinessUnit").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->BusinessUnit).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "RequestID").ToLocalChecked(), Number::New(isolate, pTrade->RequestID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderLocalID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->OrderLocalID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ExchangeID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ExchangeID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ParticipantID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ParticipantID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ClientID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ClientID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "reserve2").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->reserve2).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "TraderID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->TraderID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstallID").ToLocalChecked(), Number::New(isolate, pTrade->InstallID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderSubmitStatus").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->OrderSubmitStatus).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "NotifySequence").ToLocalChecked(), Number::New(isolate, pTrade->NotifySequence));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "TradingDay").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->TradingDay).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "SettlementID").ToLocalChecked(), Number::New(isolate, pTrade->SettlementID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderSysID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->OrderSysID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderSource").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->OrderSource).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderStatus").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->OrderStatus).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "OrderType").ToLocalChecked(), String::NewFromUtf8(isolate, charto_string(pTrade->OrderType).c_str()).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "VolumeTraded").ToLocalChecked(), Number::New(isolate, pTrade->VolumeTraded));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "VolumeTotal").ToLocalChecked(), Number::New(isolate, pTrade->VolumeTotal));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InsertDate").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InsertDate).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InsertTime").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InsertTime).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ActiveTime").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ActiveTime).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "SuspendTime").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->SuspendTime).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "UpdateTime").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->UpdateTime).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "CancelTime").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->CancelTime).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ActiveTraderID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ActiveTraderID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ClearingPartID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ClearingPartID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "SequenceNo").ToLocalChecked(), Number::New(isolate, pTrade->SequenceNo));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "FrontID").ToLocalChecked(), Number::New(isolate, pTrade->FrontID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "SessionID").ToLocalChecked(), Number::New(isolate, pTrade->SessionID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "UserProductInfo").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->UserProductInfo).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "StatusMsg").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->StatusMsg).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "UserForceClose").ToLocalChecked(), Number::New(isolate, pTrade->UserForceClose));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ActiveUserID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ActiveUserID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerOrderSeq").ToLocalChecked(), Number::New(isolate, pTrade->BrokerOrderSeq));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "RelativeOrderSysID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->RelativeOrderSysID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ZCETotalTradedVolume").ToLocalChecked(), Number::New(isolate, pTrade->ZCETotalTradedVolume));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ErrorID").ToLocalChecked(), Number::New(isolate, pTrade->ErrorID));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ErrorMsg").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ErrorMsg).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "IsSwapOrder").ToLocalChecked(), Number::New(isolate, pTrade->IsSwapOrder));
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "BranchID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->BranchID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestUnitID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InvestUnitID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "AccountID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->AccountID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "CurrencyID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->CurrencyID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "reserve3").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->reserve3).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "MacAddress").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->MacAddress).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->InstrumentID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "ExchangeInstID").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->ExchangeInstID).ToLocalChecked());
+        jsonRtn->Set(context, String::NewFromUtf8(isolate, "IPAddress").ToLocalChecked(), String::NewFromUtf8(isolate, pTrade->IPAddress).ToLocalChecked());
+    }
+    else {
+       jsonRtn = Object::New(isolate);
+    }
+
+    *cbArray = jsonRtn;
     return;
 }
 
