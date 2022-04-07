@@ -1,5 +1,5 @@
 <template>
-  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading'> 
+  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading' > 
     <div class="hold-order">
       <div class="buy-orders">
         <div class="buy-order" v-for="index of broadcast['1']" :style="{ width: stepwidth +'px'}"  :key="index"></div>
@@ -10,6 +10,34 @@
     </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
     <div  class="price-tick" v-show="showbar" :style="{ width: stepwidth +'px', left: left + 'px' ,}"></div>
+    <el-dialog title="条件单" width="400px" :visible.sync="showCondition">
+       <el-form ref="form" :model="editcondition" label-width="80px">
+            <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
+                <el-input v-model='editcondition.price' :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
+            </el-form-item>
+            <el-form-item label='超价平仓' prop='overprice' >
+                <el-radio-group v-model="editcondition.overprice">
+                    
+                    <el-radio :label="false">否</el-radio>
+                     <el-radio :label="true">是</el-radio>
+                </el-radio-group>
+                <p>选择是后将以涨跌停价进行平仓</p>
+            </el-form-item>
+            
+              <el-form-item label='手数' prop='volume' >
+                  <el-input v-model='editcondition.volume' type="number"></el-input>
+                    <p>不填写手数默认平全部仓位</p>
+              </el-form-item>
+             
+       </el-form>
+        <div slot='footer'>
+              <el-button @click='showCondition=false'>取 消</el-button>
+                <el-button type="primary" @click="cofirmCondition">确 定</el-button>
+        </div>
+    </el-dialog>
+  <div class="condition-tag">
+    <el-tag style="margion-top: 3px" effect="plain" v-for='condition, index in conditions' :key="condition.price" @click="addCondition(index)" closable size='mini' @close='closeCondition(index)'>条件单{{index + 1}}</el-tag>
+  </div>  
   </div>
 </template>
 
@@ -72,6 +100,9 @@ export default {
       ipcRenderer.send('register-event', id);
      
       window.onkeydown =(e)=>{
+        if(this.showCondition){
+          return
+        }
         this.func(e, this);
       }
       let resizeTimeout;
@@ -341,7 +372,15 @@ export default {
       broadcast: {
         '0': 0,
         '1': 0
-      }
+      },
+      showCondition: false,
+      conditions: [],
+      editcondition: {
+        price: '',
+        overprice: false,
+        volume: 0
+      },
+      arg: {}
     }
   },
   methods: {
@@ -384,7 +423,7 @@ export default {
         ipcRenderer.send('change-title', {id, title});
     },
     mouseTrade(){
-      if(!this.showbar || !this.chart.data.length) return;
+      if(!this.showbar || !this.chart.data.length || this.showCondition) return;
       const index = (this.left - 105) / this.stepwidth;
       let {buyIndex, askIndex, start, lowerLimitindex, UpperLimitindex} = this.chart;
       buyIndex = buyIndex - start;
@@ -507,7 +546,7 @@ export default {
     },
     changeHotKey(config){
       this.func = Gen(config);
-    }
+    },
     // init(data){
     //   const {LastPrice} = data;
     //   const xdata = this.intiXAxis(LastPrice, 0.5);
@@ -551,7 +590,47 @@ export default {
     //     }
     //   })
     // },
-  }
+    addCondition(index){
+      if(!this.arg.LastPrice) return;
+      if(index === undefined){
+        this.editcondition= {
+          price: '',
+          overprice: false,
+          volume: 0
+        }
+      }else {
+        this.editcondition = this.conditions[index]
+      }
+      this.showCondition = true;
+      this.editIndex= index
+    },
+    cofirmCondition(){
+      this.$refs.form.validate((valid)=>{
+        if(valid){
+          if(this.editIndex === undefined){
+            this.conditions.push(this.editcondition);
+          }else{
+            this.conditions.splice(this.editIndex, 1, this.editcondition);
+          }
+          this.showCondition =false;
+        }
+      })
+    },
+    validator(rules, value, callback) {
+        value = parseFloat(value);
+      
+        if(value < this.arg.LowerLimitPrice || value > this.arg.UpperLimitPrice){
+          return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice}, 小于${this.arg.LowerLimitPrice}`))
+        }
+         callback();
+      },
+    closeCondition(index){
+      this.$confirm(`确定删除条件单${index+1}`).then(res =>{
+        this.conditions.splice(index, 1)
+      })
+    }
+  },
+  
 }
 </script>
 <style>
@@ -604,5 +683,12 @@ export default {
   margin-left: 2px;
   width: 10px;
   height: 3px;
+}
+.condition-tag{
+  position: absolute;
+    top: 45px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
 }
 </style>

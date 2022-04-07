@@ -419,7 +419,11 @@ ipcMain.on('trade-login', (event, args) => {
    
       trade.tasks.push(setTimeout(()=>{
         trade.next()
-    }, 1500))
+      }, 1500))
+      TRADETIME = setTimeout(() => {
+        event.sender.send('finish-loading', 'trade')
+        TRADETIME= null;
+      }, 5000)
     }
    
     STARTTRADE =false;
