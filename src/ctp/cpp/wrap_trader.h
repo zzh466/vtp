@@ -79,6 +79,7 @@ private:
 	static void pkg_cb_rqinstrumentcommissionrate(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rqsettlementinfoconfirm(CbRtnField *data, Local<Value> *cbArray);
 	static void pkg_cb_rsperror(CbRtnField *data, Local<Value> *cbArray);
+	static void pkg_cb_rtnerrorconditionalorder(CbRtnField *data, Local<Value> *cbArray);
 	static Local<Value> pkg_rspinfo(void *vpRspInfo);
 
 	uv_trader *uvTrader;

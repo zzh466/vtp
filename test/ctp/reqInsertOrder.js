@@ -2,27 +2,27 @@ var ctp = require('../../build/Debug/ctp.node');
 ctp.settings({ log: true });
 
 // simnow hanzhe
-// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
-// var m_BrokerId = "9999";
-// var m_UserId = "187849";
-// var m_InvestorId = "187849";
-// var m_PassWord = "hzlianhd520!";
-// var m_TradingDay = "20210805";
-// var m_AccountId = "187849";
-// var m_CurrencyId = "CNY";
-// var m_AppId = "simnow_client_test";
-// var m_AuthCode = "0000000000000000";
-
-var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
+var ctp1_TradeAddress = "tcp://180.168.146.187:10202";
 var m_BrokerId = "9999";
-var m_UserId = "136380";
-var m_InvestorId = "136380";
-var m_PassWord = "jpf000jpf";
+var m_UserId = "187849";
+var m_InvestorId = "187849";
+var m_PassWord = "hzlianhd520!";
 var m_TradingDay = "20210805";
-var m_AccountId = "136380";
+var m_AccountId = "187849";
 var m_CurrencyId = "CNY";
 var m_AppId = "simnow_client_test";
 var m_AuthCode = "0000000000000000";
+
+// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
+// var m_BrokerId = "9999";
+// var m_UserId = "136380";
+// var m_InvestorId = "136380";
+// var m_PassWord = "jpf000jpf";
+// var m_TradingDay = "20210805";
+// var m_AccountId = "136380";
+// var m_CurrencyId = "CNY";
+// var m_AppId = "simnow_client_test";
+// var m_AuthCode = "0000000000000000";
 
 // simnow yy
 // var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
@@ -61,11 +61,11 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   console.log("rspUserLogin: info", JSON.stringify(info));
   login = true;
 
-  var instrumentID = "j2201";
+  var instrumentID = "j2205";
   var exchangeID = "DCE";
   // var instrumentID = "IC2112";
   // var exchangeID = "CFFEX";
-  var orderRef = "1632460886";
+  var orderRef = "1632460888";
   // �������� TFtdcDirectionType
   ///�� #define THOST_FTDC_D_Buy '0'
   ///�� #define THOST_FTDC_D_Sell '1'
@@ -79,28 +79,34 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   ///ǿ�� #define THOST_FTDC_OF_ForceOff '5'
   ///����ǿƽ #define THOST_FTDC_OF_LocalForceClose '6'
   var combOffsetFlag = "0";
-  var limitPrice = 6970.4
+  var limitPrice = 4075.0
   // ����
   var volumeTotalOriginal = 1;
   var requestID = "110";
+
+  var contingentCondition = '5';
+  var stopPrice = 4080.0;
+  var orderPriceType = '2';
+  var timeCondition = '3';
+
   var insertOrder = {
     "BrokerID": m_BrokerId,
     "InvestorID": m_InvestorId,
     "InstrumentID": instrumentID,
     "OrderRef": orderRef,
     "UserID": m_UserId,
-    //"OrderPriceType": "",
+    "OrderPriceType": orderPriceType,
     "Direction": direction,
     "CombOffsetFlag": combOffsetFlag,
     //"CombHedgeFlag": "",
     "LimitPrice": limitPrice,
     "VolumeTotalOriginal": volumeTotalOriginal,
-    //"TimeCondition": "",
+    "TimeCondition": timeCondition,
     //"GTDDate": "",
     //"VolumeCondition": "",
     //"MinVolume": "",
-    //"ContingentCondition": "",
-    //"StopPrice": "",
+    "ContingentCondition": contingentCondition,
+    "StopPrice": stopPrice,
     //"ForceCloseReason": "",
     //"IsAutoSuspend": "",
     //"BusinessUnit": "",
@@ -119,10 +125,10 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
 
   console.log("--------------------------------------");
 
-  // trader.reqOrderInsert(insertOrder, function (field) {
-  //   console.log('ReqOrderInsert is callback');
-  //   console.log(field);
-  // })
+  trader.reqOrderInsert(insertOrder, function (field) {
+    console.log('ReqOrderInsert is callback');
+    console.log(field);
+  })
 });
 
 trader.on('rtnOrder', function (field) {
@@ -132,6 +138,11 @@ trader.on('rtnOrder', function (field) {
 
 trader.on('rtnTrade', function (field) {
   console.log('rtnTrade');
+  console.log(field);
+})
+
+trader.on('rtnErrorConditionalOrder', function (field) {
+  console.log('rtnErrorConditionalOrder');
   console.log(field);
 })
 
