@@ -84,10 +84,11 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   var volumeTotalOriginal = 1;
   var requestID = "110";
 
-  var contingentCondition = '5';
-  var stopPrice = 4080.0;
-  var orderPriceType = '2';
-  var timeCondition = '3';
+  var limitPrice = 4075.0
+  var contingentCondition = '5'
+  var stopPrice = 4080.0
+  var orderPriceType = '2'
+  var timeCondition = '3'
 
   var insertOrder = {
     "BrokerID": m_BrokerId,

@@ -2,16 +2,16 @@ var ctp = require('../../build/Debug/ctp.node');
 ctp.settings({ log: true });
 
 // simnow hanzhe
-// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
-// var m_BrokerId = "9999";
-// var m_UserId = "187849";
-// var m_InvestorId = "187849";
-// var m_PassWord = "hzlianhd520!";
-// var m_TradingDay = "20210805";
-// var m_AccountId = "187849";
-// var m_CurrencyId = "CNY";
-// var m_AppId = "simnow_client_test";
-// var m_AuthCode = "0000000000000000";
+var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
+var m_BrokerId = "9999";
+var m_UserId = "187849";
+var m_InvestorId = "187849";
+var m_PassWord = "hzlianhd520!";
+var m_TradingDay = "20210805";
+var m_AccountId = "187849";
+var m_CurrencyId = "CNY";
+var m_AppId = "simnow_client_test";
+var m_AuthCode = "0000000000000000";
 
 // var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
 // var m_BrokerId = "9999";
@@ -24,16 +24,16 @@ ctp.settings({ log: true });
 // var m_AppId = "simnow_client_test";
 // var m_AuthCode = "0000000000000000";
 
-var ctp1_TradeAddress = "tcp://180.169.95.252:41205";
-var m_BrokerId = "5040";
-var m_UserId = "91700058";
-var m_InvestorId = "91700058";
-var m_PassWord = "sxy123456";
-var m_TradingDay = "20210805";
-var m_AccountId = "91700058";
-var m_CurrencyId = "CNY";
-var m_AppId = "client_syc_v21.4.1";
-var m_AuthCode = "3DJRGBBOBJMVQQTT";
+// var ctp1_TradeAddress = "tcp://180.169.95.252:41205";
+// var m_BrokerId = "5040";
+// var m_UserId = "91700058";
+// var m_InvestorId = "91700058";
+// var m_PassWord = "sxy123456";
+// var m_TradingDay = "20210805";
+// var m_AccountId = "91700058";
+// var m_CurrencyId = "CNY";
+// var m_AppId = "client_syc_v21.4.1";
+// var m_AuthCode = "3DJRGBBOBJMVQQTT";
 
 
 console.log("try.js starting");
@@ -79,9 +79,14 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   console.log("rspUserLogin: field", JSON.stringify(field));
   console.log("rspUserLogin: info", JSON.stringify(info));
   login = true;
-  trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function (result, iRequestID) {
-    console.log('settlementinfo return val is ' + result);
-  });
+  // trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function (result, iRequestID) {
+  //   console.log('settlementinfo return val is ' + result);
+  // });
+
+  trader.reqUserLogout(m_BrokerId, m_UserId, function (field) {
+      console.log('reqUserLogout is callback');
+      console.log(field);
+  })
 
   // var instrumentID = "";
   //   trader.reqQryInstrument(instrumentID, function (field) {
@@ -89,6 +94,13 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   //     console.log(field);
   //   })
 });
+
+trader.on('rspUserLogout', function (requestId, isLast, field, info) {
+  console.log("rspUserLogout: requestId", requestId);
+  console.log("rspUserLogout: isLast", isLast);
+  console.log("rspUserLogout: field", JSON.stringify(field));
+  console.log('rspUserLogout callback');
+})
 
 var t_bInsertOrder = false;
 trader.on('rqSettlementInfo', function (requestId, isLast, field, info) {
