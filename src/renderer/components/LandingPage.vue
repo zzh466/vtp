@@ -11,6 +11,7 @@
       <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
       <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
        <el-descriptions-item label="总实际盈亏">{{totalProfit}}</el-descriptions-item>
+        <!-- <el-descriptions-item v-if="userData.futureAccountVOList.length > 1"><el-button type="primary" size="small" @click="changeAccount">切换账号</el-button></el-descriptions-item> -->
     </el-descriptions>
       
     <main  v-if='!loading.length'>
@@ -93,13 +94,13 @@
   export default {
     name: 'landing-page',
     components: {  Round },
-    // watch:{
-    //   'userData.locked'(val, old){
-    //     if(val){
-    //       this.stop()
-    //     }
-    //   }
-    // },
+    watch:{
+      locked(val, old){
+        if(val && !old){
+          this.forceClose()
+        }
+      }
+    },
       filters: {
       changeNo(instruments, _instruments){
         
@@ -438,7 +439,10 @@
            if(!this.locked){
             if( this.userData.thrRealProfit && this.totalProfit < -this.userData.thrRealProfit){
               if(!this.forceCloseTime){
-                this.forceCloseTime = setTimeout(()=> this.forceClose(), 2200)
+                this.forceCloseTime = setTimeout(()=> {
+                     this.$store.dispatch('lock');
+                     this.locked = true
+                }, 2200)
               }
               
             }else{
@@ -740,8 +744,8 @@
       async forceClose(){
         console.log('强平')
         this.forcing  = true;
-        this.locked = true;
-        this.$store.dispatch('lock');
+       
+     
         this.stop();
      
         ipcRenderer.send('info-log', `${this.userData.account}触发强平`)
@@ -836,8 +840,14 @@
             m_AccountId,
           //  instruments: this.subscribelInstruments
           });
+      },
+      changeAccount(){
+        ipcRenderer.send('tarder-login-out');
+        ipcRenderer.send('resize-main',  {width: 500, height: 383});
+        this.$router.push('/');
       }
     }
+
   }
 </script>
 

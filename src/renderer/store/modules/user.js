@@ -19,6 +19,14 @@ const state = {
     'lock-user'(state){
       const {userData} = state;
       state.userData = {...userData, locked: true}
+    },
+    'unlock-user'(state){
+      const {userData} = state;
+      state.userData = {...userData, locked: false}
+    },
+    changeThr(state, thrRealProfit){
+      const {userData} = state;
+      state.userData = {...userData, thrRealProfit}
     }
    
   }

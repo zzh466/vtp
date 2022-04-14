@@ -45,7 +45,7 @@ export function getyyyyMMdd(){
     return yyyyMMdd;
 } 
 
-// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.18:8082/vtpmanagerapi': '139.196.41.155:8080/vtpmanagerapi'
+// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.18:8082/vtpmanagerapi': '139.196.41.155:8082/vtpmanagerapi'
 export const baseURL = '139.196.41.155:8082/vtpmanagerapi'
 
 const key = 'user-client';

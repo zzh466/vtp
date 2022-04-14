@@ -29,9 +29,15 @@ export class TraderSocket{
               this.onmessagefn(msg[1]);
               break;
             case "UpdateForceLiquidationThreshold":
+                window._$store.commit('changeThr', msg[1]);
+                break;
             case 'UpdateKeymap':
             case 'LockUser':
+                window._$store.commit('lock-user');
+                break;
             case 'UnLockUser':
+                window._$store.commit('unlock-user');
+            
         }
     }
     reconnect(){

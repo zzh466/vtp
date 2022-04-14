@@ -123,7 +123,10 @@ class Trade {
          
             _trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
                 console.log("in js code:", 'connect return val is ' + result);
-            });            
+            });       
+            // _trader.on('rspUserLogout', function (requestId, isLast, field, info) {
+            //     _trader.disposed();
+            //   })     
         })
         this.next();
         this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
@@ -155,6 +158,7 @@ class Trade {
     //     })
     // }
     send(event, ...args){
+        console.log(event,...args)
         this._trader[event](...args)
     }
     on(event, fn){
@@ -312,7 +316,9 @@ class Trade {
         
     }
     logout(){
-        this._trader.reqUserLogout(this.m_BrokerId, this.m_AccountId);
+        this.send('reqUserLogout', this.m_BrokerId, this.m_UserId, function (result) {
+            console.log("in js code: reqUserlogout result=", result);
+        });
     }
 }
 

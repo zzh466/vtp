@@ -413,7 +413,8 @@ ipcMain.on('trade-login', (event, args) => {
     }
   })
   trade.emitterOn('connect', function () {
-    infoLog('行情已连接')
+    infoLog('ctp已连接')
+    console.log('ctp已连接')
     tradeMap = [];
     trade.tasks = [];
     if(connectcount){
@@ -723,8 +724,8 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      console.log(trade.tasks)
-      if( trade.tasks.length < 2){
+     
+      if(trade && trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
         })
@@ -944,7 +945,14 @@ ipcMain.on('update-all-config', function(_, arg){
   // console.log(arg);
   opedwindow.forEach(({sender}) => sender.send('update-config') )
 })
-
+ipcMain.on('tarder-login-out', function(){
+  trade.logout();
+  positionMap = [];
+  tradeMap = [];
+  orderMap = [];
+  STARTTRADE = false;
+  trade = null;
+})
 /**
  * Auto Updater
  *

@@ -14,8 +14,8 @@
   
       <el-form label-width="160px" :rules="rules" v-else-if='step === 2'>
       <el-form-item label="选择交易账户" >
-        <el-radio-group v-model="active">
-          <el-radio v-for='account in accountList' :label="account.id" :key='account.id' >{{account.futureUserName}}</el-radio>
+        <el-radio-group :value="active" >
+          <el-radio v-for='account in accountList' @change="changeActive(account.id)" :label="account.id" :key='account.id' >{{account.futureUserName}}</el-radio>
         </el-radio-group>
       </el-form-item>
      
@@ -32,12 +32,14 @@
   import { ipcRenderer } from 'electron';
   import request from '../../utils/request';
   import { getIPAdress, hostname, version} from '../../utils/utils';
+
   export default {
     data () {
       // if (process.env.NODE_ENV === 'development'){
       //    this.$router.push('main');
       //    ipcRenderer.send('resize-main', {width: 1320, height: 840});
       // }
+      
       return {
         form: {
           userNm: '',
@@ -51,10 +53,20 @@
             { required: true, message: '请输入密码', trigger: 'blur' },
           ],
         },
-        step: 1,
-        accountList: [],
+        step: this.$store.state.user.activeCtpaccount? 2: 1,
+      
         disabled: false,
-        active: 0
+       
+      }
+    },
+    computed: {
+      accountList: function(){
+        
+        return this.$store.state.user.userData.futureAccountVOList
+      },
+      active: function(){
+        
+        return this.$store.state.user.activeCtpaccount
       }
     },
     methods: {
@@ -79,16 +91,13 @@
                     data:{account: this.form.userNm, ...res}
                 })
                 const { futureAccountVOList} = res;
+                  this.changeActive(futureAccountVOList[0].id);
                 if(futureAccountVOList.length > 1){
-                  this.accountList = futureAccountVOList;
-                  this.active = futureAccountVOList[0].id;
+                 
+                
                   this.$nextTick(()=>  this.step = 2)
                  
                 }else{
-                  this.$store.commit('setstate', {
-                      key: 'activeCtpaccount',
-                      data:futureAccountVOList[0].id
-                  })
                   ipcRenderer.send('resize-main',  {width: 1600, height: 770});
                     this.$router.push('main');
                 }
@@ -102,12 +111,16 @@
         })
       },
       cofirm(){
-        this.$store.commit('setstate', {
-              key: 'activeCtpaccount',
-              data:this.active
-          })
+        
         ipcRenderer.send('resize-main',  {width: 1600, height: 770});
         this.$router.push('main');
+      },
+      changeActive(value){
+        console.log(arguments)
+        this.$store.commit('setstate', {
+              key: 'activeCtpaccount',
+              data:value
+          })
       }
     }
   }
