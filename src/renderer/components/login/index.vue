@@ -15,7 +15,7 @@
       <el-form label-width="160px" :rules="rules" v-else-if='step === 2'>
       <el-form-item label="选择交易账户" >
         <el-radio-group v-model="active">
-          <el-radio v-for='account,index in accountList' :label="account.id" :key='account.id' >账户{{index+1}}</el-radio>
+          <el-radio v-for='account in accountList' :label="account.id" :key='account.id' >{{account.futureUserName}}</el-radio>
         </el-radio-group>
       </el-form-item>
      

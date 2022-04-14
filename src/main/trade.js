@@ -311,6 +311,9 @@ class Trade {
         })
         
     }
+    logout(){
+        this._trader.reqUserLogout(this.m_BrokerId, this.m_AccountId);
+    }
 }
 
 

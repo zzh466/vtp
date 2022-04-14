@@ -60,6 +60,7 @@ function createWindow () {
       request({
         url: 'access/logoutClient', 
       })
+      trade.logout();
     }
     if(childwin){
       childwin.close();
@@ -382,7 +383,7 @@ ipcMain.on('trade-login', (event, args) => {
   let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    if(!isLast && !send){
+    if( !isLast && !send){
       event.sender.send('add-loading', 'position')
       send = true;
     }
@@ -878,7 +879,7 @@ ipcMain.on('start-receive', (event, args) =>{
         setTimeout(()=> connect(), 1000)
       
       }
-      infoLog('data close', hadError);
+      infoLog(`data close${JSON.stringify(hadError)}`);
     })
   
     tcp_client.on('error', function (e) {

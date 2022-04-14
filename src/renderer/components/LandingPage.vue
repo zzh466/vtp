@@ -3,7 +3,7 @@
     <el-descriptions size= 'samll' direction="vertical" :column="10" border class="account">
       <el-descriptions-item label="账号">{{userData.account}}</el-descriptions-item>
          <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
-      <el-descriptions-item label="当前账户">{{`账户${accountIndex}`}}</el-descriptions-item>
+      <el-descriptions-item label="当前账户">{{currentAccount.futureUserName}}</el-descriptions-item>
    
     
       <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
@@ -302,7 +302,7 @@
         }
         ],
         forcing: false,
-        accountIndex: 1,
+        currentAccount: {},
         totalProfit: 0
       }
     },
@@ -355,7 +355,7 @@
           this.updateTrader(trader);
         
           if(this.ws){
-            const {futureUserId} = this.userData
+            const futureUserId = this.$store.state.user.activeCtpaccount
           
             let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime, TradingDay} = trader;
             if(!TradeTime ){
@@ -413,6 +413,7 @@
      
         const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
         const staticBalance = arg.PreBalance + arg.Mortgage + arg.PreFundMortgageIn + arg.FundMortgageIn + arg.FundMortgageOut + arg.FundMortgageAvailable - arg.PreFundMortgageOut - arg.PreCredit - arg.PreMortgage;
+        
         const data ={
             date: getyyyyMMdd(),
             commission: arg.Commission,
@@ -652,7 +653,7 @@
           checked = false;
         }
         const configId = this.subscribelInstruments.find(e => e.instruments.includes(instrumentID)).configId
-        const accountIndex = this.accountIndex;
+        const accountIndex = this.currentAccount.futureUserName;
         ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId, accountIndex});
         this.$store.dispatch('updateIns', instrumentID);
       },
@@ -809,9 +810,9 @@
         
         const userData = this.userData;
         const active = this.$store.state.user.activeCtpaccount;
-        const index = userData.futureAccountVOList.findIndex(e => e.id === active);
-       this.accountIndex = index + 1;
-       const account = userData.futureAccountVOList[index];
+        const account = userData.futureAccountVOList.find(e => e.id === active);
+       this.currentAccount = account;
+      
         const {
           tradeAddr:ctp1_TradeAddress,
         
