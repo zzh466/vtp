@@ -1311,11 +1311,9 @@ void WrapTrader::pkg_cb_userlogout(CbRtnField *data, Local<Value> *cbArray)
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
 
-    *cbArray = Number::New(isolate, data->nRequestID);
-    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
     if (data->rtnField)
     {
-        CThostFtdcRspUserLoginField *pRspUserLogin = static_cast<CThostFtdcRspUserLoginField *>(data->rtnField);
+        CThostFtdcUserLogoutField *pRspUserLogin = static_cast<CThostFtdcUserLogoutField *>(data->rtnField);
         Local<Object> jsonRtn = Object::New(isolate);
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pRspUserLogin->BrokerID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "UserID").ToLocalChecked(), String::NewFromUtf8(isolate, pRspUserLogin->UserID).ToLocalChecked());
@@ -1323,8 +1321,11 @@ void WrapTrader::pkg_cb_userlogout(CbRtnField *data, Local<Value> *cbArray)
     }
     else
     {
-        *(cbArray + 2) = Local<Value>::New(isolate, Undefined(isolate));
+        *(cbArray + 2) = Object::New(isolate);
     }
+
+    *cbArray = Number::New(isolate, data->nRequestID);
+    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
     *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
     return;
 }
