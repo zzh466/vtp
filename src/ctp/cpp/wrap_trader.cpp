@@ -83,6 +83,7 @@ void WrapTrader::Init(Isolate *isolate)
     NODE_SET_PROTOTYPE_METHOD(tpl, "getTradingDay", GetTradingDay);
     NODE_SET_PROTOTYPE_METHOD(tpl, "connect", Connect);
     NODE_SET_PROTOTYPE_METHOD(tpl, "on", On);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "disposed", Disposed);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqUserLogin", ReqUserLogin);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqAuthenticate", ReqAuthenticate);
 
@@ -1004,18 +1005,19 @@ void WrapTrader::Disposed(const FunctionCallbackInfo<Value> &args)
     Isolate *isolate = args.GetIsolate();
     WrapTrader *obj = ObjectWrap::Unwrap<WrapTrader>(args.Holder());
     obj->uvTrader->Disconnect();
-    std::map<int, Persistent<Function>>::iterator
-        callback_it = callback_map.begin();
-    while (callback_it != callback_map.end())
-    {
-        //        callback_it->second.Dispose();
-        callback_it++;
-    }
-    event_map.clear();
-    callback_map.clear();
-    fun_rtncb_map.clear();
-    delete obj->uvTrader;
-    obj->uvTrader = NULL;
+    // std::map<int, Persistent<Function>>::iterator
+    //     callback_it = callback_map.begin();
+    // while (callback_it != callback_map.end())
+    // {
+    //     //        callback_it->second.Dispose();
+    //     callback_it++;
+    // }
+    
+    //event_map.clear();
+    //callback_map.clear();
+    //fun_rtncb_map.clear();
+    // delete obj->uvTrader;
+    // obj->uvTrader = NULL;
     logger_cout("wrap_trader Disposed------>wrap disposed");
     return;
 }
