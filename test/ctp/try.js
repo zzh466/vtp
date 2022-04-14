@@ -100,6 +100,8 @@ trader.on('rspUserLogout', function (requestId, isLast, field, info) {
   console.log("rspUserLogout: isLast", isLast);
   console.log("rspUserLogout: field", JSON.stringify(field));
   console.log('rspUserLogout callback');
+
+  trader.disposed()
 })
 
 var t_bInsertOrder = false;
