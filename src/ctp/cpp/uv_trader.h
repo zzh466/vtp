@@ -42,6 +42,8 @@ public:
   void ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrument, void(*callback)(int, void*),int uuid);
   // 请求查询资金账户
   void ReqQryTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, void (*callback)(int, void *), int uuid);
+  // 请求查询报单信息
+  void ReqQryOrder(CThostFtdcQryOrderField *pReqOrderField, void (*callback)(int, void *), int uuid);
   // 请求查询投资者持仓
   // void ReqQryInvestorPosition(CThostFtdcQryInvestorPositionField *pQryInvestorPosition, void(*callback)(int, void*),int uuid);
   // 持仓明细

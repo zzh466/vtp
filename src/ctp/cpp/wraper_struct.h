@@ -25,6 +25,7 @@
 #define T_INSTRUMENTCOMMISSIONRATE_RE 18
 #define T_SETTLEMENTINFOCONFIRM_RE 19
 #define T_QCONFIRM_RE 20
+#define T_QORDER_RE 21
 ///////////////////////////////外部使用
 #define T_ON_CONNECT 1
 #define T_ON_DISCONNECTED 2

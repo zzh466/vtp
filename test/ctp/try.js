@@ -1,3 +1,4 @@
+const { CONSOLE_APPENDER } = require('karma/lib/constants');
 var ctp = require('../../build/Debug/ctp.node');
 ctp.settings({ log: true });
 
@@ -124,10 +125,25 @@ trader.on('rspError', function (requestId, isLast, field) {
   console.log(JSON.stringify(field));
 });
 
-trader.on('rtnOrder', function (field) {
-  console.log('rtnOrder');
-  console.log(field);
-});
+// trader.on('rtnOrder', function (field) {
+//   console.log('rtnOrder');
+//   console.log(field);
+// });
+
+trader.on('rqOrder', function (requestId, isLast, field, info) {
+  console.log('rqOrder');
+  console.log("rqOrder: requestId", requestId);
+  console.log("rqOrder: isLast", isLast);
+  console.log("rqOrder: field", JSON.stringify(field));
+  console.log("rqOrder: info", JSON.stringify(info));
+
+  if (isLast) {
+    trader.reqUserLogout(ctp_info_arr[now_user_index].BrokerId, ctp_info_arr[now_user_index].UserId, function (field) {
+      console.log('reqUserLogout is callback');
+      console.log(field);
+    });
+  }
+})
 
 trader.on('rqTradingAccount', function (requestId, isLast, field, info) {
   console.log("rqTradingAccount");
@@ -136,11 +152,14 @@ trader.on('rqTradingAccount', function (requestId, isLast, field, info) {
   console.log("rqTradingAccount: field", JSON.stringify(field));
   console.log("rqTradingAccount: info", JSON.stringify(info));
 
-  trader.reqUserLogout(ctp_info_arr[now_user_index].BrokerId, ctp_info_arr[now_user_index].UserId, function (field) {
-      console.log('reqUserLogout is callback');
-      console.log(field);
-  })
-})
+  setTimeout(
+    function() {
+      trader.reqQryOrder(ctp_info_arr[now_user_index].BrokerId, ctp_info_arr[now_user_index].InvestorId, "", function (result) {
+        console.log("in js code:", 'reqQryOrder return val is ' + result);
+      })
+    }, 
+    1000);
+});
 
 trader.connect(ctp_info_arr[now_user_index].TradeAddress, undefined, 2, 0, function (result) {
   console.log("in js code:", 'connect1 return val is ' + result);
