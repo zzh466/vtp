@@ -84,44 +84,16 @@ trader.on("rspAuthenticate", function (result) {
   });
 })
 
-// trader.on("rspUserLogin", function (requestId, isLast, field, info) {
-//   // console.log("in js code: requestId", requestId);
-//   // console.log("in js code: isLast", isLast);
-//   // console.log("in js code: field", JSON.stringify(field));
-//   console.log("in js code: info", JSON.stringify(info));
-//   trader.reqQryTradingAccount(m_BrokerId, m_AccountId, function(result){
-//     console.log("in js code:", 'reqQryTradingAccount return val is '+result);
-//   });
-// });
-
-// trader.on('rqTradingAccount',function(requestId, isLast, field, info){
-//   console.log("in js code:", 'rqTradingAccount callback');
-//   //console.log("in js code:", JSON.stringify(field));
-//   console.log("in js code:", JSON.stringify(info));
-
-//   trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function(result,iRequestID){
-//     console.log('settlementinfo return val is '+result);
-//   });
-// });
 trader.on("rspUserLogin", function (requestId, isLast, field, info) {
   console.log("rspUserLogin: requestId", requestId);
   console.log("rspUserLogin: isLast", isLast);
   console.log("rspUserLogin: field", JSON.stringify(field));
   console.log("rspUserLogin: info", JSON.stringify(info));
   login = true;
-  // trader.reqQrySettlementInfo(m_BrokerId, m_AccountId, function (result, iRequestID) {
-  //   console.log('settlementinfo return val is ' + result);
-  // });
 
   trader.reqQryTradingAccount(ctp_info_arr[now_user_index].BrokerId, ctp_info_arr[now_user_index].AccountId, function(result){
     console.log("in js code:", 'reqQryTradingAccount return val is '+result);
   });
-
-  // var instrumentID = "";
-  //   trader.reqQryInstrument(instrumentID, function (field) {
-  //     console.log('reqQryInstrument is callback');
-  //     console.log(field);
-  //   })
 });
 
 trader.on('rspUserLogout', function (requestId, isLast, field, info) {
@@ -146,79 +118,16 @@ trader.on('rqSettlementInfo', function (requestId, isLast, field, info) {
   console.log("rqSettlementInfo: isLast", isLast);
   console.log("rqSettlementInfo: field", JSON.stringify(field));
   console.log('rqsettlementinfo callback');
-
-  // if (!t_bInsertOrder) {
-  //   t_bInsertOrder = true;
-
-  //   var instrumentID = "j2201";
-  //   var orderRef = "1632460886";
-  //   var direction = "0";
-  //   var combOffsetFlag = "0";
-  //   var limitPrice = "4840.1999999"
-  //   var volumeTotalOriginal = "1";
-  //   var requestID = "110";
-  //   var exchangeID = "DCE";
-  //   var insertOrder = {
-  //     "BrokerID": m_BrokerId,
-  //     "InvestorID": m_InvestorId,
-  //     "InstrumentID": instrumentID,
-  //     "OrderRef": orderRef,
-  //     "UserID": m_UserId,
-  //     //"OrderPriceType": "",
-  //     "Direction": direction,
-  //     "CombOffsetFlag": combOffsetFlag,
-  //     //"CombHedgeFlag": "",
-  //     "LimitPrice": limitPrice,
-  //     "VolumeTotalOriginal": volumeTotalOriginal,
-  //     //"TimeCondition": "",
-  //     //"GTDDate": "",
-  //     //"VolumeCondition": "",
-  //     //"MinVolume": "",
-  //     //"ContingentCondition": "",
-  //     //"StopPrice": "",
-  //     //"ForceCloseReason": "",
-  //     //"IsAutoSuspend": "",
-  //     //"BusinessUnit": "",
-  //     "RequestID": requestID,
-  //     //"UserForceClose": "",
-  //     //"IsSwapOrder": "",
-  //     "ExchangeID": exchangeID,
-  //     "InvestUnitID": "",
-  //     "AccountID": "",
-  //     "CurrencyID": "",
-  //     "ClientID": "",
-  //     "IPAddress": "",
-  //     "MacAddress": "",
-  //  };
-
-    // trader.reqOrderInsert(insertOrder, function (field) {
-    //   console.log('ReqOrderInsert is callback');
-    //   console.log(field);
-    // })
-  //}
 });
-
-// trader.on('rtnOrder', function (field) {
-//   console.log('rtnOrder');
-//   console.log(field);
-// });
-
-// trader.on('rtnTrade', function (field) {
-//   console.log('rtnTrade');
-//   console.log(field);
-// })
 
 trader.on('rspError', function (requestId, isLast, field) {
   console.log(JSON.stringify(field));
 });
 
-// trader.on('rqInstrument', function (requestId, isLast, field, info) {
-//   console.log('rqInstrument');
-//   console.log(JSON.stringify(requestId));
-//   console.log(JSON.stringify(isLast));
-//   console.log("rqInstrument: field", JSON.stringify(field));
-//   console.log("rqInstrument: info", JSON.stringify(info));
-// })
+trader.on('rtnOrder', function (field) {
+  console.log('rtnOrder');
+  console.log(field);
+});
 
 trader.on('rqTradingAccount', function (requestId, isLast, field, info) {
   console.log("rqTradingAccount");
