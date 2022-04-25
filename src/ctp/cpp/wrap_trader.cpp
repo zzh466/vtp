@@ -86,12 +86,12 @@ void WrapTrader::Init(Isolate *isolate)
     NODE_SET_PROTOTYPE_METHOD(tpl, "disposed", Disposed);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqUserLogin", ReqUserLogin);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqAuthenticate", ReqAuthenticate);
-
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqUserLogout", ReqUserLogout);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryInstrument", ReqQryInstrument);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryTradingAccount", ReqQryTradingAccount);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqOrderInsert", ReqOrderInsert);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqOrderAction", ReqOrderAction);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryOrder", ReqQryOrder);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQryDepthMarketData", ReqQryDepthMarketData);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqQrySettlementInfo", ReqQrySettlementInfo);
     NODE_SET_PROTOTYPE_METHOD(tpl, "reqSettlementInfoConfirm", ReqSettlementInfoConfirm);
@@ -458,6 +458,48 @@ void WrapTrader::ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args)
     //logger_cout(log.append(" ").append((std::string)*brokerAscii).append("|").append((std::string)*investorIdAscii).c_str());
     obj->uvTrader->ReqQryTradingAccount(&req, FunRtnCallback, uuid);
     return;
+}
+
+void WrapTrader::ReqQryOrder(const FunctionCallbackInfo<Value> &args)
+{
+    Isolate *isolate = args.GetIsolate();
+    Local<Context> context = isolate->GetCurrentContext();
+
+    std::string log = "wrap_trader ReqQryOrder------>";
+    if (args[0]->IsUndefined() || args[1]->IsUndefined() || args[2]->IsUndefined())
+    {
+        std::string _head = std::string(log);
+        logger_cout(_head.append(" Wrong arguments").c_str());
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments").ToLocalChecked()));
+        return;
+    }
+
+    int uuid = -1;
+    WrapTrader *obj = ObjectWrap::Unwrap<WrapTrader>(args.Holder());
+    if (!args[3]->IsUndefined() && args[3]->IsFunction())
+    {
+        uuid = ++s_uuid;
+        fun_rtncb_map[uuid].Reset(isolate, Local<Function>::Cast(args[3]));
+        std::string _head = std::string(log);
+        logger_cout(_head.append(" uuid is ").append(to_string(uuid)).c_str());
+    }
+
+    Local<String> broker = args[0]->ToString(context).ToLocalChecked();
+    Local<String> investorID = args[1]->ToString(context).ToLocalChecked();
+    Local<String> exchangeID = args[2]->ToString(context).ToLocalChecked();
+    String::Utf8Value brokerUtf8(isolate, broker);
+    String::Utf8Value investorIDUtf8(isolate, investorID);
+    String::Utf8Value exchangeIDUtf8(isolate, exchangeID);
+
+    CThostFtdcQryOrderField req;
+    memset(&req, 0, sizeof(req));
+    strcpy(req.BrokerID, ((std::string)*brokerUtf8).c_str());
+    strcpy(req.InvestorID, ((std::string)*investorIDUtf8).c_str());
+    strcpy(req.ExchangeID, ((std::string)*exchangeIDUtf8).c_str());
+    logger_cout(
+        log.append(" ").append((std::string)*brokerUtf8).append("|").append((std::string)*investorIDUtf8).append("|").append((std::string)*exchangeIDUtf8).c_str());
+    obj->uvTrader->ReqQryOrder(&req, FunRtnCallback, uuid);
+    return args.GetReturnValue().Set(String::NewFromUtf8(isolate, "finish exec reqQryOrder").ToLocalChecked());
 }
 
 void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
@@ -1521,13 +1563,12 @@ void WrapTrader::pkg_cb_rspqryorder(CbRtnField *data, Local<Value> *cbArray)
     Isolate *isolate = Isolate::GetCurrent();
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
-
-    *cbArray = Number::New(isolate, data->nRequestID);
-    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    
+    Local<Object> jsonRtn = Object::New(isolate);
     if (data->rtnField)
     {
         CThostFtdcOrderField *pOrder = static_cast<CThostFtdcOrderField *>(data->rtnField);
-        Local<Object> jsonRtn = Object::New(isolate);
+        jsonRtn = Object::New(isolate);
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "BrokerID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->BrokerID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InvestorID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->InvestorID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "InstrumentID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->InstrumentID).ToLocalChecked());
@@ -1585,12 +1626,11 @@ void WrapTrader::pkg_cb_rspqryorder(CbRtnField *data, Local<Value> *cbArray)
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "RelativeOrderSysID").ToLocalChecked(), String::NewFromUtf8(isolate, pOrder->RelativeOrderSysID).ToLocalChecked());
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "ZCETotalTradedVolume").ToLocalChecked(), Number::New(isolate, pOrder->ZCETotalTradedVolume));
         jsonRtn->Set(context, String::NewFromUtf8(isolate, "IsSwapOrder").ToLocalChecked(), Number::New(isolate, pOrder->IsSwapOrder));
-        *(cbArray + 2) = jsonRtn;
     }
-    else
-    {
-        *(cbArray + 2) = Local<Value>::New(isolate, Undefined(isolate));
-    }
+
+    *cbArray = Number::New(isolate, data->nRequestID);
+    *(cbArray + 1) = Boolean::New(isolate, data->bIsLast);
+    *(cbArray + 2) = jsonRtn;
     *(cbArray + 3) = pkg_rspinfo(data->rspInfo);
     return;
 }

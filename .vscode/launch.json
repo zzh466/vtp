@@ -23,9 +23,9 @@
             "type": "node",
             "request": "launch",
             "console": "integratedTerminal",
-            // "program": "${workspaceFolder}/test/ctp/try.js",
+            "program": "${workspaceFolder}/test/ctp/try.js",
             // "program": "${workspaceFolder}/test/ctp/reqInsertOrder.js",
-            "program": "${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js",
+            // "program": "${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js",
             "preLaunchTask": "npm: rebuildCTP:dev"
         }
     ]

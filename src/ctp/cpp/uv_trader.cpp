@@ -116,6 +116,13 @@ void uv_trader::ReqQryTradingAccount(CThostFtdcQryTradingAccountField *pQryTradi
 	this->invoke(_pQryTradingAccount, T_TRADINGACCOUNT_RE, callback, uuid);
 }
 
+void uv_trader::ReqQryOrder(CThostFtdcQryOrderField *pReqOrderField, void (*callback)(int, void *), int uuid)
+{
+	CThostFtdcQryOrderField *_pReqOrderField = new CThostFtdcQryOrderField();
+	memcpy(_pReqOrderField, pReqOrderField, sizeof(CThostFtdcQryOrderField));
+	this->invoke(_pReqOrderField, T_QORDER_RE, callback, uuid);
+}
+
 void uv_trader::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, void (*callback)(int, void *), int uuid)
 {
 	CThostFtdcInputOrderField *_pInputOrder = new CThostFtdcInputOrderField();
@@ -583,6 +590,12 @@ void uv_trader::_async(uv_work_t *work)
 		CThostFtdcQrySettlementInfoConfirmField *_pQrySettlementInfoConfirm = static_cast<CThostFtdcQrySettlementInfoConfirmField *>(baton->args);
 		baton->nResult = uv_trader_obj->m_pApi->ReqQrySettlementInfoConfirm(_pQrySettlementInfoConfirm, baton->iRequestID);
 		//logger_cout(log.append("invoke ReqQrySettlementInfoConfirm,the result:").append(to_string(baton->nResult)).c_str());
+		break;
+	}
+	case T_QORDER_RE:
+	{
+		CThostFtdcQryOrderField *_pQryOrder = static_cast<CThostFtdcQryOrderField *>(baton->args);
+		baton->nResult = uv_trader_obj->m_pApi->ReqQryOrder(_pQryOrder, baton->iRequestID);
 		break;
 	}
 	default:

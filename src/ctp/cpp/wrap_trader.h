@@ -43,6 +43,7 @@ public:
 	///请求查询合约
 	static void ReqQryInstrument(const FunctionCallbackInfo<Value>& args);
 	static void ReqQryTradingAccount(const FunctionCallbackInfo<Value> &args);
+	static void ReqQryOrder(const FunctionCallbackInfo<Value> &args);
 	//static void ReqQryInvestorPosition(const FunctionCallbackInfo<Value>& args);
 	static void ReqQryInvestorPositionDetail(const FunctionCallbackInfo<Value>& args);
 	static void ReqOrderInsert(const FunctionCallbackInfo<Value> &args);
