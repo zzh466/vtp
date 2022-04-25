@@ -217,7 +217,7 @@
             }
           }
           data.hotKey= e.hotKey.map(key=>key.join(',')).join(';');
-          data.instruments =e.instruments.join(',');
+          data.instruments =e.instruments.filter(e => this.subsInstruments.find(a => a.key === e)).join(',');
           return data;
         })
          const {id} =this.$route.query;

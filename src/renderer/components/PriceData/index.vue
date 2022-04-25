@@ -94,7 +94,7 @@ export default {
   mounted(){
       const chartDom = document.getElementById('can');
       this.instrumet = {};
-     
+     this.tasks = [];
      const {id, tick, exchangeId} = this.$route.query;
       const config = this.setConfig()
       ipcRenderer.send('register-event', id);
@@ -198,9 +198,9 @@ export default {
       //     this.chart.renderHighandLow()
       //   })
       // })
-      ipcRenderer.on('total-order', (_, orders) => { 
+      ipcRenderer.on('total-order', (_, orders, current = {}) => { 
         // p.then(()=>{
-          
+          console.log(current)
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
             if(orders[key].ExchangeInstID === id){
@@ -225,12 +225,15 @@ export default {
             this.instrumet.todayVolume = open;
             this.instrumet.todayCancel = cancel;
             this.update();
-             this.chart.placeOrder = arr;
+            this.chart.placeOrder = arr;
             this.chart.renderBakcground();
             this.chart.renderVolume();  
             this.chart.renderPlaceOrder();
             this.chart.renderHighandLow();
-            
+            if(this.tasks.length && current.OrderStatus === '5'){
+              this.tasks.forEach(e => e());
+              this.tasks =[];
+            }
           }
          
          
@@ -253,6 +256,9 @@ export default {
       })
       let audio = new Audio()
       audio.src = __static+ "/trade.wav";
+      ipcRenderer.on('clear-tarder', ()=>{
+        this.traded = [];
+      })
       ipcRenderer.on('trade-order', (_, field, flag) => {
           
           if(!flag){
@@ -387,6 +393,7 @@ export default {
     setConfig(){
       const {account,configId} = this.$route.query;
        const configs =JSON.parse(localStorage.getItem(`config-${account}`));
+       
        const config = configs.find(e => e.id === +configId);
     
       console.log(config, this.$route.query);

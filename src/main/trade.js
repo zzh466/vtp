@@ -11,42 +11,29 @@ import { errorLog, infoLog} from './log';
 
 
 class Trade {
-    constructor({
-        ctp1_TradeAddress = "tcp://180.168.146.187:10201",
-        m_BrokerId = "9999",
-        m_UserId = "136380",
-        m_InvestorId = "136380",
-        m_PassWord = "jpf000jpf",
-        m_TradingDay = "20210805",
-        m_AccountId = "136380",
-        m_CurrencyId = "CNY",
-        m_AppId = "simnow_client_test",
-        m_AuthCode = "0000000000000000",
-        instruments
-    }){
-        this.m_BrokerId =m_BrokerId;
-        this.m_UserId = m_UserId;
-        this.m_InvestorId = m_InvestorId;
+    constructor(options){
+      
+        this.init(options)
         const _trader = ctp.createTrader();
         this._trader = _trader;
-        this.tasks =[];
+       
         // this.getInstrumentList = instruments.map(id => ({id}));
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
-        this.instruments = instruments;
+      
         this.login = new Promise((resolve, reject) => {
             _trader.on("connect",  (result)=> {
                 
                 console.log("in js code: ----> on connected , result=", result);
                 this.emitter.emit('connect')
-                _trader.reqAuthenticate(m_BrokerId, m_AccountId, m_AuthCode, m_AppId, function (result) {
+                _trader.reqAuthenticate(this.m_BrokerId, this.m_AccountId, this.m_AuthCode, this.m_AppId, function (result) {
                     console.log("in js code: reqAuthenticate result=", result);
                 });
             });
-            _trader.on("rspAuthenticate", function (result) {
+            _trader.on("rspAuthenticate",  (result)=> {
                 console.log("in js code: ----> on rspAuthenticate , result=", result);
-                _trader.reqUserLogin(m_BrokerId, m_AccountId, m_PassWord, function (result) {
+                _trader.reqUserLogin(this.m_BrokerId, this.m_AccountId, this.m_PassWord, function (result) {
                     console.log("in js code: reqUserlogin result=", result);
                 });
             })
@@ -64,7 +51,7 @@ class Trade {
                 }
                
                 // 拿到计算手续费和持仓
-               
+                this.haslogin = true;
                 resolve()
                 // Ϊ��ʱ����ѯ���к�Լ��Ϣ
                 
@@ -121,12 +108,12 @@ class Trade {
                 console.log(a,b)
             })
          
-            _trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
-                console.log("in js code:", 'connect return val is ' + result);
-            });       
-            // _trader.on('rspUserLogout', function (requestId, isLast, field, info) {
-            //     _trader.disposed();
-            //   })     
+            this.reconnect()
+            _trader.on('rspUserLogout',  (requestId, isLast, field, info) =>{
+                if(this.shouldReconnect){
+                    this.reconnect()
+                }
+              })     
         })
         this.next();
         this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
@@ -137,6 +124,31 @@ class Trade {
                 });
             
         });
+    }
+    init({
+        ctp1_TradeAddress = "tcp://180.168.146.187:10201",
+        m_BrokerId = "9999",
+        m_UserId = "136380",
+        m_InvestorId = "136380",
+        m_PassWord = "jpf000jpf",
+        m_TradingDay = "20210805",
+        m_AccountId = "136380",
+        m_CurrencyId = "CNY",
+        m_AppId = "simnow_client_test",
+        m_AuthCode = "0000000000000000",
+        instruments
+    }){
+        console.log(arguments)
+        this.m_BrokerId =m_BrokerId;
+        this.m_UserId = m_UserId;
+        this.m_InvestorId = m_InvestorId;
+        this.instruments = instruments;
+        this.m_AppId = m_AppId;
+        this.m_AuthCode= m_AuthCode;
+        this.ctp1_TradeAddress = ctp1_TradeAddress;
+        this.m_PassWord = m_PassWord;
+        this.m_AccountId = m_AccountId;
+        this.tasks =[];
     }
     // getInstrument(insId){
     //     return new Promise(resolve => {
@@ -203,11 +215,14 @@ class Trade {
     }
     next(){
         const { tasks} = this;
+    
         var last = tasks.shift();
         const timeout = 1000
+       
        if(tasks.length){
             let task = tasks[0];
             //ctp一秒只能发一个请求
+            console.log(task)
             setTimeout(()=> {
                 task()
             }, timeout)
@@ -218,6 +233,7 @@ class Trade {
        }
     }
     chainSend(event, ...args){
+        if(!this.haslogin)return;
         const { tasks} = this;
         const task =()=>{
             this.send(event,  ...args)
@@ -316,8 +332,14 @@ class Trade {
         
     }
     logout(){
+        this.haslogin = false;
         this.send('reqUserLogout', this.m_BrokerId, this.m_UserId, function (result) {
             console.log("in js code: reqUserlogout result=", result);
+        });
+    }
+    reconnect(){
+        this._trader.connect(this.ctp1_TradeAddress, undefined, 2, 0, function (result) {
+            console.log("in js code:", 'connect return val is ' + result);
         });
     }
 }

@@ -405,7 +405,7 @@ class Chart {
         ctx.setLineDash([]);
         ctx.strokeStyle = FONTCOLOR;
 
-        console.log(volume, this.volume)
+        // console.log(volume, this.volume)
         if(this.volume < volume){
             ctx.strokeStyle = '#ffff00';
         };

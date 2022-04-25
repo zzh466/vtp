@@ -61,6 +61,7 @@ function createWindow () {
         url: 'access/logoutClient', 
       })
       trade.logout();
+      trade.shouldReconnect = false
     }
     if(childwin){
       childwin.close();
@@ -156,7 +157,7 @@ let orderMap = {};
 let tradeMap = [];
 let positionMap = [];
 let rateMap =[];
-const catchRate  = new Set()
+let catchRate  = new Set()
 let InstrumetsData =[];
 const PriceData ={};
 const broadcast_Data = {};
@@ -194,15 +195,18 @@ ipcMain.on('register-event',  (event, args) =>{
     }
   })
 })
-ipcMain.on('update-instrumentsData',  (event, args) =>{
+ipcMain.on('update-instrumentsData',  (event, args, init) =>{
   InstrumetsData = args;
-  // InstrumetsData.forEach(instrumet =>{
-  //   const {instrumentID} = instrumet;
-  //   const win =  findedopened(instrumentID);
-  //   if(win && win.sender){
-  //     win.sender.send('instrumet-data',instrumet);
-  //   }
-  // })
+  if(init){
+    InstrumetsData.forEach(instrumet =>{
+      const {instrumentID} = instrumet;
+      const win =  findedopened(instrumentID);
+      if(win && win.sender){
+        win.sender.send('instrumet-data',instrumet);
+      }
+    })
+  }
+
 })
 
 //停止订阅
@@ -230,12 +234,33 @@ function getUnCatchCommission(args){
   
 }
 
-
+let connectcount = 0;
 ipcMain.on('trade-login', (event, args) => {
   orderMap = {};
   tradeMap = [];
   positionMap = [];
   rateMap =[];
+  let TRADETIME = setTimeout(() => {
+    event.sender.send('receive-trade', tradeMap);
+    event.sender.send('finish-loading', 'trade')
+    TRADETIME= null;
+  }, 5000)
+  let ORDERTIME =  setTimeout(() => {
+    event.sender.send('finish-loading', 'order')
+  }, 5000);
+  if(trade){
+    rateMap = [];
+    catchRate = new Set();
+    trade.init(args);
+  
+    connectcount = 0;
+    STARTTRADE= false;
+    trade.logout();
+    trade.shouldReconnect = true;
+    opedwindow.forEach(({sender}) => sender.send('clear-tarder'))
+    return
+
+  }
   trade = new Trade(args);
 
   function getorderKey(obj){
@@ -245,12 +270,8 @@ ipcMain.on('trade-login', (event, args) => {
     const orderRef = OrderRef;
     return frontId + sessionId + orderRef;
   }
-  let TRADETIME = setTimeout(() => {
-    event.sender.send('receive-trade', tradeMap);
-    event.sender.send('finish-loading', 'trade')
-    TRADETIME= null;
-  }, 5000)
-  let connectcount = 0;
+
+  
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade');
     
@@ -297,9 +318,7 @@ ipcMain.on('trade-login', (event, args) => {
    
     
   })
-  let ORDERTIME =  setTimeout(() => {
-    event.sender.send('finish-loading', 'order')
-  }, 5000);
+  
   
   trade.on('rtnOrder', function(field){
     const key = getorderKey(field);
@@ -363,7 +382,7 @@ ipcMain.on('trade-login', (event, args) => {
           console.log(field)
           win.sender.send('order-error',field.StatusMsg);
         }
-        win.sender.send('total-order',orderMap);
+        win.sender.send('total-order',orderMap, field);
       }
     // }
     console.log('StarSTARTTRADE', STARTTRADE)
@@ -395,6 +414,7 @@ ipcMain.on('trade-login', (event, args) => {
     };  
     if(isLast){
       console.log('111111111111111111111111111111111111111')
+      send = false;
       event.sender.send('receive-position', positionMap);
       event.sender.send('finish-loading', 'position')
     }
@@ -945,14 +965,14 @@ ipcMain.on('update-all-config', function(_, arg){
   // console.log(arg);
   opedwindow.forEach(({sender}) => sender.send('update-config') )
 })
-ipcMain.on('tarder-login-out', function(){
-  trade.logout();
-  positionMap = [];
-  tradeMap = [];
-  orderMap = [];
-  STARTTRADE = false;
-  trade = null;
-})
+// ipcMain.on('tarder-login-out', function(){
+//   trade.logout();
+//   positionMap = [];
+//   tradeMap = [];
+//   orderMap = [];
+//   STARTTRADE = false;
+//   trade = null;
+// })
 /**
  * Auto Updater
  *

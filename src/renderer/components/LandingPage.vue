@@ -1,7 +1,7 @@
 <template>
   <div id="wrapper" v-loading='loading.length || forcing'  :element-loading-text="forcing?'触发强平操作，正在强平中':'正在获取账号信息'" >
     <el-descriptions size= 'samll' direction="vertical" :column="10" border class="account">
-      <el-descriptions-item label="账号">{{userData.account}}</el-descriptions-item>
+      <el-descriptions-item label="账号">{{userData.userAccount}}</el-descriptions-item>
          <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
       <el-descriptions-item label="当前账户">{{currentAccount.futureUserName}}</el-descriptions-item>
    
@@ -14,7 +14,7 @@
         <!-- <el-descriptions-item v-if="userData.futureAccountVOList.length > 1"><el-button type="primary" size="small" @click="changeAccount">切换账号</el-button></el-descriptions-item> -->
     </el-descriptions>
       
-    <main  v-if='!loading.length'>
+    <main >
       
       <div class="left-side">
         
@@ -61,11 +61,14 @@
         <el-button type="primary" @click="confirm">确 定</el-button>
       </span>
     </el-dialog>
+    <el-dialog :close-on-press-escape='false' :show-close='false' :visible="loginVisible" :close-on-click-modal='false' title="重新登陆"> 
+      <loginform @login='relogin' :userAccount ='userData.userAccount'/>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-  import { ipcRenderer, dialog } from 'electron';
+  import { ipcRenderer } from 'electron';
 
   import {getWinName, Direction, CombOffsetFlag, getyyyyMMdd, getHoldCondition, getClientSize} from '../utils/utils';
   import request, {TraderSocket}  from '../utils/request';
@@ -73,7 +76,7 @@
   import Status from './LandingPage/Status.vue';
     import {Status as parseStatus, specialExchangeId} from '../utils/utils'
   import Vue from 'vue';
-
+  import loginform from './Login/form.vue'
  
   Vue.component('StatusMsg', {
     props: ['data'],
@@ -93,11 +96,14 @@
   Vue.component('Status', Status);
   export default {
     name: 'landing-page',
-    components: {  Round },
+    components: {  Round , loginform},
     watch:{
       locked(val, old){
         if(val && !old){
           this.forceClose()
+        }
+        if(!val){
+          this.forceCloseTime = null
         }
       }
     },
@@ -304,7 +310,8 @@
         ],
         forcing: false,
         currentAccount: {},
-        totalProfit: 0
+        totalProfit: 0,
+         loginVisible: false
       }
     },
     created(){
@@ -409,6 +416,7 @@
        
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
+         if(!arg || this.loginVisible)return;
          this.account=arg
         
      
@@ -435,6 +443,10 @@
           method: 'PATCH',
           data
         }).then(res => {
+          if(res.code === 'LOGIN_UNFINISHED'){
+            this.loginVisible = true
+            return
+          }
           this.totalProfit =  res.futureAccountVOList.reduce((a,b) => a + b.realProfit, 0).toFixed(2)
            if(!this.locked){
             if( this.userData.thrRealProfit && this.totalProfit < -this.userData.thrRealProfit){
@@ -460,8 +472,10 @@
 
       //   this.instrumentInfo = arg
       // })
-      setTimeout(()=>{
+      this.timoutquery = setTimeout(()=>{
+        console.log(this.loading)
         if(this.loading.length !== 0){
+
           this.$alert('查询超时，不在交易时间或者网络连接有问题', '错误', {
             callback:()=>{
               ipcRenderer.send('close-main', this.loading.toString());
@@ -530,10 +544,11 @@
         this.traderData.forEach(trader => {
            this.setTradeItem(trader, orderData, data);
         })
-        ipcRenderer.send('update-instrumentsData', data);
+        ipcRenderer.send('update-instrumentsData', data, true);
         this.instrumentsData = data;
         this.$nextTick(function(){
           this.$refs.round.init();
+    
         })
       },
       setTradeItem(trader, orderData, data= this.instrumentsData){
@@ -635,7 +650,7 @@
           })
           return result
         })
-        title = this.userData.account + title;
+        title = this.userData.userAccount + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
       start({row}) {
@@ -653,7 +668,7 @@
         const {PriceTick, ExchangeID} = info;
         //给王曼妮做的hardcode 后期从配置里面取
         let checked  = true;
-        if(this.userData.account.includes('wmn')){
+        if(this.userData.userAccount.includes('wmn')){
           checked = false;
         }
         const configId = this.subscribelInstruments.find(e => e.instruments.includes(instrumentID)).configId
@@ -693,7 +708,7 @@
          const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume, InstrumentID}) => Volume> CloseVolume && this.instrumentsData.find(e => e.instrumentID ===InstrumentID));
           if(arr.length){
             ipcRenderer.invoke('async-cancel-order').then(()=>{    
-                ipcRenderer.send('info-log', `${this.userData.account}开始强平`)
+                ipcRenderer.send('info-log', `${this.userData.userAccount}开始强平`)
                 arr.forEach(({CloseVolume, Volume,  InstrumentID, OrderSysID, ExchangeID, Direction}) => {
                   const order = this.orderData.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
                   const instrumentinfo = this.instrumentInfo.find(e => e.InstrumentID === InstrumentID)
@@ -732,7 +747,7 @@
           })
            
         }else{
-           ipcRenderer.send('info-log', `${this.userData.account}结束强平`)
+           ipcRenderer.send('info-log', `${this.userData.userAccount}结束强平`)
           this.forcing = false;
           ipcRenderer.send('stop-subscrible')
           clearInterval(this.forcingCloseTime)
@@ -748,7 +763,7 @@
      
         this.stop();
      
-        ipcRenderer.send('info-log', `${this.userData.account}触发强平`)
+        ipcRenderer.send('info-log', `${this.userData.userAccount}触发强平`)
         ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: this.instrumentInfo})
       
         // this.forcingCloseTime = setInterval(()=> {
@@ -842,10 +857,36 @@
           });
       },
       changeAccount(){
-        ipcRenderer.send('tarder-login-out');
-        ipcRenderer.send('resize-main',  {width: 500, height: 383});
-        this.$router.push('/');
+         const arr = this.$refs.round.traderData.filter(({CloseVolume, Volume, InstrumentID}) => Volume> CloseVolume && this.instrumentsData.find(e => e.instrumentID ===InstrumentID));
+         let pro = Promise.resolve()
+         if(arr.length){
+           pro = this.$confirm('当年账户有未完成交易单确认切换账户？', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          })
+         }
+         pro.then(()=>{
+          //  ipcRenderer.send('close-all-sub');
+            ipcRenderer.send('resize-main',  {width: 500, height: 383});
+            this.$router.push('/');
+         })
+        
+      },
+      relogin(data){
+    
+        this.$store.commit('setstate', {
+              key: 'userData',
+              data
+          })
+        this.loginVisible = false;
       }
+    },
+    beforeDestroy(){
+      clearTimeout(this.timoutquery);
+      ['receive-order', 'receive-position','force-close-finish','receive-trade','receive-rate','finish-loading','add-loading','receive-info','receive-price','receive-account'].forEach(e=> {
+        ipcRenderer.removeAllListeners(e)
+      })
     }
 
   }

@@ -32,6 +32,7 @@ export class TraderSocket{
                 window._$store.commit('changeThr', msg[1]);
                 break;
             case 'UpdateKeymap':
+                break
             case 'LockUser':
                 window._$store.commit('lock-user');
                 break;
