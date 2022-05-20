@@ -179,7 +179,7 @@
       this.hotKey = this.configs[0].hotKey;
     
       request({
-        url: '/qout/info',
+        url: '/quot/info',
         method: 'GET'
       }).then(res => {
         this.subsInstruments = res.quotInfoVOList.reduce((a,b) =>  a.concat(b.instrumentList.map(e => ({key: e, label: e}))), [])

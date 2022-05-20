@@ -110,8 +110,12 @@ class Trade {
          
             this.reconnect()
             _trader.on('rspUserLogout',  (requestId, isLast, field, info) =>{
+                console.log('logout', this.shouldReconnect)
                 if(this.shouldReconnect){
                     this.reconnect()
+                }else {
+                  
+                    _trader.disposed()
                 }
               })     
         })

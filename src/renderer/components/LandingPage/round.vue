@@ -133,8 +133,9 @@
                         //         commission = rate.CloseTodayRatioByMoney * data.closePrice + rate.CloseTodayRatioByVolume * data.closeVolume
                         //         break;
                         // }
+                        commission = commission.toFixed(2) ;
                         data.commission = commission;
-                        return commission.toFixed(2) ;
+                        return commission
                     }
                 },
                 {

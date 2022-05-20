@@ -30,7 +30,7 @@
        
         <div>
           <div class="label">下单信息：<el-button type="primary" size="small" @click="exportExcel('下单信息', orderData, orderColumns)">导出</el-button></div>
-            <Table  height='280' :columns='orderColumns' row-key='key' :tableData='orderData'/>
+            <Order :traders="traders" :tableData='orderData'/>
         </div>
       </div>
      
@@ -70,33 +70,22 @@
 <script>
   import { ipcRenderer } from 'electron';
 
-  import {getWinName, Direction, CombOffsetFlag, getyyyyMMdd, getHoldCondition, getClientSize} from '../utils/utils';
+  import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId} from '../utils/utils';
   import request, {TraderSocket}  from '../utils/request';
   import Round from './LandingPage/round.vue';
-  import Status from './LandingPage/Status.vue';
-    import {Status as parseStatus, specialExchangeId} from '../utils/utils'
-  import Vue from 'vue';
+   import Order from './LandingPage/Order.vue';
+
   import loginform from './Login/form.vue'
+
  
-  Vue.component('StatusMsg', {
-    props: ['data'],
-    template: `<el-popover
-                placement="left"
-                width='150px'
-                trigger="hover"
-                :content="data.StatusMsg">
-                <div slot="reference">{{data.StatusMsg.length> 4? data.StatusMsg.slice(0,4) + '……': data.StatusMsg}}</div>
-              </el-popover>
-            `
-  })
+
   function coverZero(num){
-    if(num < 0) return 0;
+    // if(num < 0) return 0;
     return num
   }
-  Vue.component('Status', Status);
   export default {
     name: 'landing-page',
-    components: {  Round , loginform},
+    components: {  Round , loginform, Order},
     watch:{
       locked(val, old){
         if(val && !old){
@@ -154,89 +143,6 @@
         instrumentsData: [],
         traderData: [],
         // loading: [],
-        orderColumns: [{
-          label: '合约',
-          prop: 'InstrumentID',
-        },{
-          label: '日期',
-          prop:'InsertDate'
-        },{
-          label: '时间',
-          prop: 'InsertTime'
-        },{
-          label: '方向',
-          prop: 'Direction',
-          class(item){
-             return item.Direction === '1'? 'sell-direction': '';
-          }, 
-          render(item){
-            return Direction[item.Direction];
-          }
-        },{
-          label: '开平',
-          prop: 'CombOffsetFlag',
-           render(item){
-            return CombOffsetFlag[item.CombOffsetFlag];
-          }
-        },{
-          label: '手数',
-           type: 'number',
-            prop: 'VolumeTotalOriginal'
-        },{
-          label: '报价',
-          prop: 'LimitPrice',
-           type: 'number',
-          render(item){
-            return item.LimitPrice.toFixed(3);
-          }
-        },{
-          label: '状态',
-          prop: 'OrderStatus',
-          component: 'Status',
-          width: 80,
-          componentRender(item){
-            const msg =  parseStatus.find(({key})=> key === item.OrderStatus);
-            if(msg){
-              return msg.msg
-            }
-          }
-        },{
-           label: '成交均价',
-            prop: 'price',
-            type: 'number',
-            render(item){
-              switch(item.OrderStatus){
-                case '5':
-                  return '0.000'
-          
-                case '0':
-                case '1':
-                case '2':
-                  const {ExchangeID , OrderSysID} = item;
-                  const traders = _this.traders.filter(trade=> trade.ExchangeID ===ExchangeID &&   trade.OrderSysID ===OrderSysID);
-                  const price = {price: 0, volume : 0};
-                  
-                  traders.reduce(function(a, b){
-                    const {Price, Volume} = b;
-                    a.price = Price*Volume;
-                    a.volume = price.volume+ Volume;
-                    return a;
-                  }, price);
-                  let average = 0;
-                  if(price.volume){
-                    average = price.price/price.volume
-                  }
-                  return average.toFixed(3)
-                default: 
-                  return ''
-              }
-            }
-        },{
-           label: '详细信息',
-            prop: 'StatusMsg',
-           
-            width: '200'
-        }],
         traders: [],
         positions:[],
         confirmInfo: [],
@@ -322,9 +228,8 @@
         ipcRenderer.send('set-account', this.userData.id);
         
         const broadcast = config.some(e => e.broadcastOpenInterest);
-        if(broadcast && !this.ws){
-          
-          this.ws = new TraderSocket(this.userData.id);
+        this.ws = new TraderSocket(this.userData.id);
+        if(broadcast ){
           this.ws.onmessage((e)=>{
             console.log(e)
             ipcRenderer.send('broadcast-openinterest', e);
@@ -361,8 +266,9 @@
         }else{
          
           this.updateTrader(trader);
-        
-          if(this.ws){
+          const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
+       
+          if(config.find(e=> e.instruments.includes(trader.InstrumentID)).broadcastOpenInterest){
             const futureUserId = this.$store.state.user.activeCtpaccount
           
             let { ExchangeID, OrderSysID, TradeID, InstrumentID,Volume ,Direction, TradeTime, TradingDay} = trader;
@@ -536,10 +442,7 @@
           if(item)item.todayCancel += 1;
         })
         //过滤
-        const orderData = this.orderData.filter(e => {
-        
-          return  e.VolumeTraded
-        })
+        const orderData = this.orderData;
         // console.log(JSON.parse(JSON.stringify(this.traderData.filter(e => e.InstrumentID === 'v2205'))))
         this.traderData.forEach(trader => {
            this.setTradeItem(trader, orderData, data);
@@ -571,7 +474,9 @@
               item[key] += Volume
            }else {
             
-           
+             if(!CombOffsetFlag){
+                ipcRenderer.send('error-log', JSON.stringify(trader));
+             }
             if(CombOffsetFlag === '0' ){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
                 item[key] += Volume;
@@ -590,8 +495,11 @@
                  }
                  
                }else{
-                
+                 
                  item[keyToady] -= Volume;
+                  if(item[keyToady] < 0){
+                    ipcRenderer.send('error-log', JSON.stringify(trader));
+                }
                }
             }
            }

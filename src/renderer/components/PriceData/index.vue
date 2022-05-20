@@ -200,10 +200,10 @@ export default {
       // })
       ipcRenderer.on('total-order', (_, orders, current = {}) => { 
         // p.then(()=>{
-          console.log(current)
+          console.log(orders, current, 111)
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
-            if(orders[key].ExchangeInstID === id){
+            if(orders[key].InstrumentID === id){
               arr.push(orders[key])
             }
           }
@@ -249,6 +249,14 @@ export default {
         position: 'bottom-right',
       })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
+        if(!instrumet){
+          instrumet = {
+            todayBuy: 0,
+            todayAsk: 0,
+            yesterdayAsk: 0,
+            yesterdayBuy: 0
+          }
+        }
         this.instrumet = instrumet;
         this.update(instrumet)
        
@@ -262,9 +270,11 @@ export default {
       ipcRenderer.on('trade-order', (_, field, flag) => {
           
           if(!flag){
-            const {Direction, Volume, OrderSysID, ExchangeID} = field;
+            let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag} = field;
             const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-            const CombOffsetFlag = item.CombOffsetFlag;
+           if(item){
+             CombOffsetFlag = item.CombOffsetFlag;
+           }
             if(CombOffsetFlag === '0'){
               const key = Direction  === '0' ? 'todayBuy': 'todayAsk';
               this.instrumet[key] += Volume;

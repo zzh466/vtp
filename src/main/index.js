@@ -6,6 +6,7 @@ import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
+import FakeTrade from './faketrade';
 import meun, {childwin} from  './menu';
 import  './export';
 import  request  from './request';
@@ -51,17 +52,18 @@ function createWindow () {
   mainWindow.loadURL(winURL)
   mainWindow.removeMenu()
   mainWindow.on('closed', () => {
-  
+    console.log('main-closed')
     mainWindow = null
   })
   mainWindow.on('close', () => {
-   
+   console.log('main-close')
     if(trade){
       request({
         url: 'access/logoutClient', 
       })
-      trade.logout();
       trade.shouldReconnect = false
+      trade.logout();
+      
     }
     if(childwin){
       childwin.close();
@@ -69,6 +71,7 @@ function createWindow () {
     clearInterval(Maincycle);
     closeALLData();
     closeALLsubs();
+    
   })
 }
 
@@ -88,6 +91,7 @@ function findedopened(insId){
   return win;
 }
 ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex}) => {
+  console.log('open-window')
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -163,6 +167,7 @@ const PriceData ={};
 const broadcast_Data = {};
 let tcp_client_list = [];
 let tcp_reconnct_count = 0;
+let tcp_timeout= 3 *60 *1000;
 function closeALLsubs(){
   COLOSEALL = true;
   
@@ -321,6 +326,7 @@ ipcMain.on('trade-login', (event, args) => {
   
   
   trade.on('rtnOrder', function(field){
+    console.log('emmit---rtnOrder');
     const key = getorderKey(field);
     const needUpdate = !!orderMap[key];
     const old = orderMap[key] || {}
@@ -385,7 +391,7 @@ ipcMain.on('trade-login', (event, args) => {
         win.sender.send('total-order',orderMap, field);
       }
     // }
-    console.log('StarSTARTTRADE', STARTTRADE)
+    
     if(!STARTTRADE){
       clearTimeout(ORDERTIME)
       ORDERTIME = setTimeout(() => {
@@ -395,7 +401,7 @@ ipcMain.on('trade-login', (event, args) => {
       }, 5000)
       return
     }
-    console.log(orderMap[key])
+   
     event.sender.send('receive-order', orderMap[key], key, needUpdate);
   })
  
@@ -433,7 +439,8 @@ ipcMain.on('trade-login', (event, args) => {
     }
   })
   trade.emitterOn('connect', function () {
-    infoLog('ctp已连接')
+    if(!mainWindow)return;
+    infoLog(`ctp第${connectcount + 1}次链接`)
     console.log('ctp已连接')
     tradeMap = [];
     trade.tasks = [];
@@ -446,10 +453,15 @@ ipcMain.on('trade-login', (event, args) => {
         event.sender.send('finish-loading', 'trade')
         TRADETIME= null;
       }, 5000)
+      ORDERTIME = setTimeout(() => {
+
+        event.sender.send('finish-loading', 'order')
+      }, 5000)
     }
    
     STARTTRADE =false;
     event.sender.send('add-loading', 'trade')
+    event.sender.send('add-loading', 'order')
     event.sender.send('receive-trade', tradeMap);
     connectcount++
   })
@@ -873,7 +885,7 @@ ipcMain.on('start-receive', (event, args) =>{
     tcp_client.on('end',function(){
       console.log('data end!');
     })
-    tcp_client.setTimeout(3 *60 * 1000);
+    tcp_client.setTimeout(tcp_timeout);
     tcp_client.on('timeout',function(){
       
         const index = tcp_client_list.indexOf(tcp_client);
@@ -882,6 +894,7 @@ ipcMain.on('start-receive', (event, args) =>{
         }
         tcp_client.destroy();
         tcp_client = new net.Socket();
+        tcp_timeout = 3 *60 *1000;
         connect();
         console.log('timeout');
     })
@@ -938,6 +951,8 @@ ipcMain.on('start-receive', (event, args) =>{
 //强制重连
 ipcMain.on('tcp-reconnect', function(){
   tcp_reconnct_count = tcp_client_list.length;
+  infoLog(`强制重连 重连${tcp_reconnct_count}个链接`)
+  tcp_timeout = 3 * 1000;
   tcp_client_list.forEach(e=>{
     e.destroy();
   })
@@ -965,6 +980,50 @@ ipcMain.on('update-all-config', function(_, arg){
   // console.log(arg);
   opedwindow.forEach(({sender}) => sender.send('update-config') )
 })
+//模拟交易
+ipcMain.on('fake-trade', function(evnet, {id, orderData, tradeData}){
+  tradeMap = tradeData;
+  orderData.forEach(e => {
+    orderMap[e.key] =e;
+  })
+  console.log(id)
+  trade = new FakeTrade(id, orderData)
+  trade.on('trade', function(item){
+    evnet.sender.send('receive-trade', item)
+    const win = findedopened(item.InstrumentID);
+    // console.log(InstrumentID)
+    if(win && win.sender){ 
+      win.sender.send('trade-order', item)
+    }
+  })
+  trade.on('order', function(item){
+    
+    orderMap[item.key] = item;
+    evnet.sender.send('receive-order', item)
+    const win = findedopened(item.InstrumentID);
+    console.log(win)
+    if(win && win.sender){ 
+      win.sender.send('total-order',orderMap, item);
+    }
+
+  })
+  trade.on('data', function(data){
+    // console.log(data)
+    sendParseData(data);
+  })
+  if(!Maincycle){
+    Maincycle=setInterval(()=>{
+      evnet.sender.send('receive-price', trade.priceData)
+    },1000)
+  }
+ 
+})
+
+ipcMain.on('send-fake-trade-msg', function(event, msg){
+  console.log(msg)
+  trade.send(msg)
+})
+
 // ipcMain.on('tarder-login-out', function(){
 //   trade.logout();
 //   positionMap = [];

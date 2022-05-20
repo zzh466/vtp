@@ -23,6 +23,10 @@ export default new Router({
       path: '/config',
       name: 'config-page',
       component: require('@/components/Config').default
+    }, {
+      path: '/trade',
+      name: 'trade-page',
+      component: require('@/components/FakeTrade').default
     },
     {
       path: '*',

@@ -18,7 +18,7 @@
             <el-form-item label='方向' prop='direction' :rules="[{ required: true, message: `请选择方向`,trigger: 'change'}]">
                 <el-select v-model="config.direction">
                     <el-option value='0' label='买'></el-option>
-                    <el-option value='1' lable='卖'></el-option>
+                    <el-option value='1' label='卖'></el-option>
                 </el-select>
             </el-form-item>
             <el-form-item label='超价' prop='overprice'  :rules="[{ required: true, message: `请输入超价`,trigger: 'blur'}]">

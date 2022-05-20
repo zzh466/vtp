@@ -572,7 +572,9 @@ class Chart {
         ctx.restore();
     }
     render(arg){
-        
+        if(!arg.LastPrice){
+            arg.LastPrice = arg.AskPrice1 || arg.BidPrice1
+        }
         if(this.data.length === 0) {
             console.log(arg.LastPrice)
             this.initData(arg.LastPrice);

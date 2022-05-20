@@ -25,8 +25,9 @@ export class TraderSocket{
         msg = msg.data.split('@');
         switch(msg[0]){
             case 'BroadcastOpenInterest': 
-            
-              this.onmessagefn(msg[1]);
+                if(this.onmessagefn){
+                    this.onmessagefn(msg[1]);
+                }   
               break;
             case "UpdateForceLiquidationThreshold":
                 window._$store.commit('changeThr', msg[1]);
@@ -70,9 +71,9 @@ export class TraderSocket{
                 this.reconnect()
             }, 2000)
         }
-        if(this.onmessagefn){
-            this.ws.onmessage = this.onmessageResolve.bind(this);
-        }
+     
+        this.ws.onmessage = this.onmessageResolve.bind(this);
+        
     }
     send(msg){
         console.log(msg)

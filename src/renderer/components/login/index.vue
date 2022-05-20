@@ -3,7 +3,7 @@
    <loginform @login='login' v-if='step === 1'>
       
     </loginform>
-  
+    
       <el-form label-width="160px"  v-else-if='step === 2'>
       <el-form-item label="选择交易账户" >
         <el-radio-group :value="active" >
@@ -15,7 +15,7 @@
         <el-button type="primary" @click="cofirm">确认</el-button>
       </el-form-item>
    </el-form>
-
+      <el-checkbox v-if='step === 1' v-model='checked'> 历史行情交易</el-checkbox>
   </div>
 </template>
 
@@ -38,7 +38,7 @@
       return {
        
         step: this.$store.state.user.activeCtpaccount? 2: 1,
-      
+        checked: false
         
        
       }
@@ -59,8 +59,14 @@
               key: 'userData',
               data
           })
-          const { futureAccountVOList} = data;
+            const { futureAccountVOList} = data;
             this.changeActive(futureAccountVOList[0].id);
+          if(this.checked){
+             ipcRenderer.send('resize-main',  {width: 1600, height: 770});
+              this.$router.push('trade');
+              return;
+          }
+        
           if(futureAccountVOList.length > 1){
                
             this.$nextTick(()=>  this.step = 2)
