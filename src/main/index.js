@@ -657,7 +657,13 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
           }
          
         }
-      tradeList.push( {limitPrice, instrumentID, combOffsetFlag, volumeTotalOriginal: volume, direction, ExchangeID});
+      const item = tradeList.find(e => e.instrumentID === instrumentID && e.combOffsetFlag === combOffsetFlag);
+      if(item){
+        item.volumeTotalOriginal = item.volumeTotalOriginal+ volume
+      }else{
+        tradeList.push( {limitPrice, instrumentID, combOffsetFlag, volumeTotalOriginal: volume, direction, ExchangeID});
+      }
+      
     })
     console.log(tradeList, 'tradeList')
     if(!tradeList.length){

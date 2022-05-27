@@ -1,5 +1,6 @@
 <template>
   <div class="price-body"  @dblclick="mouseTrade" v-loading='loading' > 
+    <Controller  v-if="showController"/>
     <div class="hold-order">
       <div class="buy-orders">
         <div class="buy-order" v-for="index of broadcast['1']" :style="{ width: stepwidth +'px'}"  :key="index"></div>
@@ -47,7 +48,11 @@ import Chart from './chart'
 import Gen from './hotkey';
 import {getWinName, getHoldCondition, setClientSize, specialExchangeId} from '../../utils/utils'
 import {Notification} from 'element-ui'
+import Controller from './controller.vue'
 export default {
+  components: {
+    Controller
+  },
   watch:{
     traded(val) {
       const buy = [], ask =[];
@@ -250,6 +255,7 @@ export default {
       })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         if(!instrumet){
+          this.showController = true;
           instrumet = {
             todayBuy: 0,
             todayAsk: 0,
@@ -268,9 +274,11 @@ export default {
         this.traded = [];
       })
       ipcRenderer.on('trade-order', (_, field, flag) => {
-          
+        let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag, TradeID} = field;
+          const index = this.traded.findIndex(e => e.ExchangeID + e.OrderSysID + e.TradeID===ExchangeID + OrderSysID + TradeID);
+          if(index > -1)return;
           if(!flag){
-            let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag} = field;
+            
             const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
            if(item){
              CombOffsetFlag = item.CombOffsetFlag;
@@ -373,6 +381,7 @@ export default {
         height = 280;
     }
     return {
+      showController: false,
       width: window.innerWidth -80 ,
       height,
       showbar: false,

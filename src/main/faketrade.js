@@ -2,6 +2,7 @@
 import events from 'events'
 import ws from 'ws'
 import dataFormat from 'silly-datetime'
+import {baseURL} from '../renderer/utils/utils' 
 const changeMap = {
     InstrumentID: 'symbol',
     ExchangeID: 'exchange',
@@ -44,18 +45,24 @@ export default class FakeTrader{
         this.orders = orders;
         this.priceData = {}
         console.log(id)
-        this.ws = new ws(`ws://139.196.41.155:8080/vtpmanagerapi/ws/${id}`);
+        this.ws = new ws(`ws://${baseURL}/ws/${id}`);
         this.ws.onmessage = ({data}) => {
             // 
-          
-            data = data.split('@')[1];
-            data = JSON.parse(data);
-            this.priceData[data.symbol]  = [
-                data.bidPrice1,
-                data.askPrice1
-            ];
-            this.checktrade()
-            this.emitter.emit('data', parseData(data));
+            console.log(data)
+            data =  data.split('@')
+            const mess = data[0];
+            if(mess === 'QuotDataHist'){
+                data = data[1];
+            
+                data = JSON.parse(data);
+                this.priceData[data.symbol]  = [
+                    data.bidPrice1,
+                    data.askPrice1
+                ];
+                this.checktrade()
+                this.emitter.emit('data', parseData(data));
+            }
+           
         }
         this.ws.onopen =  (e) =>{
             console.log('opened')
