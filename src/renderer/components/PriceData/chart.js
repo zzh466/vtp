@@ -43,7 +43,9 @@ class Chart {
         this.data = [];
         this.start = 0;
         this.range = this.initRange();
-        const decimal = (this.step.toString().split(1) || []).length;
+
+        
+        const decimal = (this.step.toString().split('.')[1] || []).length;
         this.decimal = decimal;
         this.placeOrder=[];  
         this.traded ={};
@@ -151,6 +153,7 @@ class Chart {
     }
      initData(price){
          if(!price) return;
+         
         const count = this.count / 2;
         const decimal = this.decimal;
         const data = []
@@ -208,7 +211,7 @@ class Chart {
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
-            if(price % (this.step * 10) ===0){
+            if((price * Math.pow(10, this.decimal))% (this.step * Math.pow(10, this.decimal + 1)) ===0){
                 ctx.save();
                 ctx.beginPath();
                 ctx.moveTo(x, y + 20);                
@@ -222,6 +225,7 @@ class Chart {
 
     }
     renderPrice(){
+        
         const start = this.start;
         const ctx = this.ctx;
         ctx.fillStyle= FONTCOLOR;
@@ -237,7 +241,7 @@ class Chart {
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
-            if(price % (this.step * 10) ===0){
+            if((price * Math.pow(10, this.decimal)) % (this.step * Math.pow(10, this.decimal + 1)) ===0){
                 ctx.save();
                 ctx.fillText(price, x , 20);
                 ctx.beginPath();
@@ -271,6 +275,7 @@ class Chart {
             if(i> buyIndex && i<askIndex){
                 continue
             }
+            
             if(volum){
                 if((type === 'buy' && i > buyIndex) || (type ==='ask' && i < askIndex)){
                     continue;

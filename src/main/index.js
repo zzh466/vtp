@@ -90,7 +90,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = ''}) => {
   console.log('open-window')
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
@@ -110,7 +110,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}&showController=${showController}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      

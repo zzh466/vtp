@@ -283,7 +283,10 @@
                                 //多计算的平昨要给他加回去
                                 item.close += gap;
                                 const _d = Direction === '0'? '1': '0';
-                                yesterday[InstrumentID][_d] += e._volume
+                                if(yesterday[InstrumentID]){
+                                    yesterday[InstrumentID][_d] += e._volume
+                                }
+                                
                             }
                              if(closeToady){
                                 item.closeToady += gap;

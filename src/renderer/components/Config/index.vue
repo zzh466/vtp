@@ -167,6 +167,7 @@
     created(){
       
       const {id} =this.$route.query;
+      
       const config = JSON.parse(localStorage.getItem(`config-${id}`));
       console.log(config); 
       this.configs = config.map(e => ({...e, instruments: (e.instruments||'').split(',').filter(e=>e),hotKey: e.hotKey.split(';').filter(e => e).map(key => {

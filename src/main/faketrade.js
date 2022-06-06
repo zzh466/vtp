@@ -3,6 +3,7 @@ import events from 'events'
 import ws from 'ws'
 import dataFormat from 'silly-datetime'
 import {baseURL} from '../renderer/utils/utils' 
+// const baseURL = '192.168.0.18:8082/vtpmanagerapi'
 const changeMap = {
     InstrumentID: 'symbol',
     ExchangeID: 'exchange',
@@ -48,10 +49,10 @@ export default class FakeTrader{
         this.ws = new ws(`ws://${baseURL}/ws/${id}`);
         this.ws.onmessage = ({data}) => {
             // 
-            console.log(data)
+            // console.log(data)
             data =  data.split('@')
             const mess = data[0];
-            if(mess === 'QuotDataHist'){
+            if(mess === 'QuotDataHist' || mess ==='GroupQuotDataHist'){
                 data = data[1];
             
                 data = JSON.parse(data);
@@ -108,7 +109,8 @@ export default class FakeTrader{
         const priceData = this.priceData;
         arr.forEach(item => {
             const {CombOffsetFlag, LimitPrice, Direction, InstrumentID, VolumeTotalOriginal} = item;
-            if(Direction === '0' && LimitPrice >= priceData[InstrumentID][0] || (Direction  !== '0' && LimitPrice <= priceData[InstrumentID][1] )){
+            console.log(item)
+            if(Direction === '0' && LimitPrice >= priceData[InstrumentID][1] || (Direction  !== '0' && LimitPrice <= priceData[InstrumentID][0] )){
                 this.emitter.emit('trade', {
                     Direction,
                     InstrumentID,

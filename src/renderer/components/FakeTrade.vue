@@ -33,18 +33,20 @@
           <div class="label">下单信息：
             <el-button type="primary" size="small" @click="exportorder">导出</el-button>
             </div>
-            <Order ref="order" :traders="tradeData" :tableData='orderData'/>
+            <Order ref="order" :traders="tradeData"  :tableData='orderData'/>
         </div>
       </div>
      
     </main>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
+      <template v-if='showButton'>
       <el-button type="primary" @click='visible=true'>打开合约</el-button>
-       <div class="label">订阅合约： </div>
+      <el-button type="primary" @click='topicvisible=true'>选择主题</el-button></template>
+       <div class="label">选择主题合约： </div>
       <div style="display: flex;">
          
       
-          <Table v-for='instrument in subscribelInstruments' :key ='instrument.id'  height='300' @row-dblclick='start' :tableData='instrument.instruments' :columns= 'instrumentsColumns'/>
+          <Table key ='ins'  height='300' @row-dblclick='start' :tableData='subscribelInstruments' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>  .
               .
@@ -81,16 +83,43 @@
         <el-button type="primary" @click="confirm">确 定</el-button>
     </div>
       </el-dialog>
+      <el-dialog :visible.sync='topicvisible'>
+        <el-form ref="form1" :model="topicData" label-width="80px">
+           <el-form-item label='主题' prop='topic' :rules='[{ required: true, message: `请选择主题`,trigger: "change"}]'>
+            <el-select v-model="topicData.topic">
+                <el-option v-for='e in topics' :value="e.topic" :key="e.topic" :label='e.topic'></el-option>
+              
+                
+            </el-select>
+        </el-form-item>
+        
+    </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click='topicvisible=false'>取 消</el-button>
+        <el-button type="primary" @click="confirmTopic">确 定</el-button>
+    </div>
+      </el-dialog>
   </div>
 </template>
 <script>
 import {ipcRenderer} from 'electron';
 import request  from '../utils/request';
-  import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId} from '../utils/utils';
+  import {getWinName, getyyyyMMdd, getClientSize} from '../utils/utils';
 import Round from './LandingPage/round.vue';
    import Order from './LandingPage/Order.vue';
 export default {
     components: {  Round , Order},
+    watch: {
+      topicvisible(val){
+        if(val){
+          request({
+            url: 'quot/topicquot'}).then(({list}) => {
+               this.topics = list;
+            })
+           
+        }
+      }
+    },
     data(){
         return {
             loading: true,
@@ -108,11 +137,18 @@ export default {
             totalProfit: 0,
             positions: [],
             visible: false,
+             topicvisible: false,
             subscribelData: {
               instrumentId: '',
               time: '',
               configId: ''
-            }
+            },
+            topicData:{
+              topic: ''
+            },
+            topics: [],
+            showButton: true,
+            subscribelInstruments: []
         }
         
     },
@@ -123,6 +159,7 @@ export default {
             this.rates = commissionRateList.sort((a, b) => b.InstrumentID.length - a.InstrumentID.length);
             this.loading = false;
             const storageKey= `fake-trade-${this.userData.id}`;
+            ipcRenderer.send('set-account', this.userData.id);
             let history = localStorage.getItem(storageKey);
             if(history){
               history = JSON.parse(history)
@@ -130,8 +167,9 @@ export default {
               const now = new Date().toLocaleDateString();
              
               if(date === now){
-                this.tradeData = tradeData;
-                this.orderData = orderData;
+                
+                this.tradeData = tradeData|| [];
+                this.orderData = orderData|| [];
                 this.$nextTick(function(){
                    this.$refs.round.init();
                 })
@@ -139,8 +177,9 @@ export default {
                 localStorage.setItem(storageKey, '')
               }
             }
-
+          
             ipcRenderer.send('fake-trade', {id: this.userData.id, orderData: this.orderData, tradeData: this.tradeData});
+            
         })
         ipcRenderer.on('receive-order', (evnet, order) => {
           const index= this.orderData.findIndex(e => e.key === order.key)
@@ -152,8 +191,9 @@ export default {
            this.setStroge()
         })
         ipcRenderer.on('receive-trade', (evnet, trade) => {
+          console.log(trade)
            this.$refs.round.update(trade);
-          this.tradeData.push(trade)
+          this.tradeData.unshift(trade)
           this.setStroge()
         })
         ipcRenderer.on('receive-price', (evnet, price) => {
@@ -164,7 +204,7 @@ export default {
               a.total = a.total + b.closeProfit + b.optionProfit - b.commission;
               return a
             }, {commission:0, total: 0});
-            this.commission=commission;
+            this.commission=commission.toFixed(2);
             this.totalProfit = total;
           })
         })
@@ -175,14 +215,7 @@ export default {
       userData() {
          return this.$store.state.user.userData
       },
-      subscribelInstruments (){
-        
-        // return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
-         return this.userData.instrumentConfigVOList.map(e=> ({
-          instruments: (e.instruments|| '').split(',').map(e => ({ins: e.replace(/[\n\r]/g, '')})),
-          configId: e.id
-        }))
-      },
+     
     },
     methods: {
         exportroud(){
@@ -231,23 +264,41 @@ export default {
           }),request({
             url: '/ctp/instrumentCommissionRate',
             
-          }),this.$store.dispatch('get-config')])
+          }),
+          this.$store.dispatch('get-config')])
       },
-      start(row){
-         const {instrumentID} = row;
+      start({row}){
+        
+         const {ins} = row;
         const {width, height} = getClientSize()
-        const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
+        const info = this.instrumentInfo.find(e => e.InstrumentID.match(/^[a-zA-Z]+/)[0] === ins.match(/^[a-zA-Z]+/)[0]);
+        this.instrumentInfo.push({...info, InstrumentID: ins})
         if(!info){
            this.$alert('改合约尚未订阅行情，请联系管理员订阅！');
            return;
         };
          const {PriceTick, ExchangeID} = info; 
         const active = this.$store.state.user.activeCtpaccount;
-        const account = userData.futureAccountVOList.find(e => e.id === active);
-        const configId = this.subscribelInstruments.find(e => e.instruments.includes(instrumentID)).configId
+        const account = this.userData.futureAccountVOList.find(e => e.id === active);
+        const configId = this.userData.instrumentConfigVOList.find(e => e.instruments.includes(ins.match(/^[a-zA-Z]+/)[0])).id
         const accountIndex = account.futureUserName;
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked: true,configId, accountIndex});
-        this.$store.dispatch('updateIns', instrumentID);
+        ipcRenderer.send('open-window', {id:ins, title: getWinName(ins, accountIndex), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked: true,configId, accountIndex});
+      },
+      confirmTopic(){
+        this.$refs.form1.validate((valid) => {
+          if(valid){
+             
+           
+            const {topic} = this.topicData;
+            ipcRenderer.send('send-fake-trade-msg',`NotifyGroupQuotDataHist@${topic}`)
+            
+            const e = this.topics.find(e => e.topic === topic);
+            
+            this.subscribelInstruments = e.instrumentIDList.map(e => ({ins: e}))    ;
+            this.showButton = false     
+             this.topicvisible = false; 
+          }
+         })
       },
       confirm(){
         this.$refs.form.validate((valid) => {
@@ -264,10 +315,10 @@ export default {
                 const info = this.instrumentInfo.find(e => e.InstrumentID.match(/^[a-zA-Z]+/)[0] === instrumentId.match(/^[a-zA-Z]+/)[0]);
                 const {PriceTick, ExchangeID} = info; 
             const accountIndex = account.futureUserName;
-            ipcRenderer.send('open-window', {id:instrumentId, title: getWinName(instrumentId, accountIndex), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked: true,configId, accountIndex});
+            ipcRenderer.send('open-window', {id:instrumentId, title: getWinName(instrumentId, accountIndex), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked: true,configId, accountIndex, showController : true});
             this.visible = false;
             this.opened = instrumentId
-
+            this.showButton = false;
           }
         })
       }

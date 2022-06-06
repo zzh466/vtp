@@ -28,10 +28,11 @@ export default {
             ipcRenderer.send('send-fake-trade-msg',`NotifyQuotDataHist${msg}`)
         },
         start(flag){
-            this.send(flag);
+            this.send(flag+ '@');
             this.pause = !this.pause
         },
         go(direction){
+            this.end();
            this.send(`${direction}@${this.step}`)
             this.timer = setInterval(()=>{
                 if(this.step < 40){

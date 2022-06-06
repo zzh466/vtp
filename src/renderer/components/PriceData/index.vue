@@ -100,10 +100,12 @@ export default {
       const chartDom = document.getElementById('can');
       this.instrumet = {};
      this.tasks = [];
-     const {id, tick, exchangeId} = this.$route.query;
+     const {id, tick, exchangeId, showController} = this.$route.query;
+
+     
       const config = this.setConfig()
       ipcRenderer.send('register-event', id);
-     
+     this.showController = !!showController;
       window.onkeydown =(e)=>{
         if(this.showCondition){
           return
@@ -255,7 +257,7 @@ export default {
       })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         if(!instrumet){
-          this.showController = true;
+         
           instrumet = {
             todayBuy: 0,
             todayAsk: 0,
