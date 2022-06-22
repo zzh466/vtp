@@ -13,8 +13,9 @@
 </template>
 
 <script>
- import { getIPAdress, hostname, version} from '../../utils/utils';
+ import { getIPAdress, hostname, version, getMac} from '../../utils/utils';
 import request from '../../utils/request';
+  import { ipcRenderer } from 'electron';
 export default {
     props: ['userAccount'],
     data() {
@@ -36,17 +37,22 @@ export default {
     },
     methods : {
         login(){
-             this.disabled = true
+             
             this.$refs.form.validate((validate) => {
+           
             if(validate){
-                request({
-                url: 'access/loginClient', 
-                method: 'POST',
-                data: {
+                 this.disabled = true
+                 const data = {
                     appVersion: version,
                     ip: getIPAdress(),
                     hostNm: hostname,
-                    ...this.form},
+                    userMAC: getMac(),
+                    ...this.form};
+                ipcRenderer.send('info-log', `login  ${JSON.stringify(data)}`)
+                request({
+                url: 'access/loginClient', 
+                method: 'POST',
+                data
                 }).then((res) => {
                 this.disabled =  false
                 if(res.code === 'REQ_SUCCESS'){

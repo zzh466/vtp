@@ -240,12 +240,14 @@
       })
       this.getCtpInfo();
       ipcRenderer.on('receive-order', (event, orders, key, needUpdate) =>{
+        
         console.log(orders, key, needUpdate)
        if(key){
          
          this.upddateOrder(orders, key, needUpdate)
        }else{
          this.orders = orders;
+         this.finishLoading('order');
        }
         
       });
@@ -323,9 +325,10 @@
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
          if(!arg || this.loginVisible)return;
+         console.log(arg)
          this.account=arg
         
-     
+
         const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
         const staticBalance = arg.PreBalance + arg.Mortgage + arg.PreFundMortgageIn + arg.FundMortgageIn + arg.FundMortgageOut + arg.FundMortgageAvailable - arg.PreFundMortgageOut - arg.PreCredit - arg.PreMortgage;
         
@@ -403,6 +406,7 @@
       init(){
         
         console.log(1111111111111111111111111111111)
+        
         const arr = []
         for(let key in this.orders){
           this.orders[key].key =key;
@@ -479,7 +483,7 @@
            }else {
             
              if(!CombOffsetFlag){
-                ipcRenderer.send('err-log', JSON.stringify(trader));
+                ipcRenderer.send('err-log', `trader找不到order， ${JSON.stringify(trader)}`);
              }
             if(CombOffsetFlag === '0' ){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
@@ -502,7 +506,7 @@
                  
                  item[keyToady] -= Volume;
                   if(item[keyToady] < 0){
-                    ipcRenderer.send('err-log', JSON.stringify(trader));
+                    ipcRenderer.send('err-log', `持仓负数，${JSON.stringify(trader)}`);
                 }
                }
             }
@@ -523,6 +527,7 @@
       upddateOrder(order, key, needUpdate){
         
           order.key = key;
+          this.orders[key]= order;
         if(needUpdate){
           
           const index = this.orderData.findIndex(e =>e.key === key);
@@ -695,7 +700,7 @@
       finishLoading(tag){
         
         const index = this.loading.indexOf(tag);
-        // console.log(tag)
+        console.log(tag)
         if(index > -1) {
           this.loading.splice(index, 1)
           

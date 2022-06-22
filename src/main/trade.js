@@ -255,7 +255,7 @@ class Trade {
         this[key]++;
         return value.toString();
     }
-    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID}){
+    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID, contingentCondition: ContingentCondition,   stopPrice: StopPrice,}){
         // console.log(this.getInstrumentList, instrumentID)
         // const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
 
@@ -275,8 +275,8 @@ class Trade {
             //"GTDDate": "",
             //"VolumeCondition": "",
             //"MinVolume": "",
-            //"ContingentCondition": "",
-            //"StopPrice": "",
+            ContingentCondition,
+            StopPrice,
             //"ForceCloseReason": "",
             //"IsAutoSuspend": "",
             //"BusinessUnit": "",

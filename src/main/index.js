@@ -167,7 +167,7 @@ const PriceData ={};
 const broadcast_Data = {};
 let tcp_client_list = [];
 let tcp_reconnct_count = 0;
-let tcp_timeout= 3 *60 *1000;
+let tcp_timeout= 2.9 *60 *1000;
 function closeALLsubs(){
   COLOSEALL = true;
   
@@ -280,7 +280,7 @@ ipcMain.on('trade-login', (event, args) => {
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade');
     
-    infoLog(JSON.stringify(field));
+    // infoLog(JSON.stringify(field));
     const { Volume, Price, InstrumentID} = field
     // if(args.instruments.includes(InstrumentID)){
       infoLog(JSON.stringify(field));
@@ -332,7 +332,7 @@ ipcMain.on('trade-login', (event, args) => {
     const old = orderMap[key] || {}
     // const orderStatus = old.OrderStatus;
     // if(args.instruments.includes(field.InstrumentID)){
-      infoLog(JSON.stringify(field));
+      // infoLog(JSON.stringify(field));
     // }
     //返回可能不按时序 先返回已完成的后返回中间状态，所以一旦订单已经完成就要将中间状态舍弃
     if(old.OrderStatus){
@@ -396,7 +396,7 @@ ipcMain.on('trade-login', (event, args) => {
       clearTimeout(ORDERTIME)
       ORDERTIME = setTimeout(() => {
         event.sender.send('receive-order', orderMap);
-        event.sender.send('finish-loading', 'order')
+       
         
       }, 5000)
       return
@@ -546,7 +546,7 @@ ipcMain.on('trade', (event, args) => {
 function findCancelorder(args, title){
   const arr = [];
   function needCancel(order){
-    return (order.OrderStatus === '1' || order.OrderStatus === 'a' || order.OrderStatus === '3') && (!args || args.value === order[args.key])
+    return (order.OrderStatus === '1' || order.OrderStatus === 'a' || order.OrderStatus === '3'|| order.OrderStatus === 'b') && (!args || args.value === order[args.key])
   }
  for(let key in orderMap){
    const item = orderMap[key];
@@ -900,7 +900,7 @@ ipcMain.on('start-receive', (event, args) =>{
         }
         tcp_client.destroy();
         tcp_client = new net.Socket();
-        tcp_timeout = 3 *60 *1000;
+        tcp_timeout = 2.9 *60 *1000;
         connect();
         console.log('timeout');
     })
@@ -960,7 +960,7 @@ ipcMain.on('tcp-reconnect', function(){
   infoLog(`强制重连 重连${tcp_reconnct_count}个链接`)
   tcp_timeout = 3 * 1000;
   tcp_client_list.forEach(e=>{
-    e.destroy();
+    setTimeout(()=> e.destroy(), 1);
   })
   tcp_client_list= [];
 })

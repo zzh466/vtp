@@ -436,8 +436,8 @@ class Chart {
         if(this.data.length===0) return;
         
         const pricearray = this.placeOrder.reduce((a, b) => {
-            const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus} =b;
-            if(OrderStatus !== '3' && OrderStatus!=='1'){
+            const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus, OrderSysID} =b;
+            if(OrderStatus !== '3' && OrderStatus!=='1' && OrderStatus!=='b'){
                 return a;
             }
             const item = a.find(({price})=> price===LimitPrice)
@@ -447,7 +447,8 @@ class Chart {
                 a.push({
                     price: LimitPrice,
                     volume: VolumeTotalOriginal -VolumeTraded,
-                    direction: Direction
+                    direction: Direction,
+                    OrderSysID
                 })
             }
             return a;
@@ -459,13 +460,13 @@ class Chart {
         const _x = X + 50.5;
         const {stepwidth, stepHeight, range} = this;
         let _volume = [0, 0];
-        pricearray.forEach(({price, volume, direction}) => {
+        pricearray.forEach(({price, volume, direction, OrderSysID = ''}) => {
             const index = this.getindex(price, true);
             if(index < this.start || index > this.start + this.count)return;
             const  x = _x + (index-this.start) * stepwidth;
             const height = Chart.getHeight(range, volume, stepHeight); 
            
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = OrderSysID.startsWith('TJBD_')?'blue':'red';
             _volume[direction] = _volume[direction] + volume;
             ctx.fillRect(x,y,stepwidth -1,height);
 

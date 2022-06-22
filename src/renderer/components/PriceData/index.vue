@@ -1,5 +1,5 @@
 <template>
-  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading' > 
+  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading' @contextmenu="showCondition=true  "> 
     <Controller  v-if="showController"/>
     <div class="hold-order">
       <div class="buy-orders">
@@ -16,19 +16,28 @@
             <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
                 <el-input v-model='editcondition.price' :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
             </el-form-item>
-            <el-form-item label='超价平仓' prop='overprice' >
-                <el-radio-group v-model="editcondition.overprice">
+             <el-form-item label='条件' prop='contingentCondition' required>
+                <el-select v-model="editcondition.contingentCondition">
+                    <el-option v-for="e in limitcondition" :key='e.value'  :value='e.value' :label='e.label'></el-option>
                     
-                    <el-radio :label="false">否</el-radio>
-                     <el-radio :label="true">是</el-radio>
-                </el-radio-group>
-                <p>选择是后将以涨跌停价进行平仓</p>
+                </el-select>
+            </el-form-item>
+             <el-form-item label='超价' prop='overprice' required>
+                  <el-input v-model='editcondition.overprice' type="number"></el-input>
+                    
+              </el-form-item>
+            <el-form-item label='方向' prop='direction' required>
+                <el-select v-model="editcondition.direction">
+                    <el-option value='0' label='买'></el-option>
+                    <el-option value='1' label='卖'></el-option>
+                </el-select>
             </el-form-item>
             
-              <el-form-item label='手数' prop='volume' >
+              <el-form-item label='手数' prop='volume' required>
                   <el-input v-model='editcondition.volume' type="number"></el-input>
-                    <p>不填写手数默认平全部仓位</p>
+                    
               </el-form-item>
+              
              
        </el-form>
         <div slot='footer'>
@@ -36,9 +45,9 @@
                 <el-button type="primary" @click="cofirmCondition">确 定</el-button>
         </div>
     </el-dialog>
-  <div class="condition-tag">
+  <!-- <div class="condition-tag">
     <el-tag style="margion-top: 3px" effect="plain" v-for='condition, index in conditions' :key="condition.price" @click="addCondition(index)" closable size='mini' @close='closeCondition(index)'>条件单{{index + 1}}</el-tag>
-  </div>  
+  </div>   -->
   </div>
 </template>
 
@@ -146,7 +155,7 @@ export default {
          
         // })
       // })
-     
+        
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
             
@@ -276,9 +285,12 @@ export default {
         this.traded = [];
       })
       ipcRenderer.on('trade-order', (_, field, flag) => {
-        let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag, TradeID} = field;
-          const index = this.traded.findIndex(e => e.ExchangeID + e.OrderSysID + e.TradeID===ExchangeID + OrderSysID + TradeID);
-          if(index > -1)return;
+        let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag, TradeID, TradeType} = field;
+          const index = this.traded.findIndex(e => e.TradeType === TradeType && e.ExchangeID + e.OrderSysID + e.TradeID===ExchangeID + OrderSysID + TradeID);
+          if(index > -1){
+            console.log(this.traded, field, 1112356)
+            return;
+          }
           if(!flag){
             
             const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
@@ -401,13 +413,37 @@ export default {
         '1': 0
       },
       showCondition: false,
-      conditions: [],
+     
       editcondition: {
         price: '',
-        overprice: false,
-        volume: 0
+        overprice: 1,
+        direction: '0',
+        volume: 1,
+        contingentCondition: ''
       },
-      arg: {}
+      arg: {},
+      limitcondition: [{
+        label: '最新价大于等于条件价',
+        value: '6'
+      },
+      {
+        label: '最新价小于等于条件价',
+        value: '8'
+      },{
+        label: '买一价大于等于条件价',
+        value: 'E'
+      },
+      {
+        label: '买一价小于等于条件价',
+        value: 'H'
+      },{
+        label: '卖一价大于等于条件价',
+        value: 'A'
+      },
+      {
+        label: '卖一价小于等于条件价',
+        value: 'C'
+      }]
     }
   },
   methods: {
@@ -470,7 +506,7 @@ export default {
       this.putOrder(limitPrice, direction,volumeTotalOriginal)
 
     },
-    putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume){
+    putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume, contingentCondition, stopPrice){
        const instrumentID = this.$route.query.id;
       let combOffsetFlag = '0'
       let {traded, holdVolume} = this.chart;
@@ -503,13 +539,13 @@ export default {
       }
       if(Array.isArray(traderData.volumeTotalOriginal)){
         if(traderData.volumeTotalOriginal[0]){
-          ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId})
+          ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId, contingentCondition, stopPrice})
         }
          
-        ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal: traderData.volumeTotalOriginal[1],combOffsetFlag: '3', ExchangeID: this.exchangeId})
+        ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal: traderData.volumeTotalOriginal[1],combOffsetFlag: '3', ExchangeID: this.exchangeId, contingentCondition, stopPrice})
 
       }else{
-        ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId})
+        ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId, contingentCondition, stopPrice})
       }
       
     },
@@ -618,29 +654,19 @@ export default {
     //     }
     //   })
     // },
-    addCondition(index){
-      if(!this.arg.LastPrice) return;
-      if(index === undefined){
-        this.editcondition= {
-          price: '',
-          overprice: false,
-          volume: 0
-        }
-      }else {
-        this.editcondition = this.conditions[index]
-      }
-      this.showCondition = true;
-      this.editIndex= index
-    },
+    
     cofirmCondition(){
       this.$refs.form.validate((valid)=>{
         if(valid){
-          if(this.editIndex === undefined){
-            this.conditions.push(this.editcondition);
-          }else{
-            this.conditions.splice(this.editIndex, 1, this.editcondition);
+          
+         let {price, overprice, contingentCondition, direction, volume} = this.editcondition;
+          const {tick} = this.$route.query;
+          if(direction === '1'){
+            overprice = -overprice
           }
-          this.showCondition =false;
+        const limitPrice = parseFloat(price) + tick * overprice;
+        this.putOrder(limitPrice, direction, volume, contingentCondition, price)
+        this.showCondition = false;
         }
       })
     },
@@ -648,15 +674,11 @@ export default {
         value = parseFloat(value);
       
         if(value < this.arg.LowerLimitPrice || value > this.arg.UpperLimitPrice){
-          return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice}, 小于${this.arg.LowerLimitPrice}`))
+          return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice}, 小于${this.arg.UpperLimitPrice}`))
         }
          callback();
       },
-    closeCondition(index){
-      this.$confirm(`确定删除条件单${index+1}`).then(res =>{
-        this.conditions.splice(index, 1)
-      })
-    }
+ 
   },
   
 }

@@ -236,7 +236,8 @@
             this.findAnDmatch(data, this.traderData);
         },
         findAnDmatch(e, arr){
-                const yesterday = this.yesterday;
+                
+                const yesterday = this.yesterday || {};
                 const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID, CombOffsetFlag} = e;
                 
                  let _volume = e._volume;

@@ -1,6 +1,7 @@
 import os from 'os';
-export function getIPAdress(){
 var interfaces = os.networkInterfaces();
+export function getIPAdress(){
+
 for(var devName in interfaces){
     var iface = interfaces[devName];
     for(var i=0;i<iface.length;i++){
@@ -12,7 +13,15 @@ for(var devName in interfaces){
 }
 }
 console.log(getIPAdress())
-
+export function getMac(){
+    for(var i in interfaces){
+        for(var j in interfaces[i]){
+            if(interfaces[i][j]["family"]==="IPv4" && interfaces[i][j]["mac"]!=="00:00:00:00:00:00" && interfaces[i][j]["address"]!=="127.0.0.1"){
+            return interfaces[i][j]["mac"]
+            }
+        }
+    }
+}
 export const hostname = os.hostname();//主机名
 console.log(hostname);
 export const typeMap = ['锁仓', '平今', '开仓', '平仓'];
@@ -30,10 +39,10 @@ export const Direction = ['买', '卖'];
 export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
 
 
-export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '尚未触发', key: 'b'},{msg: '已触发', key: 'c'}]
+export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '条件单尚未触发', key: 'b'},{msg: '条件单已触发', key: 'c'}]
 
 
-export const version = '220606a';
+export const version = '220614a';
 export function getyyyyMMdd(){
     var d = new Date();
     var curr_date = d.getDate();

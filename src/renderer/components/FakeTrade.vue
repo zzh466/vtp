@@ -161,6 +161,7 @@ export default {
             const storageKey= `fake-trade-${this.userData.id}`;
             ipcRenderer.send('set-account', this.userData.id);
             let history = localStorage.getItem(storageKey);
+            
             if(history){
               history = JSON.parse(history)
               const {date, tradeData, orderData} = history;
@@ -186,7 +187,7 @@ export default {
           if(index > -1){
             this.orderData.splice(index, 1, order)
           }else{
-             this.orderData.push(order)
+             this.orderData.unshift(order)
           }
            this.setStroge()
         })
