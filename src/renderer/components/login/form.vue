@@ -37,11 +37,14 @@ export default {
     },
     methods : {
         login(){
-             
+             if( this.disabled){
+                 return
+             }
+            this.disabled = true
             this.$refs.form.validate((validate) => {
            
             if(validate){
-                 this.disabled = true
+                 
                  const data = {
                     appVersion: version,
                     ip: getIPAdress(),
@@ -65,6 +68,8 @@ export default {
                    
                 }
                 })
+            }else{
+                this.disabled =  false
             }
             })
         }

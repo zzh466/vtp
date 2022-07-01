@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, ipcRenderer, Notification } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import  { receiveData }  from '../ctp/dataStruct';
 import { errorLog, infoLog} from './log';
 
@@ -167,7 +167,7 @@ const PriceData ={};
 const broadcast_Data = {};
 let tcp_client_list = [];
 let tcp_reconnct_count = 0;
-let tcp_timeout= 2.9 *60 *1000;
+let tcp_timeout= 3 *60 *1000;
 function closeALLsubs(){
   COLOSEALL = true;
   
@@ -781,7 +781,7 @@ ipcMain.on('start-receive', (event, args) =>{
   function connect(){
     infoLog('data open');
     tcp_client_list.push(tcp_client);
-    // tcp_client.setKeepAlive(true);
+    tcp_client.setKeepAlive(true, 5*1000);
     tcp_client.connect({host, port},function(){
       console.log('connected to Server');
       
@@ -891,35 +891,34 @@ ipcMain.on('start-receive', (event, args) =>{
     tcp_client.on('end',function(){
       console.log('data end!');
     })
-    tcp_client.setTimeout(tcp_timeout);
+    // tcp_client.setTimeout(tcp_timeout);
     tcp_client.on('timeout',function(){
       
-        const index = tcp_client_list.indexOf(tcp_client);
-        if(index > -1){
-          tcp_client_list.splice(index, 1);
-        }
+        // const index = tcp_client_list.indexOf(tcp_client);
+        // if(index > -1){
+        //   tcp_client_list.splice(index, 1);
+        // }
         tcp_client.destroy();
-        tcp_client = new net.Socket();
-        tcp_timeout = 2.9 *60 *1000;
-        connect();
+        // tcp_client = new net.Socket();
+      
+        // connect();
         console.log('timeout');
+        infoLog('timeout')
     })
     tcp_client.on('close',function(hadError ){
       console.log('1231231')
-      if((hadError || tcp_reconnct_count) && mainWindow && !COLOSEALL){
+      if( mainWindow && !COLOSEALL){
         
         const index = tcp_client_list.indexOf(tcp_client);
         if(index > -1){
           tcp_client_list.splice(index, 1);
         }
-        if(tcp_reconnct_count){
-          tcp_reconnct_count--;
-        }
+        
         tcp_client = new net.Socket();
         setTimeout(()=> connect(), 1000)
       
       }
-      infoLog(`data close${JSON.stringify(hadError)}`);
+      infoLog(`data close ${JSON.stringify(hadError)}`);
     })
   
     tcp_client.on('error', function (e) {
@@ -958,7 +957,7 @@ ipcMain.on('start-receive', (event, args) =>{
 ipcMain.on('tcp-reconnect', function(){
   tcp_reconnct_count = tcp_client_list.length;
   infoLog(`强制重连 重连${tcp_reconnct_count}个链接`)
-  tcp_timeout = 3 * 1000;
+
   tcp_client_list.forEach(e=>{
     setTimeout(()=> e.destroy(), 1);
   })
@@ -1028,6 +1027,25 @@ ipcMain.on('fake-trade', function(evnet, {id, orderData, tradeData}){
 ipcMain.on('send-fake-trade-msg', function(event, msg){
   console.log(msg)
   trade.send(msg)
+})
+ipcMain.on('import-trades', function(event, instrumentID){
+  dialog.showOpenDialog(mainWindow, {
+    title: '导入交易信息',
+    properties : {
+      openDirectory : false,
+      multiSelections: false
+    },
+    filters: [
+      { name: 'Excel', extensions: ['csv', 'xls', 'xlsx'] },
+  
+    ]
+  }).then(result => {
+    if(result.filePaths){
+      trade.importTrade(instrumentID, filePaths)
+    }
+  }).catch(err => {
+    console.log(err)
+  })
 })
 
 // ipcMain.on('tarder-login-out', function(){

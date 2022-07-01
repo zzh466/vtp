@@ -226,7 +226,7 @@ class Trade {
        if(tasks.length){
             let task = tasks[0];
             //ctp一秒只能发一个请求
-            console.log(task)
+            // console.log(task)
             setTimeout(()=> {
                 task()
             }, timeout)

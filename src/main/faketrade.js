@@ -3,6 +3,7 @@ import events from 'events'
 import ws from 'ws'
 import dataFormat from 'silly-datetime'
 import {baseURL} from '../renderer/utils/utils' 
+import xlsx from 'xlsx';
 // const baseURL = '192.168.0.18:8082/vtpmanagerapi'
 const changeMap = {
     InstrumentID: 'symbol',
@@ -104,8 +105,12 @@ export default class FakeTrader{
     send(msg){
         this.ws.send(msg);
     }
-    checktrade(){
-        const arr = this.orders.filter(e => e.OrderStatus === '3');
+    importTrade(instrumentID, path){
+        const tradeData = xlsx.parse(path)
+        console.log(tradeData);
+    }
+    checktrade(instrumentID){
+        const arr = this.orders.filter(e => e.OrderStatus === '3' && e.InstrumentID === instrumentID);
         const priceData = this.priceData;
         arr.forEach(item => {
             const {CombOffsetFlag, LimitPrice, Direction, InstrumentID, VolumeTotalOriginal} = item;

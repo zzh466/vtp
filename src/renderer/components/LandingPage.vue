@@ -717,7 +717,8 @@
          if(this.started)return;
         this.started = true;
         const {quotVOList } = this.userData;
-        // const quotAddr = '192.168.0.18:18198'
+        // const quotAddr = '192.168.0.19:18198'.split(':');
+        // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209'],   iCmdID: 101});
         quotVOList.forEach((e) => {
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')
