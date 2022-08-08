@@ -19,9 +19,9 @@
         
          <div>
            <div class="label">回合信息：
-              <el-button type="primary" size="small" @click="exportroud">导出</el-button>
+              <el-button type="primary" size="small" @click="exportroud">导出</el-button> <el-button @click='clear'>清除</el-button>
               </div>
-          <Round ref="round" :data='tradeData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
+          <Round ref="round" @round-click='jump' :data='tradeData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
         </div>
          
       </div>
@@ -41,7 +41,8 @@
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
       <template v-if='showButton'>
       <el-button type="primary" @click='visible=true'>打开合约</el-button>
-      <el-button type="primary" @click='topicvisible=true'>选择主题</el-button></template>
+      <el-button type="primary" @click='topicvisible=true'>选择主题</el-button>
+       <el-button type="primary" @click='startVolume'>实盘数据</el-button></template>
        <div class="label">选择主题合约： </div>
       <div style="display: flex;">
          
@@ -62,10 +63,15 @@
         </el-form-item>
         <el-form-item label='配置' prop='configId' :rules='[{ required: true, message: `请选择配置`,trigger: "change"}]'>
             <el-select v-model="subscribelData.configId">
-                <el-option v-for='e,index in subscribelInstruments' :value="e.configId" :key="e.configId" :label='"配置" + (index + 1) '></el-option>
+                <el-option v-for='e,index in userData.instrumentConfigVOList' :value="e.id" :key="e.id" :label='"配置" + (index + 1) '></el-option>
               
                 
             </el-select>
+        </el-form-item>
+        <el-form-item label='交易信息' prop='importPath'>
+            <el-input v-model="subscribelData.importPath"   clearable/>
+            <el-button @click='importExcel'>导入</el-button>
+           
         </el-form-item>
        <el-form-item label='时间' prop='time' :rules='[{ required: true, message: `请选择合约`,trigger: "change"}]'>
             <el-date-picker
@@ -102,7 +108,7 @@
   </div>
 </template>
 <script>
-import {ipcRenderer} from 'electron';
+import {ipcRenderer, dialog} from 'electron';
 import request  from '../utils/request';
   import {getWinName, getyyyyMMdd, getClientSize} from '../utils/utils';
 import Round from './LandingPage/round.vue';
@@ -126,6 +132,7 @@ export default {
             instrumentsColumns: [{
               label: '合约',
               prop: 'ins',
+              width: 100
             }],
             orderData: [],
             tradeData: [],
@@ -141,14 +148,16 @@ export default {
             subscribelData: {
               instrumentId: '',
               time: '',
-              configId: ''
+              configId: '',
+              importPath: ''
             },
             topicData:{
               topic: ''
             },
             topics: [],
             showButton: true,
-            subscribelInstruments: []
+            subscribelInstruments: [],
+    
         }
         
     },
@@ -182,7 +191,7 @@ export default {
             ipcRenderer.send('fake-trade', {id: this.userData.id, orderData: this.orderData, tradeData: this.tradeData});
             
         })
-        ipcRenderer.on('receive-order', (evnet, order) => {
+        ipcRenderer.on('receive-order', (event, order) => {
           const index= this.orderData.findIndex(e => e.key === order.key)
           if(index > -1){
             this.orderData.splice(index, 1, order)
@@ -191,13 +200,30 @@ export default {
           }
            this.setStroge()
         })
-        ipcRenderer.on('receive-trade', (evnet, trade) => {
+        ipcRenderer.on('receive-trade', (event, trade) => {
           console.log(trade)
-           this.$refs.round.update(trade);
+          if(Array.isArray(trade)){
+            this.tradeData = trade
+            this.$refs.round.traderColumns.push({
+               label: '开仓说明',
+              prop: 'openText',
+              width: '100' })
+            this.$refs.round.traderColumns.push({
+               label: '锁仓说明',
+              prop: 'closeText',
+               width: '100' 
+            })
+            this.$nextTick(function(){
+                this.$refs.round.init();
+            })
+          }else{
+            this.$refs.round.update(trade);
           this.tradeData.unshift(trade)
+          }
+           
           this.setStroge()
         })
-        ipcRenderer.on('receive-price', (evnet, price) => {
+        ipcRenderer.on('receive-price', (event, price) => {
           this.price = price
           this.$nextTick(function(){
             const {commission, total} = this.$refs.round.traderData.reduce((a,b) => {
@@ -208,6 +234,9 @@ export default {
             this.commission=commission.toFixed(2);
             this.totalProfit = total;
           })
+        })
+        ipcRenderer.on('file-path', (event, [path]) => {
+          this.subscribelData.importPath = path;
         })
 
     },
@@ -281,7 +310,11 @@ export default {
          const {PriceTick, ExchangeID} = info; 
         const active = this.$store.state.user.activeCtpaccount;
         const account = this.userData.futureAccountVOList.find(e => e.id === active);
-        const configId = this.userData.instrumentConfigVOList.find(e => e.instruments.includes(ins.match(/^[a-zA-Z]+/)[0])).id
+        const confgindex  = this.userData.instrumentConfigVOList.find(e => e.instruments.includes(ins.match(/^[a-zA-Z]+/)[0]))
+        if(!confgindex){
+          return;
+        }
+        const configId = confgindex.id
         const accountIndex = account.futureUserName;
         ipcRenderer.send('open-window', {id:ins, title: getWinName(ins, accountIndex), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked: true,configId, accountIndex});
       },
@@ -301,13 +334,20 @@ export default {
           }
          })
       },
+      jump({row}){
+        const {InstrumentID, OpenTime, TradeDate, parseIndex} = row;
+        ipcRenderer.send('jump-time', {instrumentID: InstrumentID, time : `${TradeDate} ${OpenTime}`, index: parseIndex})
+      },
       confirm(){
         this.$refs.form.validate((valid) => {
           if(valid){
-            const { instrumentId , time , configId} = this.subscribelData;
+            const { instrumentId , time , configId, importPath} = this.subscribelData;
             if(this.opened && this.opened!== instrumentId){
               ipcRenderer.send('close-all-sub');
               ipcRenderer.send('send-fake-trade-msg',`NotifyQuotDataHistCancel`)
+            }
+            if(importPath){
+              ipcRenderer.send('parse-trades', {instrumentID: instrumentId, filepath: importPath})
             }
             ipcRenderer.send('send-fake-trade-msg',`NotifyQuotDataHist@${instrumentId}:${time}`)
               const active = this.$store.state.user.activeCtpaccount;
@@ -322,7 +362,30 @@ export default {
             this.showButton = false;
           }
         })
-      }
+      },
+      importExcel(){
+        ipcRenderer.send('import-trades')
+      },
+      clear(){
+        this.tradeData = [];
+        this.$nextTick(()=>this.$refs.round.init())
+        
+         const storageKey= `fake-trade-${this.userData.id}`;
+          localStorage.setItem(storageKey, '')
+      },
+      startVolume(){
+         if(this.started)return;
+         this.showButton = false;
+        this.started = true;
+        const {quotVOList } = this.userData;
+   
+        quotVOList.forEach((e) => {
+           const _quotAddr = e.quotAddr.split(':');
+            const instruments = e.subInstruments.split(',')
+            this.subscribelInstruments = this.subscribelInstruments.concat(instruments.map(e => ({ins: e})));
+             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments,   iCmdID: 101});
+        })
+    },
     }
 }
 </script>

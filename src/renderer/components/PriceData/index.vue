@@ -281,7 +281,7 @@ export default {
       })
       let audio = new Audio()
       audio.src = __static+ "/trade.wav";
-      ipcRenderer.on('clear-tarder', ()=>{
+      ipcRenderer.on('clear-trader', ()=>{
         this.traded = [];
       })
       ipcRenderer.on('trade-order', (_, field, flag) => {
@@ -318,7 +318,8 @@ export default {
             }
             this.update();
           }
-           
+          //有成交单进来就把先撤后下的队列给清除 防止出现撤单后成交依然挂着
+          this.tasks =[]; 
           this.traded.push(field);
           if(this.startTrade){
             audio.load();

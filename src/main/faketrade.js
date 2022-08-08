@@ -23,11 +23,11 @@ for(let b = 1; b < 6; b++){
     changeMap[`AskVolume${b}`] =`askVolume${b}`
 }
 
-function getDay(){
-    return dataFormat.format(new Date(),'YYYYMMDD')
+function getDay(time = new Date()){
+    return dataFormat.format(time,'YYYY/MM/DD')
 }
-function getTime(){
-    return dataFormat.format(new Date(),'HH:mm:ss')
+function getTime(time = new Date()){
+    return dataFormat.format(time,'HH:mm:ss')
 }
 function parseData(data){
     const item = {}
@@ -36,16 +36,33 @@ function parseData(data){
    }
 //    console.log(data);
    item.UpdateTime = data.datetime.substr(8, 2) + ':' + data.datetime.substr(10, 2) + ':' + data.datetime.substr(12, 2)
+   
    return item;
    
 }
 
+function toTradeData(_data, InstrumentID, index){
+    return  {
+        Direction: _data.direction,
+        InstrumentID,
+        Price: _data.price,
+        CombOffsetFlag: '0',
+        TradeDate: getDay(_data.time),
+        TradeTime: getTime(_data.time),
+        Volume: _data.volume,
+        closeText: _data.closeText,
+        openText: _data.openText,
+        parseIndex: index
+    }
+}
+const TradeDateMap = {};
 
 export default class FakeTrader{
     constructor(id,orders =[]){
         this.emitter = new  events.EventEmitter();
         this.orders = orders;
         this.priceData = {}
+        this.TradeDateMap =TradeDateMap;
         console.log(id)
         this.ws = new ws(`ws://${baseURL}/ws/${id}`);
         this.ws.onmessage = ({data}) => {
@@ -59,9 +76,11 @@ export default class FakeTrader{
                 data = JSON.parse(data);
                 this.priceData[data.symbol]  = [
                     data.bidPrice1,
-                    data.askPrice1
+                    data.askPrice1,
+                    data.datetime,
+                    data.lastPrice
                 ];
-                this.checktrade()
+                this.checktrade(data)
                 this.emitter.emit('data', parseData(data));
             }
            
@@ -91,7 +110,7 @@ export default class FakeTrader{
         }
         this.orders.push(item)
         this.emitter.emit('order', item);
-        this.checktrade()
+        this.checktrade({symbol: instrumentID})
         
     }
     cancel(arr){
@@ -103,26 +122,78 @@ export default class FakeTrader{
         })
     }
     send(msg){
+        console.log(msg)
         this.ws.send(msg);
     }
-    importTrade(instrumentID, path){
-        const tradeData = xlsx.parse(path)
-        console.log(tradeData);
+    getTime(instrumentID, time){
+        console.log(time)
+        time = +new Date(time);
+        if(this.priceData[instrumentID]){
+            let lasttime = +new Date(this.priceData[instrumentID][2]);
+            const gap = time - lasttime
+           if(gap >= 0 && gap <= 5000){
+            return
+           }
+        }
+       
+        console.log(time)
+        this.send('NotifyQuotDataHistCancel@');
+       
+        time = dataFormat.format(time -5000,'YYYYMMDDHHmmss')
+         this.send(`NotifyQuotDataHist@${instrumentID}:${time}`) 
     }
-    checktrade(instrumentID){
-        const arr = this.orders.filter(e => e.OrderStatus === '3' && e.InstrumentID === instrumentID);
+    importTrade(instrumentID, path){
+        console.log(instrumentID, path)
+        const tradeData = [];
+        TradeDateMap[instrumentID] = {data: tradeData, flag: 0};
+      
+        const workbook = xlsx.readFile(path)
+        console.log(workbook.SheetNames[0]);
+        const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+        function parse(e, type, directionType){
+            const time = + new Date(e[`${type}时间`]);
+            const price = e[`${type}价格`];
+            const direction = directionType === e['方向']? '0' : '1';
+            const volume = e['手数'];
+            const openText = e['开仓说明'];
+            const closeText = e['锁仓说明'];
+            tradeData.push({time, price, direction, volume, openText, closeText});
+        }
+        data.forEach((e) => {
+            parse(e, '开仓', '多')
+            parse(e, '锁仓', '空')
+        })
+        this.emitter.emit('main-trade',tradeData.map((e,index) => toTradeData(e, instrumentID, index)));
+    }
+    checktrade(data){
+        if(data && TradeDateMap[data.symbol]){
+            const tradeData = TradeDateMap[data.symbol];
+            let datetime = data.datetime;
+            const arr = ['/', '/', ' ', ':', ':', '.'];
+            arr.forEach((e , index) => {
+                const flag = (index+2)*2 + index
+                datetime = datetime.substring(0, flag) + e + datetime.substring(flag);
+            })
+            datetime = +new Date(datetime);
+            while(tradeData.data[tradeData.flag] && tradeData.data[tradeData.flag].time <= datetime){
+                const _data = tradeData.data[tradeData.flag]
+                tradeData.flag ++ ;
+                this.emitter.emit('sub-trade',toTradeData(_data, data.symbol));
+            }
+        }
+        const arr = this.orders.filter(e => e.OrderStatus === '3' && e.InstrumentID === data.symbol);
         const priceData = this.priceData;
         arr.forEach(item => {
             const {CombOffsetFlag, LimitPrice, Direction, InstrumentID, VolumeTotalOriginal} = item;
-            console.log(item)
-            if(Direction === '0' && LimitPrice >= priceData[InstrumentID][1] || (Direction  !== '0' && LimitPrice <= priceData[InstrumentID][0] )){
+            
+            if((Direction === '0' && (LimitPrice >= priceData[InstrumentID][1]|| LimitPrice >= priceData[InstrumentID][3])) || (Direction  !== '0' && (LimitPrice <= priceData[InstrumentID][0] || LimitPrice <= priceData[InstrumentID][3]))){
                 this.emitter.emit('trade', {
                     Direction,
                     InstrumentID,
                     Price: Direction === '0' ? priceData[InstrumentID][1]: priceData[InstrumentID][0],
                     CombOffsetFlag,
-                    TradeTime: getDay(),
-                    TradeDate: getTime(),
+                    TradeDate: getDay(),
+                    TradeTime: getTime(),
                     Volume: VolumeTotalOriginal
                 });
                 item.StatusMsg = '已成交';

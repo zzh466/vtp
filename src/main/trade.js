@@ -43,6 +43,7 @@ class Trade {
                 console.log("rspUserLogin: isLast", isLast);
                 console.log("rspUserLogin: field", JSON.stringify(field));
                 console.log("rspUserLogin: info", JSON.stringify(info));
+                info = info || {};
                 if(info.ErrorID){
                     this.emitter.emit('error', info.ErrorMsg);
                     errorLog(`登陆失败，${info.ErrorMsg}`)
@@ -57,9 +58,9 @@ class Trade {
                 
             });
             
-            _trader.on('rspError', function (requestId, isLast, field, info) {
+            _trader.on('rspError',  (requestId, isLast, field, info) =>{
                 console.log(JSON.stringify(field));
-                errorLog(`错误，${info.ErrorMsg}`)
+                errorLog(`错误，${info && info.ErrorMsg}`)
                 this.emitter.emit('error',field);
                 reject()
             });

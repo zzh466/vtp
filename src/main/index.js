@@ -262,7 +262,7 @@ ipcMain.on('trade-login', (event, args) => {
     STARTTRADE= false;
     trade.logout();
     trade.shouldReconnect = true;
-    opedwindow.forEach(({sender}) => sender.send('clear-tarder'))
+    opedwindow.forEach(({sender}) => sender.send('clear-trader'))
     return
 
   }
@@ -460,6 +460,7 @@ ipcMain.on('trade-login', (event, args) => {
     }
    
     STARTTRADE =false;
+    opedwindow.forEach(({sender}) => sender.send('clear-trader'))
     event.sender.send('add-loading', 'trade')
     event.sender.send('add-loading', 'order')
     event.sender.send('receive-trade', tradeMap);
@@ -724,12 +725,30 @@ const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
 function sendParseData(parseData){
   const {InstrumentID} = parseData; 
   PriceData[InstrumentID] = parseData
+ 
   const win = findedopened(InstrumentID);
   // console.log(InstrumentID)
   if(win && win.sender){ 
     // console.log(InstrumentID, '11111111111111111111111111111111111')
     
       win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
+  }
+  if(trade.priceData){
+    trade.priceData[InstrumentID]  = [
+        parseData.BidPrice1,
+        parseData.AskPrice1,
+        undefined,
+        parseData.LastPrice  
+    ];
+    trade.checktrade({symbol:InstrumentID});
+  }
+  if(trade.PriceData){
+    trade.priceData[InstrumentID]  = [
+        parseData.BidPrice1,
+        parseData.AskPrice1,
+        
+    ];
+    trade.checktrade();
   }
 }
 function parseReceiveData(data){
@@ -763,17 +782,18 @@ ipcMain.on('start-receive', (event, args) =>{
   if(!Maincycle){
     Maincycle=setInterval(()=>{
      
+     
+      if(Object.getOwnPropertyNames(PriceData).length!==0){
+        const data = {};
+        for(let key in PriceData){
+          data[key] = [PriceData[key].BidPrice1, PriceData[key].AskPrice1, PriceData[key].LowerLimitPrice ,PriceData[key].UpperLimitPrice, PriceData[key]]
+        }
+        event.sender.send('receive-price', data)
+      }
       if(trade && trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
         })
-      }
-      if(Object.getOwnPropertyNames(PriceData).length!==0){
-        const data = {};
-        for(let key in PriceData){
-          data[key] = [PriceData[key].BidPrice1, PriceData[key].AskPrice1, PriceData[key].LowerLimitPrice ,PriceData[key].UpperLimitPrice]
-        }
-        event.sender.send('receive-price', data)
       }
     }, 1000)
   }
@@ -986,7 +1006,7 @@ ipcMain.on('update-all-config', function(_, arg){
   opedwindow.forEach(({sender}) => sender.send('update-config') )
 })
 //模拟交易
-ipcMain.on('fake-trade', function(evnet, {id, orderData, tradeData}){
+ipcMain.on('fake-trade', function(event, {id, orderData, tradeData}){
   tradeMap = tradeData;
   orderData.forEach(e => {
     orderMap[e.key] =e;
@@ -994,17 +1014,27 @@ ipcMain.on('fake-trade', function(evnet, {id, orderData, tradeData}){
   console.log(id)
   trade = new FakeTrade(id, orderData)
   trade.on('trade', function(item){
-    evnet.sender.send('receive-trade', item)
+    event.sender.send('receive-trade', item)
     const win = findedopened(item.InstrumentID);
     // console.log(InstrumentID)
     if(win && win.sender){ 
       win.sender.send('trade-order', item)
     }
   })
+  trade.on('sub-trade', function(item){
+    const win = findedopened(item.InstrumentID);
+    // console.log(InstrumentID)
+    if(win && win.sender){ 
+      win.sender.send('trade-order', item)
+    }
+  })
+  trade.on('main-trade', function(item){
+    event.sender.send('receive-trade', item)
+  })
   trade.on('order', function(item){
     
     orderMap[item.key] = item;
-    evnet.sender.send('receive-order', item)
+    event.sender.send('receive-order', item)
     const win = findedopened(item.InstrumentID);
     console.log(win)
     if(win && win.sender){ 
@@ -1018,7 +1048,7 @@ ipcMain.on('fake-trade', function(evnet, {id, orderData, tradeData}){
   })
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      evnet.sender.send('receive-price', trade.priceData)
+      event.sender.send('receive-price', trade.priceData)
     },1000)
   }
  
@@ -1028,26 +1058,53 @@ ipcMain.on('send-fake-trade-msg', function(event, msg){
   console.log(msg)
   trade.send(msg)
 })
-ipcMain.on('import-trades', function(event, instrumentID){
+ipcMain.on('import-trades', function(event,){
   dialog.showOpenDialog(mainWindow, {
     title: '导入交易信息',
-    properties : {
-      openDirectory : false,
-      multiSelections: false
-    },
+    
     filters: [
       { name: 'Excel', extensions: ['csv', 'xls', 'xlsx'] },
   
     ]
   }).then(result => {
     if(result.filePaths){
-      trade.importTrade(instrumentID, filePaths)
+     event.sender.send('file-path', result.filePaths)
     }
   }).catch(err => {
     console.log(err)
   })
 })
-
+ipcMain.on('parse-trades', function(event,{instrumentID, filepath}){
+  trade.importTrade(instrumentID, filepath)
+})
+ipcMain.on('jump-next', function(event, instrumentID){
+ 
+  if(trade.TradeDateMap[instrumentID]){
+    console.log('jump', instrumentID)
+    event.sender.send('clear-trader');
+    const tradeData = trade.TradeDateMap[instrumentID];
+    const flag = ++tradeData.flag;
+    if(tradeData.data[flag]){
+      trade.getTime(instrumentID ,tradeData.data[flag].time);
+    }
+  }
+})
+ipcMain.on('jump-time', function(event, {instrumentID, time, index}){
+  if(trade.TradeDateMap[instrumentID]){
+    console.log('jump', time)
+    const tradeData = trade.TradeDateMap[instrumentID];
+    
+    console.log(index);
+   
+    tradeData.flag = index;
+    
+    const win = findedopened(instrumentID);
+    if(win && win.sender){ 
+      win.sender.send('clear-trader');
+      trade.getTime(instrumentID ,time);
+    }
+  }
+})
 // ipcMain.on('tarder-login-out', function(){
 //   trade.logout();
 //   positionMap = [];

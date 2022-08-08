@@ -7,7 +7,10 @@
    
     
       <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
-      <el-descriptions-item label="当前账户实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
+      
+      <el-descriptions-item label="当前账户盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
+      <el-descriptions-item label="隔节误差">{{deviation.toFixed(2)}}</el-descriptions-item>
+       <el-descriptions-item label="实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission + deviation).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
       <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
        <el-descriptions-item label="总实际盈亏">{{totalProfit}}</el-descriptions-item>
@@ -20,7 +23,7 @@
         
          <div>
            <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button></div>
-          <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
+          <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions" @history-trade="historyTraders = $event"></Round>
         </div>
          
       </div>
@@ -217,11 +220,13 @@
         forcing: false,
         currentAccount: {},
         totalProfit: 0,
+        deviation: 0,
          loginVisible: false
       }
     },
     created(){
       this.forceCloseCount = 0;
+      this.historyTraders = [];
       this.updateConfig().then(()=>{
         
         const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
@@ -315,8 +320,37 @@
         this.confirmInfo =  arg.map(({Content}) => Content)
         this.dialogVisible = true;
       })
-       ipcRenderer.on('receive-price', (event, arg)=>{
-        //  console.log(this.instrumentsData)
+       ipcRenderer.on('receive-price', (event, arg)=>{    
+        //计算隔节误差;
+        console.log(this.historyTraders)
+        if(this.historyTraders.length){
+          
+          for(let i = this.historyTraders.length - 1 ; i >= 0; i--){
+           
+            const {InstrumentID, Volume, Direction, TradeDate  } = this.historyTraders[i];
+            const priceData = arg[InstrumentID];
+            const info = this.instrumentInfo.find(e => InstrumentID === e.InstrumentID);
+             console.log(priceData, info)
+            if(priceData && info){
+              let price
+              
+              const { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay} = priceData[4];
+              
+              if(TradeDate  < TradingDay ){
+                price = PreSettlementPrice - PreClosePrice
+              }else {
+                price =  SettlementPrice - ClosePrice
+              }
+              
+              let profit = price*Volume * info.VolumeMultiple
+              if(Direction === '1'){
+                profit = -profit;
+              }
+              this.deviation += profit;
+              this.historyTraders.splice(i, 1)
+            }
+          }
+        }
          if(this.instrumentsData.some(({todayAsk, todayBuy, yesterdayBuy, yesterdayAsk})=> todayAsk+ yesterdayAsk!== yesterdayBuy+ todayBuy)){
            
             this.price=arg;
@@ -329,7 +363,7 @@
          this.account=arg
         
 
-        const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission;
+        const realProfit = arg.CloseProfit + arg.PositionProfit - arg.Commission+ this.deviation;
         const staticBalance = arg.PreBalance + arg.Mortgage + arg.PreFundMortgageIn + arg.FundMortgageIn + arg.FundMortgageOut + arg.FundMortgageAvailable - arg.PreFundMortgageOut - arg.PreCredit - arg.PreMortgage;
         
         const data ={
@@ -356,7 +390,7 @@
             this.loginVisible = true
             return
           }
-          this.totalProfit =  res.futureAccountVOList.reduce((a,b) => a + b.realProfit, 0).toFixed(2)
+          this.totalProfit =  res.futureAccountVOList.reduce((a,b) => a + b.realProfit, 0).toFixed(2) 
            if(!this.locked){
             if( this.userData.thrRealProfit && this.totalProfit < -this.userData.thrRealProfit){
               
@@ -457,6 +491,7 @@
         })
         ipcRenderer.send('update-instrumentsData', data, true);
         this.instrumentsData = data;
+        this.deviation = 0;
         this.$nextTick(function(){
           this.$refs.round.init();
     
@@ -717,8 +752,8 @@
          if(this.started)return;
         this.started = true;
         const {quotVOList } = this.userData;
-        // const quotAddr = '192.168.0.19:18198'.split(':');
-        // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209'],   iCmdID: 101});
+        // const quotAddr = '127.0.0.1:18199'.split(':');
+        // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209', 'j2209'],   iCmdID: 101});
         quotVOList.forEach((e) => {
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')

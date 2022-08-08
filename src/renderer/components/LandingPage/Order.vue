@@ -78,6 +78,7 @@ export default ({
             prop: 'price',
             type: 'number',
             render(item){
+              
               switch(item.OrderStatus){
                 case '5':
                   return '0.000'
@@ -91,7 +92,7 @@ export default ({
                   
                   traders.reduce(function(a, b){
                     const {Price, Volume} = b;
-                    a.price = Price*Volume;
+                    a.price =a.price + Price*Volume;
                     a.volume = price.volume+ Volume;
                     return a;
                   }, price);

@@ -12,6 +12,7 @@
         <i v-if="step > 8" class="el-icon-d-arrow-right"></i>
         <i v-else class="el-icon-arrow-right"></i>
         </span>
+        <i  @click='next' class="el-icon-caret-right"></i>
     </div>
 </template>
 <script>
@@ -45,6 +46,10 @@ export default {
         end(){
             clearInterval(this.timer);
             this.step = 4
+        },
+        next(){
+             const {id} = this.$route.query;
+            ipcRenderer.send('jump-next', id)
         }
     }
 }

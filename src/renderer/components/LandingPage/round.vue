@@ -1,6 +1,6 @@
 <template>
     <div>
-    <Table :tableData='traderData' height="280" :columns='traderColumns'/>
+    <Table :tableData='traderData' height="280" :columns='traderColumns' @row-dblclick="$emit('round-click', $event)"/>
     </div>
 </template>
 
@@ -225,9 +225,9 @@
             this.data.forEach(e => {
                 e._volume = undefined
                 this.findAnDmatch(e, arr);
-            });
+            }); 
             
-            
+            this.$emit('history-trade', arr.filter(a => a.Volume &&!a.OpenTime))
             this.traderData = arr.filter(a=> {
                 return a.TradeTime || a.Volume !== a.CloseVolume 
             })
@@ -306,6 +306,7 @@
                                 item.closeToady += closeToady;
                                 item.ClosePrice = (item.CloseVolume * item.ClosePrice  + Price*_volume )/ (item.CloseVolume + _volume);
                                 item.CloseVolume = item.CloseVolume + _volume;
+                                item.closeText = e.closeText;
                             }
                             
                         }
@@ -324,13 +325,15 @@
                                 TradeTime,
                                 CloseVolume: 0,
                                 ClosePrice: 0,
-                              
+                                OpenTime:TradeTime,
                                 OrderSysID,
                                 ExchangeID,
                                 combOffsetFlag,
                                 open,
                                 close,
-                                closeToady
+                                closeToady,
+                                openText: e.openText,
+                                parseIndex: e.parseIndex
                             }) 
                          }else {
                               item.open += open ;
@@ -353,14 +356,15 @@
                         TradeTime,
                         CloseVolume: 0,
                         ClosePrice: 0,
-                    
+                        OpenTime:TradeTime,
                         OrderSysID,
                         ExchangeID,
                         combOffsetFlag,
                         open,
                         close,
-                        closeToady
-                        
+                        closeToady,
+                        openText: e.openText,
+                         parseIndex: e.parseIndex
                     })
                 }
             }
