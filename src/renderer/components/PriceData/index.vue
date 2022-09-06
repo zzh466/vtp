@@ -1,5 +1,5 @@
 <template>
-  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading' @contextmenu="showCondition=true  "> 
+  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading' @contextmenu="conditionTrade"> 
     <Controller  v-if="showController"/>
     <div class="hold-order">
       <div class="buy-orders">
@@ -11,8 +11,8 @@
     </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
     <div  class="price-tick" v-show="showbar" :style="{ width: stepwidth +'px', left: left + 'px' ,}"></div>
-    <el-dialog title="条件单" width="400px" :visible.sync="showCondition">
-       <el-form ref="form" :model="editcondition" label-width="80px">
+    <el-dialog title="条件单" width="400px" :visible.sync="showCondition" top="5px">
+       <el-form ref="form" :model="editcondition" label-width="80px" size="small">
             <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
                 <el-input v-model='editcondition.price' :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
             </el-form-item>
@@ -41,8 +41,8 @@
              
        </el-form>
         <div slot='footer'>
-              <el-button @click='showCondition=false'>取 消</el-button>
-                <el-button type="primary" @click="cofirmCondition">确 定</el-button>
+              <el-button size="small" @click='showCondition=false'>取 消</el-button>
+                <el-button size="small" type="primary" @click="cofirmCondition">确 定</el-button>
         </div>
     </el-dialog>
   <!-- <div class="condition-tag">
@@ -420,7 +420,7 @@ export default {
         overprice: 1,
         direction: '0',
         volume: 1,
-        contingentCondition: ''
+        contingentCondition: '6'
       },
       arg: {},
       limitcondition: [{
@@ -486,6 +486,14 @@ export default {
         const {volume, type, closeType} = this.config;
         const title =getWinName(id, accountIndex, volume, type, closeType) + getHoldCondition(instrumet);
         ipcRenderer.send('change-title', {id, title});
+    },
+    conditionTrade(){
+      if(!this.showbar || !this.chart.data.length|| this.showCondition )return;
+      const index = (this.left - 105) / this.stepwidth;
+      let {start} = this.chart;
+      const  limitPrice = +this.chart.data[index + start].price;
+      this.showCondition = true;
+      this.editcondition.price = limitPrice;
     },
     mouseTrade(){
       if(!this.showbar || !this.chart.data.length || this.showCondition) return;
@@ -677,7 +685,7 @@ export default {
         value = parseFloat(value);
       
         if(value < this.arg.LowerLimitPrice || value > this.arg.UpperLimitPrice){
-          return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice}, 小于${this.arg.UpperLimitPrice}`))
+          return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice.toFixed(this.chart.decimal)}, 小于${this.arg.UpperLimitPrice.toFixed(this.chart.decimal)}`))
         }
          callback();
       },

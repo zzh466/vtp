@@ -133,8 +133,9 @@
                         //         commission = rate.CloseTodayRatioByMoney * data.closePrice + rate.CloseTodayRatioByVolume * data.closeVolume
                         //         break;
                         // }
+                          data.commission = commission;
                         commission = commission.toFixed(2) ;
-                        data.commission = commission;
+                      
                         return commission
                     }
                 },
@@ -227,10 +228,11 @@
                 this.findAnDmatch(e, arr);
             }); 
             
-            this.$emit('history-trade', arr.filter(a => a.Volume &&!a.OpenTime))
+           
             this.traderData = arr.filter(a=> {
                 return a.TradeTime || a.Volume !== a.CloseVolume 
             })
+             this.$emit('history-trade', this.traderData.filter(a => a.Volume  &&!a.OpenTime))
         },
         update(data){
             this.findAnDmatch(data, this.traderData);

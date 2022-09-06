@@ -218,26 +218,40 @@ export default {
             })
           }else{
             this.$refs.round.update(trade);
-          this.tradeData.unshift(trade)
+          this.tradeData.push(trade)
           }
            
           this.setStroge()
         })
         ipcRenderer.on('receive-price', (event, price) => {
           this.price = price
-          this.$nextTick(function(){
-            const {commission, total} = this.$refs.round.traderData.reduce((a,b) => {
-              a.commission = a.commission + parseFloat(b.commission);
-              a.total = a.total + b.closeProfit + b.optionProfit - b.commission;
-              return a
-            }, {commission:0, total: 0});
-            this.commission=commission.toFixed(2);
-            this.totalProfit = total;
-          })
         })
         ipcRenderer.on('file-path', (event, [path]) => {
           this.subscribelData.importPath = path;
         })
+        this.timer = setInterval(()=> {
+          const {commission, total} = this.$refs.round.traderData.reduce((a,b) => {
+            a.commission = a.commission + parseFloat(b.commission);
+            a.total = a.total + b.closeProfit + b.optionProfit - b.commission;
+            return a
+          }, {commission:0, total: 0});
+          this.commission=commission.toFixed(2);
+          console.log(this.$store.state.user.activeCtpaccount)
+          if(this.totalProfit !== total){
+            this.totalProfit = total;
+            const data ={
+                date: getyyyyMMdd(),
+                realProfit: total,
+                id: this.$store.state.user.activeCtpaccount
+              }
+            
+            request({
+              url:  '/future/futureAccountTradingInfo',
+              method: 'PATCH',
+              data
+            })
+          }
+        }, 1000)
 
     },
     computed: {
@@ -369,9 +383,9 @@ export default {
       clear(){
         this.tradeData = [];
         this.$nextTick(()=>this.$refs.round.init())
-        
-         const storageKey= `fake-trade-${this.userData.id}`;
-          localStorage.setItem(storageKey, '')
+          const config =  localStorage.getItem(`config-${this.userData.id}`);
+          localStorage.clear()
+          localStorage.setItem(`config-${this.userData.id}`, config)
       },
       startVolume(){
          if(this.started)return;

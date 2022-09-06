@@ -27,6 +27,7 @@ function getDay(time = new Date()){
     return dataFormat.format(time,'YYYY/MM/DD')
 }
 function getTime(time = new Date()){
+   
     return dataFormat.format(time,'HH:mm:ss')
 }
 function parseData(data){
@@ -36,6 +37,7 @@ function parseData(data){
    }
 //    console.log(data);
    item.UpdateTime = data.datetime.substr(8, 2) + ':' + data.datetime.substr(10, 2) + ':' + data.datetime.substr(12, 2)
+   item.datetime = data.datetime;
    
    return item;
    
@@ -74,13 +76,7 @@ export default class FakeTrader{
                 data = data[1];
             
                 data = JSON.parse(data);
-                this.priceData[data.symbol]  = [
-                    data.bidPrice1,
-                    data.askPrice1,
-                    data.datetime,
-                    data.lastPrice
-                ];
-                this.checktrade(data)
+               
                 this.emitter.emit('data', parseData(data));
             }
            
@@ -95,6 +91,8 @@ export default class FakeTrader{
         this.emitter.on(event, fn.bind(this));
     }
     trade({combOffsetFlag, direction, instrumentID, limitPrice, volumeTotalOriginal}){
+        const priceData = this.priceData[instrumentID] || [];
+        console.log(priceData)
         const item = {
             InstrumentID: instrumentID,
             Direction: direction,
@@ -104,13 +102,13 @@ export default class FakeTrader{
             OrderStatus: '3',
             StatusMsg:"未成交",
             InsertDate: getDay(),
-            InsertTime: getTime(),
+            InsertTime: priceData[4],
             VolumeTraded: 0,
             key: +new Date()
         }
         this.orders.push(item)
         this.emitter.emit('order', item);
-        this.checktrade({symbol: instrumentID})
+        this.checktrade({InstrumentID: instrumentID})
         
     }
     cancel(arr){
@@ -166,8 +164,8 @@ export default class FakeTrader{
         this.emitter.emit('main-trade',tradeData.map((e,index) => toTradeData(e, instrumentID, index)));
     }
     checktrade(data){
-        if(data && TradeDateMap[data.symbol]){
-            const tradeData = TradeDateMap[data.symbol];
+        if(data && TradeDateMap[data.InstrumentID]){
+            const tradeData = TradeDateMap[data.InstrumentID];
             let datetime = data.datetime;
             const arr = ['/', '/', ' ', ':', ':', '.'];
             arr.forEach((e , index) => {
@@ -178,22 +176,49 @@ export default class FakeTrader{
             while(tradeData.data[tradeData.flag] && tradeData.data[tradeData.flag].time <= datetime){
                 const _data = tradeData.data[tradeData.flag]
                 tradeData.flag ++ ;
-                this.emitter.emit('sub-trade',toTradeData(_data, data.symbol));
+                this.emitter.emit('sub-trade',toTradeData(_data, data.InstrumentID));
             }
         }
-        const arr = this.orders.filter(e => e.OrderStatus === '3' && e.InstrumentID === data.symbol);
+        const arr = this.orders.filter(e => e.OrderStatus === '3' && e.InstrumentID === data.InstrumentID);
         const priceData = this.priceData;
+     
         arr.forEach(item => {
             const {CombOffsetFlag, LimitPrice, Direction, InstrumentID, VolumeTotalOriginal} = item;
-            
-            if((Direction === '0' && (LimitPrice >= priceData[InstrumentID][1]|| LimitPrice >= priceData[InstrumentID][3])) || (Direction  !== '0' && (LimitPrice <= priceData[InstrumentID][0] || LimitPrice <= priceData[InstrumentID][3]))){
+            let price, tradeed;
+            if(Direction === '0'){
+                
+                if(LimitPrice >= priceData[InstrumentID][1]){
+                    console.log(1)
+                    tradeed = true;
+                    price =  priceData[InstrumentID][1]
+                }
+                if(LimitPrice < priceData[InstrumentID][1] && LimitPrice >= priceData[InstrumentID][3]){
+                    console.log(2)
+                    tradeed = true;
+                    price =  LimitPrice
+                }
+            }else{
+           
+                if(LimitPrice  <= priceData[InstrumentID][0]){
+                    console.log(3)
+                    tradeed = true;
+                    price =  priceData[InstrumentID][0]
+                }
+                if(LimitPrice > priceData[InstrumentID][0] && LimitPrice <= priceData[InstrumentID][3]){
+                    console.log(4)
+                    tradeed = true;
+                    price =  LimitPrice
+                }
+            }
+            console.log(tradeed)
+            if(tradeed){
                 this.emitter.emit('trade', {
                     Direction,
                     InstrumentID,
-                    Price: Direction === '0' ? priceData[InstrumentID][1]: priceData[InstrumentID][0],
+                    Price: price,
                     CombOffsetFlag,
                     TradeDate: getDay(),
-                    TradeTime: getTime(),
+                    TradeTime: data.UpdateTime || priceData[InstrumentID][4],
                     Volume: VolumeTotalOriginal
                 });
                 item.StatusMsg = '已成交';

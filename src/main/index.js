@@ -460,7 +460,7 @@ ipcMain.on('trade-login', (event, args) => {
     }
    
     STARTTRADE =false;
-    opedwindow.forEach(({sender}) => sender.send('clear-trader'))
+    // opedwindow.forEach(({sender}) => sender.send('clear-trader'))
     event.sender.send('add-loading', 'trade')
     event.sender.send('add-loading', 'order')
     event.sender.send('receive-trade', tradeMap);
@@ -737,18 +737,11 @@ function sendParseData(parseData){
     trade.priceData[InstrumentID]  = [
         parseData.BidPrice1,
         parseData.AskPrice1,
-        undefined,
-        parseData.LastPrice  
+        parseData.datetime,
+        parseData.LastPrice,  
+        parseData.UpdateTime
     ];
-    trade.checktrade({symbol:InstrumentID});
-  }
-  if(trade.PriceData){
-    trade.priceData[InstrumentID]  = [
-        parseData.BidPrice1,
-        parseData.AskPrice1,
-        
-    ];
-    trade.checktrade();
+    trade.checktrade(parseData);
   }
 }
 function parseReceiveData(data){

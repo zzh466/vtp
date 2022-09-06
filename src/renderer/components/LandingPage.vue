@@ -378,6 +378,7 @@
             openVolume: this.orderData.length,
             staticBalance,
             positionProfit: arg.PositionProfit,
+            deviation: this.deviation,
             id: this.$store.state.user.activeCtpaccount
           }
          
@@ -549,6 +550,7 @@
       },
       updateTrader(trade){
         this.traderData.push(trade);
+        this.traders.push(trade);
         this.setTradeItem(trade,  this.orderData.filter(e => {
           return  e.VolumeTraded
         }))
@@ -752,8 +754,8 @@
          if(this.started)return;
         this.started = true;
         const {quotVOList } = this.userData;
-        // const quotAddr = '127.0.0.1:18199'.split(':');
-        // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209', 'j2209'],   iCmdID: 101});
+        // const quotAddr = '101.132.114.246:19189'.split(':');
+        // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209', 'j2301'],   iCmdID: 101});
         quotVOList.forEach((e) => {
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')

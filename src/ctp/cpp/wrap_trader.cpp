@@ -659,7 +659,7 @@ void WrapTrader::ReqOrderInsert(const FunctionCallbackInfo<Value> &args)
     //req.VolumeCondition = ((std::string)*volumeCondition_)[0];
     req.MinVolume = 1;
     
-    memset(&(req.StopPrice), 0, sizeof(req.StopPrice));
+    // memset(&(req.StopPrice), 0, sizeof(req.StopPrice));
     req.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
     req.IsAutoSuspend = 0;
     memset(req.BusinessUnit, 0, sizeof(req.BusinessUnit));

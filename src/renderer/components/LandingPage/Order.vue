@@ -86,6 +86,7 @@ export default ({
                 case '0':
                 case '1':
                 case '2':
+                  
                   const {ExchangeID , OrderSysID} = item;
                   const traders = _this.traders.filter(trade=> trade.ExchangeID ===ExchangeID &&   trade.OrderSysID ===OrderSysID);
                   const price = {price: 0, volume : 0};
