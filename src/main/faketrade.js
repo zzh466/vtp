@@ -66,6 +66,10 @@ export default class FakeTrader{
         this.priceData = {}
         this.TradeDateMap =TradeDateMap;
         console.log(id)
+        this.connect(id)
+       
+    }
+    connect(id){
         this.ws = new ws(`ws://${baseURL}/ws/${id}`);
         this.ws.onmessage = ({data}) => {
             // 
@@ -80,6 +84,18 @@ export default class FakeTrader{
                 this.emitter.emit('data', parseData(data));
             }
            
+        }
+        this.ws.onerror=(e) =>{
+           
+            console.log('客户端（client）：与服务器的连接已断开'+ e);
+            this.ws.close();
+        }
+        this.ws.onclose = ()=>{      
+            this.ws = null;
+            setTimeout( ()=>{
+              
+                this.connect(id)
+            }, 2000)
         }
         this.ws.onopen =  (e) =>{
             console.log('opened')

@@ -381,11 +381,19 @@ export default {
         ipcRenderer.send('import-trades')
       },
       clear(){
-        this.tradeData = [];
-        this.$nextTick(()=>this.$refs.round.init())
-          const config =  localStorage.getItem(`config-${this.userData.id}`);
-          localStorage.clear()
-          localStorage.setItem(`config-${this.userData.id}`, config)
+        this.$confirm('清空回合信息和下单信息？', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(()=>{
+            this.tradeData = [];
+            this.orderData=[]
+            this.$nextTick(()=>this.$refs.round.init())
+            const config =  localStorage.getItem(`config-${this.userData.id}`);
+            localStorage.clear()
+            localStorage.setItem(`config-${this.userData.id}`, config)
+          })
+       
       },
       startVolume(){
          if(this.started)return;

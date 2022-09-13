@@ -11,10 +11,10 @@
     </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
     <div  class="price-tick" v-show="showbar" :style="{ width: stepwidth +'px', left: left + 'px' ,}"></div>
-    <el-dialog title="条件单" width="400px" :visible.sync="showCondition" top="5px">
-       <el-form ref="form" :model="editcondition" label-width="80px" size="small">
+    <el-dialog title="条件单" width="750px" :visible.sync="showCondition" top="5px">
+       <el-form ref="form" :model="editcondition" label-width="80px" size="small" :inline="true">
             <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
-                <el-input v-model='editcondition.price' :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
+                <el-input v-model='editcondition.price' @keydown.enter.native = 'cofirmCondition' :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
             </el-form-item>
              <el-form-item label='条件' prop='contingentCondition' required>
                 <el-select v-model="editcondition.contingentCondition">
@@ -23,7 +23,7 @@
                 </el-select>
             </el-form-item>
              <el-form-item label='超价' prop='overprice' required>
-                  <el-input v-model='editcondition.overprice' type="number"></el-input>
+                  <el-input v-model='editcondition.overprice' @keydown.enter.native = 'cofirmCondition' type="number"></el-input>
                     
               </el-form-item>
             <el-form-item label='方向' prop='direction' required>
@@ -34,7 +34,7 @@
             </el-form-item>
             
               <el-form-item label='手数' prop='volume' required>
-                  <el-input v-model='editcondition.volume' type="number"></el-input>
+                  <el-input v-model='editcondition.volume' @keydown.enter.native = 'cofirmCondition' type="number"></el-input>
                     
               </el-form-item>
               
@@ -492,6 +492,10 @@ export default {
       const index = (this.left - 105) / this.stepwidth;
       let {start} = this.chart;
       const  limitPrice = +this.chart.data[index + start].price;
+      const traded = this.chart.traded;
+      if(traded.direction && traded.price.length){
+        this.editcondition.direction = traded.direction === '0'? '1': '0';
+      }
       this.showCondition = true;
       this.editcondition.price = limitPrice;
     },

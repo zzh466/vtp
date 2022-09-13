@@ -332,6 +332,7 @@
             const info = this.instrumentInfo.find(e => InstrumentID === e.InstrumentID);
              console.log(priceData, info)
             if(priceData && info){
+              
               let price
               
               const { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay} = priceData[4];
@@ -391,7 +392,7 @@
             this.loginVisible = true
             return
           }
-          this.totalProfit =  res.futureAccountVOList.reduce((a,b) => a + b.realProfit, 0).toFixed(2) 
+          this.totalProfit =  (res.futureAccountVOList || []).reduce((a,b) => a + b.realProfit, 0).toFixed(2) 
            if(!this.locked){
             if( this.userData.thrRealProfit && this.totalProfit < -this.userData.thrRealProfit){
               
