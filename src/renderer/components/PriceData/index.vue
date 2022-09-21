@@ -14,7 +14,7 @@
     <el-dialog title="条件单" width="750px" :visible.sync="showCondition" top="5px">
        <el-form ref="form" :model="editcondition" label-width="80px" size="small" :inline="true">
             <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
-                <el-input v-model='editcondition.price' @keydown.enter.native = 'cofirmCondition' :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
+                <el-input v-model='editcondition.price'  :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
             </el-form-item>
              <el-form-item label='条件' prop='contingentCondition' required>
                 <el-select v-model="editcondition.contingentCondition">
@@ -23,7 +23,7 @@
                 </el-select>
             </el-form-item>
              <el-form-item label='超价' prop='overprice' required>
-                  <el-input v-model='editcondition.overprice' @keydown.enter.native = 'cofirmCondition' type="number"></el-input>
+                  <el-input v-model='editcondition.overprice' type="number"></el-input>
                     
               </el-form-item>
             <el-form-item label='方向' prop='direction' required>
@@ -34,7 +34,7 @@
             </el-form-item>
             
               <el-form-item label='手数' prop='volume' required>
-                  <el-input v-model='editcondition.volume' @keydown.enter.native = 'cofirmCondition' type="number"></el-input>
+                  <el-input v-model='editcondition.volume'  type="number"></el-input>
                     
               </el-form-item>
               
@@ -117,6 +117,10 @@ export default {
      this.showController = !!showController;
       window.onkeydown =(e)=>{
         if(this.showCondition){
+          if(e.keyCode === 13){
+            this.cofirmCondition()
+          }
+       
           return
         }
         this.func(e, this);
@@ -159,7 +163,7 @@ export default {
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
             
-            console.log(arg)
+           
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               this.arg = arg;
@@ -495,6 +499,13 @@ export default {
       const traded = this.chart.traded;
       if(traded.direction && traded.price.length){
         this.editcondition.direction = traded.direction === '0'? '1': '0';
+      }
+      const {LastPrice} = this.arg;
+      
+      if(LastPrice > limitPrice){
+        this.editcondition.contingentCondition = '8'
+      }else{
+        this.editcondition.contingentCondition = '6'
       }
       this.showCondition = true;
       this.editcondition.price = limitPrice;

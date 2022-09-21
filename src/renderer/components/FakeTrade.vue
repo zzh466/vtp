@@ -19,7 +19,7 @@
         
          <div>
            <div class="label">回合信息：
-              <el-button type="primary" size="small" @click="exportroud">导出</el-button> <el-button @click='clear'>清除</el-button>
+              <el-button  type="primary" size="small" @click="exportroud">导出</el-button> <el-button v-if="false" @click='clear'>清除</el-button>
               </div>
           <Round ref="round" @round-click='jump' :data='tradeData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
         </div>

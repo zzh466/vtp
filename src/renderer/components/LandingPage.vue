@@ -1,13 +1,13 @@
 <template>
   <div id="wrapper" v-loading='loading.length || forcing'  :element-loading-text="forcing?'触发强平操作，正在强平中':'正在获取账号信息'" >
-    <el-descriptions size= 'samll' direction="vertical" :column="10" border class="account">
+    <el-descriptions size= 'samll' direction="vertical" :column="12" border class="account">
       <el-descriptions-item label="账号">{{userData.userAccount}}</el-descriptions-item>
-         <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
+      <el-descriptions-item label="账户状态"><span :style="{color:locked?'red': 'green'}">{{locked?'锁定': '正常'}}</span></el-descriptions-item>
+     
+      <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
       <el-descriptions-item label="当前账户">{{currentAccount.futureUserName}}</el-descriptions-item>
-   
-    
+      <el-descriptions-item label="期货账户状态"><span :style="{color:accounStatus?'green': 'red'}">{{accounStatus?'在线': '离线'}}</span></el-descriptions-item>
       <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
-      
       <el-descriptions-item label="当前账户盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="隔节误差">{{deviation.toFixed(2)}}</el-descriptions-item>
        <el-descriptions-item label="实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission + deviation).toFixed(2)}}</el-descriptions-item>
@@ -221,7 +221,8 @@
         currentAccount: {},
         totalProfit: 0,
         deviation: 0,
-         loginVisible: false
+         loginVisible: false,
+         accounStatus: false
       }
     },
     created(){
@@ -256,7 +257,9 @@
        }
         
       });
-  
+      ipcRenderer.on('account-connect',  (event, status) =>{
+        this.accounStatus = status;
+      })
        ipcRenderer.on('receive-position', (event, position) =>{
         // console.log(position.filter(a => a.InstrumentID==='IC2201'))
         

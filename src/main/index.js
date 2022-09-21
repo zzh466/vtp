@@ -444,6 +444,7 @@ ipcMain.on('trade-login', (event, args) => {
     console.log('ctp已连接')
     tradeMap = [];
     trade.tasks = [];
+    event.sender.send('account-connect', true)
     if(connectcount){
    
       trade.tasks.push(setTimeout(()=>{
@@ -468,6 +469,7 @@ ipcMain.on('trade-login', (event, args) => {
   })
   trade.on('disconnected', (...rest) => {
     console.log('disconnected', rest)
+    event.sender.send('account-connect', false)
     errorLog('disconnected');
   })
   // trade.login.then(()=>{
