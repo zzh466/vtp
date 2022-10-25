@@ -176,6 +176,7 @@ function closeALLsubs(){
   
 }
 function closeALLData(){
+  COLOSEALL = true;
   tcp_client_list.forEach(e => e.destroy());
   tcp_client_list = []
 }
@@ -469,7 +470,9 @@ ipcMain.on('trade-login', (event, args) => {
   })
   trade.on('disconnected', (...rest) => {
     console.log('disconnected', rest)
-    event.sender.send('account-connect', false)
+    if(mainWindow){
+      event.sender.send('account-connect', false)
+    }
     errorLog('disconnected');
   })
   // trade.login.then(()=>{
@@ -686,7 +689,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
       }
     }
   }
-  function fixMap({Direction, Volume, ExchangeID , OrderSysID, InstrumentID}){
+  function fixMap({Direction, Volume, ExchangeID , OrderSysID, InstrumentID, key}){
     if(!map[InstrumentID]){
       map[InstrumentID] = {
         buy: [],
@@ -770,53 +773,35 @@ function parseEncodeData(data){
   sendParseData(parseData)
 }
 
-ipcMain.on('start-receive', (event, args) =>{
-  STARTTRADE = true;
-  const {host, port, instrumentIDs,  iCmdID, size = 36} = args
-  let tcp_client = new net.Socket();
-  if(!Maincycle){
-    Maincycle=setInterval(()=>{
-     
-     
-      if(Object.getOwnPropertyNames(PriceData).length!==0){
-        const data = {};
-        for(let key in PriceData){
-          data[key] = [PriceData[key].BidPrice1, PriceData[key].AskPrice1, PriceData[key].LowerLimitPrice ,PriceData[key].UpperLimitPrice, PriceData[key]]
-        }
-        event.sender.send('receive-price', data)
-      }
-      if(trade && trade.tasks.length < 2){
-        trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
-          
-        })
-      }
-    }, 1000)
+class TcpClient{
+  constructor(args){
+    this.args = args;
+    this.index = 1;
+    const subscribe = [['RequestID', 'int32'], ['InstrumentID', 'string', '32']];
+    this.msg = new cppmsg.msg([
+      ['size', 'int32'],
+      ['iCmdID', 'int32'],
+      ['Stru_ReqSubscribe', 'object', subscribe]
+    ])
   }
-  connect();
-  function connect(){
-    infoLog('data open');
-    tcp_client_list.push(tcp_client);
+  connect(){
+    const {host, port, instrumentIDs,  iCmdID, size = 36, } = this.args
+    let tcp_client = new net.Socket();
+    this.tcp_client = tcp_client;
     tcp_client.setKeepAlive(true, 5*1000);
-    tcp_client.connect({host, port},function(){
-      console.log('connected to Server');
-      
-      const subscribe = [['RequestID', 'int32'], ['InstrumentID', 'string', '32']]
-      const msg = new cppmsg.msg([
-        ['size', 'int32'],
-        ['iCmdID', 'int32'],
-        ['Stru_ReqSubscribe', 'object', subscribe]
-      ])
-      instrumentIDs.forEach((InstrumentID, index) => {
-       
-        tcp_client.write(msg.encodeMsg2({
-          size,
-          iCmdID,
-          Stru_ReqSubscribe: {
-            RequestID: index + 2,
-            InstrumentID: InstrumentID
-          }
-        }))
-      })
+    tcp_client.connect({host, port},()=>{
+    console.log('connected to Server');
+    instrumentIDs.forEach((InstrumentID) => {
+      this.index ++; 
+      tcp_client.write(this.msg.encodeMsg2({
+        size,
+        iCmdID,
+        Stru_ReqSubscribe: {
+          RequestID: this.index,
+          InstrumentID: InstrumentID
+        }
+      }))
+    })
   
       console.log('success')
     })
@@ -835,8 +820,7 @@ ipcMain.on('start-receive', (event, args) =>{
       cacheArr.push(data);
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
       // console.log(length)
-      data = Buffer.concat(cacheArr, length)
-    
+      data = Buffer.concat(cacheArr, length);
       cacheArr = [];
       while(data.length){
         if(data.length < 8){
@@ -861,46 +845,7 @@ ipcMain.on('start-receive', (event, args) =>{
         data = data.slice(size + 8)
         
       }
-      // if(head.CmdID === 12 ){
-        
-      //   if(data.length < 302){
-      //     console.log(data.length)
-      //   }
-      //   while(data.length > 301){
-        
-      //     let _head = headMsg.decodeMsg(data.slice(0, 8));
-      //     let end = 301;
-      //     if(_head.size + 8 <end){
-      //       console.log(_head)
-      //       return
-      //     } 
-      //     const encodeData = data.slice(8, end)
-      //     parseEncodeData(encodeData)
-      //     data = data.slice(_head.size + 8)
-      //     if(data.length < 302 && 0<data.length){
-      //       console.log(data.length)
-      //     }
-         
-          
-      //   }
-      //   // console.log(data.length)
-        
-      //   return
-      // }
-      
-      // // if(cacheArr.length !== 0 && head.CmdID !== 11){
-      // //   return
-      // // }
-      //    //建立缓冲区 解析分片发送数据
-      // cacheArr.push(data)
-      // // console.log.apply(console, cacheArr.map(e => e.length));
-      // const length = cacheArr.reduce((a,b)=> a + b.length, 0);
-      
-      // if(length % 416 === 0){
-      //   parseReceiveData(Buffer.concat(cacheArr, length));
-      // }
-      
-      // event.sender.send('receive-tarde-data', decodeMsg.decodeMsg(data.slice(8)))
+    
     })
   
     tcp_client.on('end',function(){
@@ -909,47 +854,231 @@ ipcMain.on('start-receive', (event, args) =>{
     // tcp_client.setTimeout(tcp_timeout);
     tcp_client.on('timeout',function(){
       
-        // const index = tcp_client_list.indexOf(tcp_client);
-        // if(index > -1){
-        //   tcp_client_list.splice(index, 1);
-        // }
+    
         tcp_client.destroy();
-        // tcp_client = new net.Socket();
-      
-        // connect();
+       
         console.log('timeout');
         infoLog('timeout')
     })
-    tcp_client.on('close',function(hadError ){
+    tcp_client.on('close',(hadError ) =>{
       console.log('1231231')
       if( mainWindow && !COLOSEALL){
         
-        const index = tcp_client_list.indexOf(tcp_client);
-        if(index > -1){
-          tcp_client_list.splice(index, 1);
-        }
-        
-        tcp_client = new net.Socket();
-        setTimeout(()=> connect(), 1000)
+        setTimeout(()=> this.connect(), 1000)
       
       }
       infoLog(`data close ${JSON.stringify(hadError)}`);
     })
   
     tcp_client.on('error', function (e) {
-      // console.log('3333333333333')
-      // console.log('tcp_client error!', e);
-      event.sender.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`});
+   
+      mainWindow.webContents.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`});
       errorLog(`行情服务${host}:${port} 链接错误:${JSON.stringify(e)}`)
-      // const index = tcp_client_list.indexOf(tcp_client);
-      // tcp_client_list.splice(index, 1);
-      // // tcp_client.destroy();
-      // ipcMain.once('error-msg-connect', function(){
-      //   tcp_client = new net.Socket();
-      //   connect();
-      // })
+      
     })
   }
+  destroy(){
+    this.tcp_client.destroy()
+  }
+  changeIns(instruments){
+    const {instrumentIDs, size, iCmdID} = this.args;
+    console.log(instruments)
+    instruments.filter(e => !instrumentIDs.includes(e)).forEach((InstrumentID) => {
+      this.index ++; 
+      console.log(InstrumentID)
+      this.tcp_client.write(this.msg.encodeMsg2({
+        size,
+        iCmdID,
+        Stru_ReqSubscribe: {
+          RequestID: this.index,
+          InstrumentID: InstrumentID
+        }
+      }))
+    })
+    this.args.instrumentIDs = instruments;
+  }
+}
+ipcMain.on('start-receive', (event, args) =>{
+  STARTTRADE = true;
+  let tcp_client = new TcpClient(args);
+
+  if(!Maincycle){
+    Maincycle=setInterval(()=>{
+     
+     
+      if(Object.getOwnPropertyNames(PriceData).length!==0){
+        const data = {};
+        for(let key in PriceData){
+          data[key] = [PriceData[key].BidPrice1, PriceData[key].AskPrice1, PriceData[key].LowerLimitPrice ,PriceData[key].UpperLimitPrice, PriceData[key]]
+        }
+        event.sender.send('receive-price', data)
+      }
+      if(trade && trade.tasks.length < 2){
+        trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
+          
+        })
+      }
+    }, 1000)
+  }
+  tcp_client.connect();
+  tcp_client_list.push(tcp_client)
+  // function connect(){
+  //   infoLog('data open');
+  //   tcp_client_list.push(tcp_client);
+  //   tcp_client.setKeepAlive(true, 5*1000);
+  //   tcp_client.connect({host, port},function(){
+  //     console.log('connected to Server');
+      
+  //     const subscribe = [['RequestID', 'int32'], ['InstrumentID', 'string', '32']]
+  //     const msg = new cppmsg.msg([
+  //       ['size', 'int32'],
+  //       ['iCmdID', 'int32'],
+  //       ['Stru_ReqSubscribe', 'object', subscribe]
+  //     ])
+  //     instrumentIDs.forEach((InstrumentID, index) => {
+       
+  //       tcp_client.write(msg.encodeMsg2({
+  //         size,
+  //         iCmdID,
+  //         Stru_ReqSubscribe: {
+  //           RequestID: index + 2,
+  //           InstrumentID: InstrumentID
+  //         }
+  //       }))
+  //     })
+  
+  //     console.log('success')
+  //   })
+  
+   
+   
+  //   const headMsg = new cppmsg.msg([
+  //     ['size', 'int32'],
+  //     ['CmdID', 'int32'],
+  //   ])
+  //   let cacheArr = [];
+  
+  //   tcp_client.on('data',function(data){
+  //     // console.log(data)
+  //     // console.log(data.length)
+  //     cacheArr.push(data);
+  //     const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+  //     // console.log(length)
+  //     data = Buffer.concat(cacheArr, length)
+    
+  //     cacheArr = [];
+  //     while(data.length){
+  //       if(data.length < 8){
+  //         cacheArr.push(data)
+  //         return
+  //       } 
+  //       const _head = headMsg.decodeMsg(data.slice(0, 8));
+  //       const {size, CmdID } = _head;
+    
+  //       if(data.length < size + 8){
+      
+  //         cacheArr.push(data)
+  //         return
+  //       }
+    
+  //       const parseData = data.slice(8, size+8);
+  //       if(CmdID === 11){
+  //         parseReceiveData(parseData)
+  //       }else if(CmdID === 12){
+  //         parseEncodeData(parseData)
+  //       }
+  //       data = data.slice(size + 8)
+        
+  //     }
+  //     // if(head.CmdID === 12 ){
+        
+  //     //   if(data.length < 302){
+  //     //     console.log(data.length)
+  //     //   }
+  //     //   while(data.length > 301){
+        
+  //     //     let _head = headMsg.decodeMsg(data.slice(0, 8));
+  //     //     let end = 301;
+  //     //     if(_head.size + 8 <end){
+  //     //       console.log(_head)
+  //     //       return
+  //     //     } 
+  //     //     const encodeData = data.slice(8, end)
+  //     //     parseEncodeData(encodeData)
+  //     //     data = data.slice(_head.size + 8)
+  //     //     if(data.length < 302 && 0<data.length){
+  //     //       console.log(data.length)
+  //     //     }
+         
+          
+  //     //   }
+  //     //   // console.log(data.length)
+        
+  //     //   return
+  //     // }
+      
+  //     // // if(cacheArr.length !== 0 && head.CmdID !== 11){
+  //     // //   return
+  //     // // }
+  //     //    //建立缓冲区 解析分片发送数据
+  //     // cacheArr.push(data)
+  //     // // console.log.apply(console, cacheArr.map(e => e.length));
+  //     // const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+      
+  //     // if(length % 416 === 0){
+  //     //   parseReceiveData(Buffer.concat(cacheArr, length));
+  //     // }
+      
+  //     // event.sender.send('receive-tarde-data', decodeMsg.decodeMsg(data.slice(8)))
+  //   })
+  
+  //   tcp_client.on('end',function(){
+  //     console.log('data end!');
+  //   })
+  //   // tcp_client.setTimeout(tcp_timeout);
+  //   tcp_client.on('timeout',function(){
+      
+  //       // const index = tcp_client_list.indexOf(tcp_client);
+  //       // if(index > -1){
+  //       //   tcp_client_list.splice(index, 1);
+  //       // }
+  //       tcp_client.destroy();
+  //       // tcp_client = new net.Socket();
+      
+  //       // connect();
+  //       console.log('timeout');
+  //       infoLog('timeout')
+  //   })
+  //   tcp_client.on('close',function(hadError ){
+  //     console.log('1231231')
+  //     if( mainWindow && !COLOSEALL){
+        
+  //       const index = tcp_client_list.indexOf(tcp_client);
+  //       if(index > -1){
+  //         tcp_client_list.splice(index, 1);
+  //       }
+        
+  //       tcp_client = new net.Socket();
+  //       setTimeout(()=> connect(), 1000)
+      
+  //     }
+  //     infoLog(`data close ${JSON.stringify(hadError)}`);
+  //   })
+  
+  //   tcp_client.on('error', function (e) {
+  //     // console.log('3333333333333')
+  //     // console.log('tcp_client error!', e);
+  //     event.sender.send('error-msg', {msg:`行情服务${host}:${port} 链接错误:${e}。正在重连…………`});
+  //     errorLog(`行情服务${host}:${port} 链接错误:${JSON.stringify(e)}`)
+  //     // const index = tcp_client_list.indexOf(tcp_client);
+  //     // tcp_client_list.splice(index, 1);
+  //     // // tcp_client.destroy();
+  //     // ipcMain.once('error-msg-connect', function(){
+  //     //   tcp_client = new net.Socket();
+  //     //   connect();
+  //     // })
+  //   })
+  // }
   
 
   // 接收数据
@@ -976,7 +1105,7 @@ ipcMain.on('tcp-reconnect', function(){
   tcp_client_list.forEach(e=>{
     setTimeout(()=> e.destroy(), 1);
   })
-  tcp_client_list= [];
+
 })
 
 ipcMain.on('broadcast-openinterest', function(_, arg){
@@ -998,7 +1127,29 @@ ipcMain.on('broadcast-openinterest', function(_, arg){
 })
 ipcMain.on('update-all-config', function(_, arg){
   // console.log(arg);
-  opedwindow.forEach(({sender}) => sender.send('update-config') )
+  mainWindow.webContents.send('update-config', arg)
+  opedwindow.forEach(({sender}) => sender.send('update-config'))
+ 
+  const allInstruments = arg.flatMap(e => e.instruments.split(','));
+
+  tcp_client_list.forEach((e) => {
+    const {instruments} = e.args;
+   
+    e.changeIns(allInstruments.filter(a => instruments.includes(a)));
+
+  })
+
+})
+ipcMain.on('add-sub-instruments', function(_, ins){
+  for(let i =0; i< tcp_client_list.length; i++){
+    const args= tcp_client_list[i].args
+    if(args.instruments.includes(ins)){
+      const arrs = args.instrumentIDs.slice();
+      arrs.push(ins)
+      tcp_client_list[i].changeIns(arrs);
+      break;
+    }
+  }
 })
 //模拟交易
 ipcMain.on('fake-trade', function(event, {id, orderData, tradeData}){
@@ -1011,6 +1162,7 @@ ipcMain.on('fake-trade', function(event, {id, orderData, tradeData}){
   trade.on('trade', function(item){
     event.sender.send('receive-trade', item)
     const win = findedopened(item.InstrumentID);
+    tradeMap.push(item)
     // console.log(InstrumentID)
     if(win && win.sender){ 
       win.sender.send('trade-order', item)

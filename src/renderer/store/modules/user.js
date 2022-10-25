@@ -27,6 +27,11 @@ const state = {
     changeThr(state, thrRealProfit){
       const {userData} = state;
       state.userData = {...userData, thrRealProfit}
+    },
+    'update-config'(state, instrumentConfigVOList){
+      localStorage.setItem(`config-${state.userData.id}`, JSON.stringify(instrumentConfigVOList));
+      const {userData} = state;
+      state.userData = {...userData, instrumentConfigVOList}
     }
    
   }

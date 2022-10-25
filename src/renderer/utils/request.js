@@ -18,7 +18,10 @@ export class TraderSocket{
     }
     onmessage(fn){
         this.onmessagefn = fn;
-        this.ws.onmessage = this.onmessageResolve.bind(this);
+        // this.ws.onmessage = this.onmessageResolve.bind(this);
+    }
+    onActiveInstrument(fn){
+        this.onActiveInstrumentFn = fn;
     }
     onmessageResolve(msg){
         console.log(msg)
@@ -27,6 +30,7 @@ export class TraderSocket{
             case 'BroadcastOpenInterest': 
                 if(this.onmessagefn){
                     this.onmessagefn(msg[1]);
+                    // this.onActiveInstrumentFn(msg[1].split(":")[0])
                 }   
               break;
             case "UpdateForceLiquidationThreshold":
@@ -39,15 +43,29 @@ export class TraderSocket{
                 break;
             case 'UnLockUser':
                 window._$store.commit('unlock-user');
+                break
+            case 'BroadcastBigMarket': 
+                if(this.onActiveInstrumentFn){
+                    this.onActiveInstrumentFn(msg[1])
+                }
             
         }
     }
     reconnect(){
         const ws = new WebSocket(`ws://${baseURL}/ws/${this.id}`);
+        let timerId =0;
         this.ws =ws ;
         count++
         ws.onopen =  (e) =>{
             this.ready=true;
+            const keepAlive =()=>  {
+                const timeout = 15000;
+                
+                this.ws.send('im keep alive');
+                
+                timerId = setTimeout(keepAlive, timeout);
+            }
+            keepAlive()
             console.log('客户端（client）：与服务器连接')
             if(this.task.length){
                 this.task.forEach(e => {
@@ -62,6 +80,9 @@ export class TraderSocket{
             this.ws.close();
         }
         ws.onclose = ()=>{
+            if (timerId) {
+                cancelTimeout(timerId);
+            }
             this.ready=false;
             ipcRenderer.send('err-log', `socket已关闭`)
             

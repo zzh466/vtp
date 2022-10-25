@@ -71,6 +71,7 @@ export default class FakeTrader{
     }
     connect(id){
         this.ws = new ws(`ws://${baseURL}/ws/${id}`);
+        let timerId; 
         this.ws.onmessage = ({data}) => {
             // 
             // console.log(data)
@@ -92,6 +93,9 @@ export default class FakeTrader{
         }
         this.ws.onclose = ()=>{      
             this.ws = null;
+            if (timerId) {
+                cancelTimeout(timerId);
+            }
             setTimeout( ()=>{
               
                 this.connect(id)
@@ -99,8 +103,14 @@ export default class FakeTrader{
         }
         this.ws.onopen =  (e) =>{
             console.log('opened')
-          
-            
+            const keepAlive =()=>  {
+                const timeout = 15000;
+                
+                this.send('im keep alive');
+                
+                timerId = setTimeout(keepAlive, timeout);
+            }
+            keepAlive()
         }
     }
     on(event, fn){

@@ -234,8 +234,8 @@
             this.loading = false;
              if(res.code === 'REQ_SUCCESS'){
                this.$message.success('修改成功');
-              localStorage.setItem(`config-${id}`, JSON.stringify(config));
-              ipcRenderer.send('update-all-config');
+             
+              ipcRenderer.send('update-all-config', config);
              }else {
                 this.$message.error(res.msg);
              }

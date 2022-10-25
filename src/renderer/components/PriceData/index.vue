@@ -11,7 +11,7 @@
     </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
     <div  class="price-tick" v-show="showbar" :style="{ width: stepwidth +'px', left: left + 'px' ,}"></div>
-    <el-dialog title="条件单" width="750px" :visible.sync="showCondition" top="5px">
+    <el-dialog title="条件单" width="750px" :visible.sync="showCondition" top="5px" :close-on-click-modal="false">
        <el-form ref="form" :model="editcondition" label-width="80px" size="small" :inline="true">
             <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
                 <el-input v-model='editcondition.price'  :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
@@ -150,11 +150,11 @@ export default {
       
       // const p = new Promise(a => {
         //  ipcRenderer.invoke('get-pirceTick', id).then(({PriceTick: tick, ExchangeID: exchangeId}) => {
-        console.log(tick, exchangeId)
+    
         this.exchangeId = exchangeId;
-     
+          
         this.chart = new Chart(chartDom, this.width, this.height,tick, config);
-         
+        console.log(config)
         //   a();
          
         // })
@@ -166,6 +166,7 @@ export default {
            
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
+              console.log(arg)
               this.arg = arg;
               this.chart.render(arg)
             }

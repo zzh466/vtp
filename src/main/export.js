@@ -1,9 +1,9 @@
 import {ipcMain, dialog} from'electron';
 import xlsx from 'xlsx';
-
+import dataFormat from 'silly-datetime'
 ipcMain.on('export-excel', (_, {title,excelData})=>{
     dialog.showSaveDialog({
-        defaultPath: `../${title}-${new Date().toLocaleDateString().replace(/\//g, '')}.xlsx`
+        defaultPath: `../${title}-${dataFormat.format(new Date(),'YYYYMMDD')}.xlsx`
       }).then(({filePath })=>{
         if(filePath ){
           const wb  = xlsx.utils.book_new();

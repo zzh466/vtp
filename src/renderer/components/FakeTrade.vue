@@ -5,10 +5,10 @@
       <el-descriptions-item label="账号">{{userData.userAccount}}</el-descriptions-item>
          <el-descriptions-item label="交易日">{{tradingDay}}</el-descriptions-item>
     
-   
+         <el-descriptions-item label="账户状态"><span :style="{color:locked?'red': 'green'}">{{locked?'锁定': '正常'}}</span></el-descriptions-item>
     
       <el-descriptions-item label="手续费">{{commission}}</el-descriptions-item>
-    
+      <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
        <el-descriptions-item label="总实际盈亏">{{totalProfit.toFixed(2)}}</el-descriptions-item>
         <!-- <el-descriptions-item v-if="userData.futureAccountVOList.length > 1"><el-button type="primary" size="small" @click="changeAccount">切换账号</el-button></el-descriptions-item> -->
     </el-descriptions>
@@ -124,8 +124,10 @@ export default {
             })
            
         }
-      }
+      },
+      
     },
+   
     data(){
         return {
             loading: true,
@@ -170,12 +172,13 @@ export default {
             const storageKey= `fake-trade-${this.userData.id}`;
             ipcRenderer.send('set-account', this.userData.id);
             let history = localStorage.getItem(storageKey);
-            
+            const now = this.getTime();
             if(history){
+
               history = JSON.parse(history)
               const {date, tradeData, orderData} = history;
-              const now = new Date().toLocaleDateString();
              
+              ipcRenderer.send('info-log', `${date},${now}  ${tradeData.length} ${orderData.length}`)
               if(date === now){
                 
                 this.tradeData = tradeData|| [];
@@ -186,12 +189,14 @@ export default {
               }else{
                 localStorage.setItem(storageKey, '')
               }
+              
             }
-          
+            this.date = now;
             ipcRenderer.send('fake-trade', {id: this.userData.id, orderData: this.orderData, tradeData: this.tradeData});
             
         })
         ipcRenderer.on('receive-order', (event, order) => {
+          this.checkDate();
           const index= this.orderData.findIndex(e => e.key === order.key)
           if(index > -1){
             this.orderData.splice(index, 1, order)
@@ -202,6 +207,7 @@ export default {
         })
         ipcRenderer.on('receive-trade', (event, trade) => {
           console.log(trade)
+          this.checkDate();
           if(Array.isArray(trade)){
             this.tradeData = trade
             this.$refs.round.traderColumns.push({
@@ -237,6 +243,11 @@ export default {
           }, {commission:0, total: 0});
           this.commission=commission.toFixed(2);
           console.log(this.$store.state.user.activeCtpaccount)
+          if(this.locked)return;
+
+          if(total < -this.userData.thrRealProfit){
+            this.forceClose()
+          }
           if(this.totalProfit !== total){
             this.totalProfit = total;
             const data ={
@@ -259,10 +270,18 @@ export default {
       userData() {
          return this.$store.state.user.userData
       },
-     
+      locked (){
+          return this.$store.state.user.userData.locked;
+      },
     },
     methods: {
-        exportroud(){
+      forceClose(){
+        this.$store.commit('lock-user');
+        this.$store.dispatch('lock');
+        ipcRenderer.send('close-all-sub');
+        ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: this.instrumentInfo})
+      },
+      exportroud(){
         const {traderColumns, traderData} =  this.$refs.round
         this.exportExcel('模拟交易回合信息', traderData, traderColumns)
       },
@@ -293,13 +312,24 @@ export default {
       },
       setStroge(){
         const storageKey= `fake-trade-${this.userData.id}`;
-        const now = new Date().toLocaleDateString();
+        const now = this.getTime();
         const data = {
           date: now,
           tradeData: this.tradeData,
           orderData: this.orderData
         }
         localStorage.setItem(storageKey, JSON.stringify(data));
+      },
+      getTime(){
+        return  new Date(+new Date() + 5*60*60*1000).toLocaleDateString()
+      },
+      checkDate(){
+        const now = this.getTime();
+        if(now !== this.date){
+          this.tradeData = [];
+          this.orderData = [];
+          this.date = now;
+        }
       },
        init(){
         return Promise.all([request({
@@ -313,6 +343,7 @@ export default {
       },
       start({row}){
         
+        if(this.locked)return;
          const {ins} = row;
         const {width, height} = getClientSize()
         const info = this.instrumentInfo.find(e => e.InstrumentID.match(/^[a-zA-Z]+/)[0] === ins.match(/^[a-zA-Z]+/)[0]);
@@ -326,6 +357,7 @@ export default {
         const account = this.userData.futureAccountVOList.find(e => e.id === active);
         const confgindex  = this.userData.instrumentConfigVOList.find(e => e.instruments.includes(ins.match(/^[a-zA-Z]+/)[0]))
         if(!confgindex){
+          this.$alert('找不到合约配置信息，请在配置中订阅此类合约！');
           return;
         }
         const configId = confgindex.id
@@ -399,14 +431,15 @@ export default {
          if(this.started)return;
          this.showButton = false;
         this.started = true;
-        const {quotVOList } = this.userData;
-   
+        const {quotVOList, instrumentConfigVOList } = this.userData;
+        const subscribelInstruments = instrumentConfigVOList.flatMap(e => e.instruments.split(','));
         quotVOList.forEach((e) => {
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')
-            this.subscribelInstruments = this.subscribelInstruments.concat(instruments.map(e => ({ins: e})));
-             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments,   iCmdID: 101});
+            
+             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101});
         })
+        this.subscribelInstruments = subscribelInstruments.map(e => ({ins: e}))
     },
     }
 }

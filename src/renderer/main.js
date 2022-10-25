@@ -26,7 +26,7 @@ ipcRenderer.on('change-ins', (event, arg) => {
   window._$store.dispatch('updateIns', arg)
 })
 ipcRenderer.on('remove-window', (event, arg) => {
-  window._$store.dispatch('close', arg)
+  window._$store.dispatch('removeIns', arg)
 })
 ipcRenderer.on('error-msg', (event, {msg, code}) => {
   MessageBox({

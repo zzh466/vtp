@@ -42,6 +42,7 @@ class Chart {
         this.step = step;
         this.data = [];
         this.start = 0;
+        
         this.range = this.initRange();
 
         
@@ -85,10 +86,13 @@ class Chart {
         ctx.strokeStyle = '#404040'
         ctx.lineTo(this.width - 19.5,Y+10);
         ctx.stroke();
+        
         this.renderRange(range);
        
     }
     initRange(){
+
+        
         let {stepHeight, volumeScaleType, volumeScaleCount, volumeScaleTick, height} = this;
         let baseRange = null;
         
@@ -266,6 +270,7 @@ class Chart {
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
         const stepwidth = this.stepwidth;
+        
         for(let i = this.start; (i-this.start)  <= this.count; i ++ ){
             if(!this.data[i]){
                 console.log(i, JSON.parse(JSON.stringify(this.data)))
@@ -578,6 +583,11 @@ class Chart {
         ctx.restore();
     }
     render(arg){
+         //开盘会有错误数据进入
+       if(Math.abs(arg.OpenPrice) > 100000000  ||  arg.AskPrice1> 100000000){
+            return
+        }
+        
         if(!arg.LastPrice){
             arg.LastPrice = arg.AskPrice1 || arg.BidPrice1
         }
@@ -587,10 +597,8 @@ class Chart {
             if(!this.data.length) return
             this.renderPrice();
         }
-        //开盘会有错误数据进入
-        if(Math.abs(arg.OpenPrice) > 100000000 ){
-            return
-        }
+       
+        
         this.args= arg
         this.renderTime(arg.UpdateTime)
         this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);

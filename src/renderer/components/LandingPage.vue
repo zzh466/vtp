@@ -118,13 +118,25 @@
         }))
       },
       openvolume_limit(){
-          return this.$store.state.user.openvolume_limit
+          return this.$store.state.user.openvolume_limit.split(';').filter(e=>e).map(e => {
+          const msg= e.split(':')
+          return {
+            instrumentID: msg[0],
+            limit : msg[1]
+          }
+        })
       },
       vtp_client_cancelvolume_limit(){
-          return this.$store.state.user.vtp_client_cancelvolume_limit
+          return this.$store.state.user.vtp_client_cancelvolume_limit.split(';').filter(e=>e).map(e => {
+            const msg= e.split(':')
+            return {
+              instrumentID: msg[0],
+              limit : msg[1]
+            }
+          })
       },
-      activeIns() {
-         return this.$store.state.PriceData.activeIns
+      opened() {
+         return this.$store.state.PriceData.InstrumentIDs
       },
       locked: {
         get(){
@@ -241,6 +253,45 @@
             ipcRenderer.send('broadcast-openinterest', e);
           })
         }
+        this.ws.onActiveInstrument((e) =>{
+          
+          console.log(e)
+          if(this.opened.includes(e) || this.loading.length)return;
+          this.$confirm(`合约${e}波动剧烈是否打开？（未订阅合约会以配置一打开）`, '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            let  config = this.subscribelInstruments.find(e => e.instruments.includes(e))
+            if(!config){
+             
+           
+              const configs = this.userData.instrumentConfigVOList.slice();
+              const instruments = configs[0].instruments;
+              configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
+              this.$store.commit('update-config', configs);
+              const openvolume_limit = this.openvolume_limit
+              config = configs[0]
+              const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+              const data = {
+                instrumentID: e,
+                configId: configs[0].id,
+                yesterdayBuy: 0,
+                yesterdayAsk: 0,
+                todayBuy: 0,
+                todayAsk:0,
+                todayVolume: 0,
+                'todayCancel': 0,
+                openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
+                vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
+              }
+              ipcRenderer.send('add-sub-instruments', e)
+              this.instrumentsData.push(data);
+
+            }
+            this.start({row:{instrumentID: e, configId: config.id}})
+          })
+        })
         this.login()
          
       })
@@ -338,9 +389,12 @@
               
               let price
               
-              const { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay} = priceData[4];
+              const { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay, UpdateTime} = priceData[4];
               
-              if(TradeDate  < TradingDay ){
+              const updateHour = +UpdateTime.slice(0,2);
+              const current = new Date().getHours()
+              if(Math.abs(updateHour - current) > 1)continue;
+              if(TradeDate  < TradingDay){
                 price = PreSettlementPrice - PreClosePrice
               }else {
                 price =  SettlementPrice - ClosePrice
@@ -362,7 +416,7 @@
        
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
-         if(!arg || this.loginVisible)return;
+         if(!arg || this.loginVisible || this.loading.length)return;
          console.log(arg)
          this.account=arg
         
@@ -420,6 +474,14 @@
 
       //   this.instrumentInfo = arg
       // })
+      ipcRenderer.on('update-config', (event, arg)=>{
+        // console.log(arg)
+        
+        this.$store.commit('update-config',arg);
+        this.$nextTick(()=>{
+          this.init()
+        })
+      })
       this.timoutquery = setTimeout(()=>{
         console.log(this.loading)
         if(this.loading.length !== 0){
@@ -456,22 +518,10 @@
         this.traderData = this.positions.concat(this.traders);
 
     
-        const openvolume_limit = this.openvolume_limit.split(';').filter(e=>e).map(e => {
-          const msg= e.split(':')
-          return {
-            instrumentID: msg[0],
-            limit : msg[1]
-          }
-        })
-        const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit.split(';').filter(e=>e).map(e => {
-          const msg= e.split(':')
-          return {
-            instrumentID: msg[0],
-            limit : msg[1]
-          }
-        })
-        const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments), []).map(e=>({
-          instrumentID: e,
+        const openvolume_limit = this.openvolume_limit
+        const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+        const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments.map(e=>({ins:e, configId: b.configId}))), []).map(e=>({
+          instrumentID: e.ins,
           configId: e.configId,
           yesterdayBuy: 0,
           yesterdayAsk: 0,
@@ -480,7 +530,7 @@
           todayVolume: 0,
           'todayCancel': 0,
           openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
-          vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
+          vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.ins.includes(instrumentID)) || {limit: "无"}).limit
         }))
         
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
@@ -616,7 +666,8 @@
           this.$alert('当前账号已锁定', '锁定' )
           return
         }
-        const {instrumentID} = row;
+        
+        const {instrumentID, configId} = row;
         const {width, height} = getClientSize()
         const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
         if(!info){
@@ -629,7 +680,7 @@
         if(this.userData.userAccount.includes('wmn')){
           checked = false;
         }
-        const configId = this.subscribelInstruments.find(e => e.instruments.includes(instrumentID)).configId
+        
         const accountIndex = this.currentAccount.futureUserName;
         ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId, accountIndex});
         this.$store.dispatch('updateIns', instrumentID);
@@ -763,7 +814,7 @@
         quotVOList.forEach((e) => {
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')
-             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101});
+             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
         })
     },
       cancel(){
