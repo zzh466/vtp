@@ -116,6 +116,7 @@ export default {
       ipcRenderer.send('register-event', id);
      this.showController = !!showController;
       window.onkeydown =(e)=>{
+        
         if(this.showCondition){
           if(e.keyCode === 13){
             this.cofirmCondition()

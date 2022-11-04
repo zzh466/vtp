@@ -114,7 +114,7 @@
         // return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
          return this.userData.instrumentConfigVOList.map(e=> ({
           instruments: (e.instruments|| '').split(',').map(e => e.replace(/[\n\r]/g, '')).filter(e=>e),
-          configId: e.id
+          id: e.id
         }))
       },
       openvolume_limit(){
@@ -260,13 +260,17 @@
           this.$confirm(`合约${e}波动剧烈是否打开？（未订阅合约会以配置一打开）`, '提示', {
             confirmButtonText: '确定',
             cancelButtonText: '取消',
-            type: 'warning'
+            type: 'warning',
+            closeOnClickModal: true
           }).then(() => {
-            let  config = this.subscribelInstruments.find(e => e.instruments.includes(e))
+            console.log(this.subscribelInstruments)
+            let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
+            
             if(!config){
              
            
               const configs = this.userData.instrumentConfigVOList.slice();
+              
               const instruments = configs[0].instruments;
               configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
               this.$store.commit('update-config', configs);
@@ -275,7 +279,7 @@
               const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
               const data = {
                 instrumentID: e,
-                configId: configs[0].id,
+                id: configs[0].id,
                 yesterdayBuy: 0,
                 yesterdayAsk: 0,
                 todayBuy: 0,
@@ -289,7 +293,7 @@
               this.instrumentsData.push(data);
 
             }
-            this.start({row:{instrumentID: e, configId: config.id}})
+            this.start({row:{instrumentID: e, id: config.id}})
           })
         })
         this.login()
@@ -454,6 +458,7 @@
             if( this.userData.thrRealProfit && this.totalProfit < -this.userData.thrRealProfit){
               
               if(this.forceCloseCount > 2){
+                ipcRenderer.send('err-log', `盈亏超过强平两次 触发强平操作${this.totalProfit}`)
                 this.$store.dispatch('lock');
                 this.locked = true
               }else {
@@ -520,9 +525,9 @@
     
         const openvolume_limit = this.openvolume_limit
         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
-        const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments.map(e=>({ins:e, configId: b.configId}))), []).map(e=>({
+        const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments.map(e=>({ins:e, id: b.id}))), []).map(e=>({
           instrumentID: e.ins,
-          configId: e.configId,
+          id: e.id,
           yesterdayBuy: 0,
           yesterdayAsk: 0,
           todayBuy: 0,
@@ -574,6 +579,11 @@
             
              if(!CombOffsetFlag){
                 ipcRenderer.send('err-log', `trader找不到order， ${JSON.stringify(trader)}`);
+                //找不到是可能是网络波动导致trader比order更早返回，延迟一段时间后重新渲染
+                setTimeout(()=>{
+                    this.setTradeItem(trader, this.orderData, data)
+                }, 500)
+                return
              }
             if(CombOffsetFlag === '0' ){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
@@ -667,7 +677,7 @@
           return
         }
         
-        const {instrumentID, configId} = row;
+        const {instrumentID, id} = row;
         const {width, height} = getClientSize()
         const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
         if(!info){
@@ -682,13 +692,12 @@
         }
         
         const accountIndex = this.currentAccount.futureUserName;
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId, accountIndex});
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
-        const account = this.account;
         ipcRenderer.send('close-all-sub');
-         ipcRenderer.send('err-log', `触发锁定，盈亏金额${account.CloseProfit + account.PositionProfit - account.Commission}`)
+         ipcRenderer.send('err-log', `触发锁定，盈亏金额${this.totalProfit}`)
         // this.$store.dispatch('updateIns', '')
       }, 
       updateConfig(){

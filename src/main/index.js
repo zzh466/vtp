@@ -728,6 +728,13 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
 const decodeMsg = new cppmsg.msg(receiveData['SP'])
 const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
 function sendParseData(parseData){
+ 
+     //开盘会有错误数据进入 todo判断正无穷
+  if(parseData.OpenPrice >=  Number.MAX_VALUE  ||  parseData.AskPrice1>=  Number.MAX_VALUE){
+      console.log(parseData.InstrumentID, 'data')
+      return
+  }
+  
   const {InstrumentID} = parseData; 
   PriceData[InstrumentID] = parseData
  
@@ -882,10 +889,10 @@ class TcpClient{
   }
   changeIns(instruments){
     const {instrumentIDs, size, iCmdID} = this.args;
-    console.log(instruments)
+   
     instruments.filter(e => !instrumentIDs.includes(e)).forEach((InstrumentID) => {
       this.index ++; 
-      console.log(InstrumentID)
+      console.log(InstrumentID,this.index)
       this.tcp_client.write(this.msg.encodeMsg2({
         size,
         iCmdID,

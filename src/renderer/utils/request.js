@@ -52,6 +52,7 @@ export class TraderSocket{
         }
     }
     reconnect(){
+      
         const ws = new WebSocket(`ws://${baseURL}/ws/${this.id}`);
         let timerId =0;
         this.ws =ws ;

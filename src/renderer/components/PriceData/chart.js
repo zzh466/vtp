@@ -583,11 +583,7 @@ class Chart {
         ctx.restore();
     }
     render(arg){
-         //开盘会有错误数据进入
-       if(Math.abs(arg.OpenPrice) > 100000000  ||  arg.AskPrice1> 100000000){
-            return
-        }
-        
+       
         if(!arg.LastPrice){
             arg.LastPrice = arg.AskPrice1 || arg.BidPrice1
         }
