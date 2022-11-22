@@ -1,5 +1,6 @@
 <template>
-  <div class="price-body"  @dblclick="mouseTrade" v-loading='loading' @contextmenu="conditionTrade"> 
+  <div class="price-body "  @dblclick="mouseTrade" v-loading='loading' @contextmenu="conditionTrade"> 
+    <div class="breath-alert" v-show="showalert"></div>
     <Controller  v-if="showController"/>
     <div class="hold-order">
       <div class="buy-orders">
@@ -14,7 +15,7 @@
     <el-dialog title="条件单" width="750px" :visible.sync="showCondition" top="5px" :close-on-click-modal="false">
        <el-form ref="form" :model="editcondition" label-width="80px" size="small" :inline="true">
             <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
-                <el-input v-model='editcondition.price'  :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
+                <el-input v-model='editcondition.price'  :min='arg.LowerLimitPrice' :step="$route.query.tick" :max="arg.UpperLimitPrice"  type="number"></el-input>
             </el-form-item>
              <el-form-item label='条件' prop='contingentCondition' required>
                 <el-select v-model="editcondition.contingentCondition">
@@ -62,6 +63,11 @@ export default {
   components: {
     Controller
   },
+  // computed:{
+  //   showalert: function(){
+
+  //   }
+  // },
   watch:{
     traded(val) {
       const buy = [], ask =[];
@@ -170,6 +176,7 @@ export default {
               console.log(arg)
               this.arg = arg;
               this.chart.render(arg)
+              this.calc(arg)
             }
             
           // })
@@ -344,6 +351,16 @@ export default {
           console.log(this.broadcast)
         }
       })
+      ipcRenderer.on('broadcast-indicator', (_, type, value)=>{
+        
+        switch(type){
+          case "lpdm_1min":
+            this.lpdm_1min = value;
+            break;
+          case 'vm_1min':
+            this.vm_1min = value;
+        }
+      })
       // let price_ =2902.00;
       // setInterval(()=>{
       //   price_ = price_ - 0.5;
@@ -401,8 +418,10 @@ export default {
     if(height < 280){
         height = 280;
     }
+    this.args = [];
     return {
-      showController: false,
+      showalert: false,
+      showController:false,
       width: window.innerWidth -80 ,
       height,
       showbar: false,
@@ -637,6 +656,46 @@ export default {
     changeHotKey(config){
       this.func = Gen(config);
     },
+    calc(arg){
+      
+      
+      let {TradingDay, UpdateTime, Volume, LastPrice} = arg;
+      TradingDay = TradingDay.substr(0, 4) + '-' + TradingDay.substr(4, 2)+ '-'+ TradingDay.substr(6, 2);
+      const time = +new Date(`${TradingDay} ${UpdateTime}`);
+      const args = this.args;
+      args.push({time, Volume, LastPrice})
+    
+      if(!this.vm_1min || !this.lpdm_1min) return;
+      const last1Min = args[0]
+      if(last1Min && time - last1Min.time  >= 60*1000){
+        const arr = args.map(e => e.LastPrice)
+      
+        const A = (Math.max.apply(Math , arr) - Math.min.apply(Math , arr)) / this.lpdm_1min;
+        const B = (Volume -last1Min.Volume) / this.vm_1min
+        let C, buy = 0, ask = 0;
+        for(let i =1 ; i < 6; i++){
+          buy = buy + arg[`BidVolume${i}`]
+          ask = ask + arg[`AskVolume${i}`]
+        }
+        if(buy > ask){
+          C = buy / ask
+        }else {
+          C = ask /buy
+        }
+   
+        const X = A *0.4 + B *0.2 + C *0.4;
+        if(X >=5.5){
+          this.showalert = true;
+          
+        }else{
+          this.showalert = false;
+        }
+        console.log(X)
+        this.args.shift();
+      }
+      
+      
+    },
     // init(data){
     //   const {LastPrice} = data;
     //   const xdata = this.intiXAxis(LastPrice, 0.5);
@@ -688,6 +747,7 @@ export default {
          let {price, overprice, contingentCondition, direction, volume} = this.editcondition;
          price = parseFloat(price)
           const {tick} = this.$route.query;
+          
           if(direction === '1'){
             overprice = -overprice
           }
@@ -700,11 +760,16 @@ export default {
     },
     validator(rules, value, callback) {
         value = parseFloat(value);
-      
-        if(value < this.arg.LowerLimitPrice || value > this.arg.UpperLimitPrice){
+        const {LowerLimitPrice, UpperLimitPrice, LastPrice} = this.arg;
+        const {tick} = this.$route.query;
+        if(value < LowerLimitPrice || value > UpperLimitPrice){
           return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice.toFixed(this.chart.decimal)}, 小于${this.arg.UpperLimitPrice.toFixed(this.chart.decimal)}`))
         }
-         callback();
+        
+        if(Math.abs((value -LastPrice).toFixed(2)*100) % (tick*100) !== 0) {
+          return callback(new Error(`触发价格非最小单位的价格`))
+        }
+        callback();
       },
  
   },
@@ -768,5 +833,39 @@ export default {
     right: 0;
     display: flex;
     flex-direction: column;
+}
+.breath-alert {
+  position:absolute;
+  z-index: 10;
+    top: 1px;
+	width:200px;
+	height:10px;
+	
+	line-height:40px;
+	border:1px solid #2b92d4;
+	border-radius:1px;
+	color:#fff;
+	font-size:20px;
+	text-align:center;
+	cursor:pointer;
+	box-shadow:0 1px 2px rgba(0,0,0,.3);
+	overflow:hidden;
+	background-image:-webkit-gradient(linear,left top,left bottom,from(hsl(352, 80%, 50%)),to(#bb0a0aee));
+	-webkit-animation-timing-function:ease-in-out;
+	-webkit-animation-name:breathe;
+	-webkit-animation-duration:1000ms;
+	-webkit-animation-iteration-count:infinite;
+	-webkit-animation-direction:alternate;
+}
+@-webkit-keyframes breathe {
+	0% {
+	opacity:.5;
+	box-shadow:0 1px 2px rgba(255,255,255,0.1);
+}
+100% {
+	opacity:1;
+	border:1px solid #cf2a40;
+	box-shadow:0 1px 30px #920505;
+}
 }
 </style>

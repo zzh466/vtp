@@ -42,7 +42,8 @@
       <template v-if='showButton'>
       <el-button type="primary" @click='visible=true'>打开合约</el-button>
       <el-button type="primary" @click='topicvisible=true'>选择主题</el-button>
-       <el-button type="primary" @click='startVolume'>实盘数据</el-button></template>
+       <!-- <el-button type="primary" @click='startVolume'>实盘数据</el-button> -->
+      </template>
        <div class="label">选择主题合约： </div>
       <div style="display: flex;">
          
@@ -321,7 +322,14 @@ export default {
         localStorage.setItem(storageKey, JSON.stringify(data));
       },
       getTime(){
-        return  new Date(+new Date() + 5*60*60*1000).toLocaleDateString()
+        const date = new Date();
+        const weekday = date.getDay();
+        let time = +date + 5*60*60*1000
+        //周五要和下周一的同步
+        if(weekday === 5){
+          time = time + 2 *24*60*60*1000
+        }
+        return  new Date(time).toLocaleDateString()
       },
       checkDate(){
         const now = this.getTime();

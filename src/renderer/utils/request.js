@@ -1,6 +1,7 @@
 
 import { ipcRenderer } from 'electron';
 import { baseURL } from './utils';
+// const baseURL = '192.168.0.18:8082/vtpmanagerapi'
 export default function request(config){
     
     return ipcRenderer.invoke('request', config).then(res=>{
@@ -48,6 +49,10 @@ export class TraderSocket{
                 if(this.onActiveInstrumentFn){
                     this.onActiveInstrumentFn(msg[1])
                 }
+                break;
+            case 'BroadcastIndicator':
+                
+                ipcRenderer.send('broadcast-indicator', msg[1])
             
         }
     }
@@ -67,6 +72,7 @@ export class TraderSocket{
                 timerId = setTimeout(keepAlive, timeout);
             }
             keepAlive()
+            ipcRenderer.send('info-log', `socket第${count}次链接}`)
             console.log('客户端（client）：与服务器连接')
             if(this.task.length){
                 this.task.forEach(e => {

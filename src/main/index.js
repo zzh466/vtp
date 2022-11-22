@@ -1259,6 +1259,17 @@ ipcMain.on('jump-time', function(event, {instrumentID, time, index}){
     }
   }
 })
+//指标计算
+ipcMain.on('broadcast-indicator', function(event, msg){
+  
+    msg = msg.split('-')
+    console.log(msg)
+  const instrumentID = msg[0];
+  const win = findedopened(instrumentID);
+  if(win && win.sender){ 
+    win.sender.send('broadcast-indicator', msg[1], msg[2]);
+  }
+})
 // ipcMain.on('tarder-login-out', function(){
 //   trade.logout();
 //   positionMap = [];

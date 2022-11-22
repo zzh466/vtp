@@ -678,6 +678,7 @@
         }
         
         const {instrumentID, id} = row;
+        this.ws.ws.send(`NotifyIndicatorInstrument@${instrumentID}`)
         const {width, height} = getClientSize()
         const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
         if(!info){
