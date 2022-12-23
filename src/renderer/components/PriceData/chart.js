@@ -597,8 +597,8 @@ class Chart {
         
         this.args= arg
         this.renderTime(arg.UpdateTime)
-        this.clearData(arg.BidPrice5, arg.BidPrice1 || arg.LastPrice);
-        this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5 );
+        this.clearData(arg.BidPrice5 || arg.LastPrice, arg.BidPrice1 || arg.LastPrice);
+        this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5  || arg.LastPrice );
         
         for(let i=1; i<= 5; i++){
             let buyPirce = arg[`BidPrice${i}`];

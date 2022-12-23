@@ -314,8 +314,17 @@ export default {
               const key = Direction  === '0' ? 'todayBuy': 'todayAsk';
               this.instrumet[key] += Volume;
             }else{
-              const yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
-              const todayAsk = Direction  === '0' ? 'todayAsk': 'todayBuy';
+
+              let yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
+              let todayAsk = Direction  === '0' ? 'todayAsk': 'todayBuy';
+              //中金先平今再平昨
+              console.log(CombOffsetFlag)
+              if(this.exchangeId === 'CFFEX'){
+                const temp= todayAsk;
+                todayAsk = yesterDay;
+                yesterDay = temp
+              }
+
               if(this.instrumet[yesterDay] && CombOffsetFlag!== '3'){
                  if(this.instrumet[yesterDay] >= Volume){
                    this.instrumet[yesterDay] -= Volume
@@ -352,7 +361,7 @@ export default {
         }
       })
       ipcRenderer.on('broadcast-indicator', (_, type, value)=>{
-        
+        value = parseFloat(value)
         switch(type){
           case "lpdm_1min":
             this.lpdm_1min = value;
@@ -664,7 +673,7 @@ export default {
       const time = +new Date(`${TradingDay} ${UpdateTime}`);
       const args = this.args;
       args.push({time, Volume, LastPrice})
-    
+      
       if(!this.vm_1min || !this.lpdm_1min) return;
       const last1Min = args[0]
       if(last1Min && time - last1Min.time  >= 60*1000){

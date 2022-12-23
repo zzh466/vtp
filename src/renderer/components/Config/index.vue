@@ -17,7 +17,11 @@
           <el-form-item label='订阅合约' prop='instruments'  :rules='[{ required: true, message: `请选择订阅合约`}]'>
             <el-transfer filterable :titles= "['全部合约', '已订阅合约']" v-model="config.instruments" :data="subsInstruments"></el-transfer>
           </el-form-item>
-       
+          <!-- <el-form-item label='行情提醒合约' prop='subscribeIndicator' >
+              <el-select  multiple   filterable v-model="config.subscribeIndicator">
+               <el-option v-for="ins in subsInstruments" :key="ins.key"  :value='ins.key' :label="ins.key"></el-option>
+              </el-select> 
+          </el-form-item> -->
         <el-form-item label='默认平仓方式' prop='sysCloseType'  :rules='[{ required: true, message: `请选择默认平仓方式`}]'>
             <el-select v-model='config.sysCloseType'>
             <el-option :value='0' label="一键全平"></el-option>
@@ -219,6 +223,7 @@
           }
           data.hotKey= e.hotKey.map(key=>key.join(',')).join(';');
           data.instruments =e.instruments.filter(e => this.subsInstruments.find(a => a.key === e)).join(',');
+        
           return data;
         })
          const {id} =this.$route.query;
@@ -285,7 +290,7 @@
 </script>
 <style >
   .config-content{
-    padding: 15px 0px;
+    padding: 15px 0px 80px  0px;
     padding-bottom: 50px;
   }
   .config-foot{

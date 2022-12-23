@@ -102,7 +102,22 @@
       filters: {
       changeNo(instruments, _instruments){
         
-        return instruments.filter(e=> _instruments.includes(e.instrumentID));
+        return instruments.filter(e=> _instruments.includes(e.instrumentID)).sort((a,b) =>{
+          const a_i = a.instrumentID.match(/[a-zA-Z]+/)[0];
+          const b_i = b.instrumentID.match(/[a-zA-Z]+/)[0];
+          if (a_i < b_i) {
+              return -1;
+          }
+          if (a_i > b_i) {
+              return 1;
+          }
+          return 0;
+          // if(a_i === b_i){
+          //   return b.instrumentID.match(/[0-9]+/)[0] - a.instrumentID.match(/[0-9]+/)[0]
+          // }else{
+          //   return a_i < b_i
+          // }
+        });
       }
     },
     computed: {
@@ -589,15 +604,29 @@
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
                 item[key] += Volume;
                 item.todayVolume += Volume;
+                trader.open = Volume;
             }else {
-               const keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
-               const keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
-              
+               let keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';
+               let keyToady = Direction === '0'? 'todayAsk': 'todayBuy';
+               let close = 'close';
+               let closeToady = 'closeToady'
+                  //中金先平今再平昨
+
+              if(ExchangeID === 'CFFEX'){
+                const temp= keyToady;
+                keyToady = keyYesterDay;
+                keyYesterDay = temp
+                close ='closeToady';
+                closeToady = 'close'
+              }
                if(item[keyYesterDay] && CombOffsetFlag!== '3'){
                  if(item[keyYesterDay] >= Volume){
                    item[keyYesterDay] -= Volume
+                   trader[close] = Volume
                  }else {
                     item[keyToady] -= Volume -  item[keyYesterDay];
+                    trader[close] = item[keyYesterDay]
+                    trader[closeToady] = Volume -  item[keyYesterDay]
                    item[keyYesterDay]  = 0;
                    
                  }
@@ -605,6 +634,7 @@
                }else{
                  
                  item[keyToady] -= Volume;
+                 trader[closeToady] = Volume
                   if(item[keyToady] < 0){
                     ipcRenderer.send('err-log', `持仓负数，${JSON.stringify(trader)}`);
                 }
@@ -678,7 +708,10 @@
         }
         
         const {instrumentID, id} = row;
-        this.ws.ws.send(`NotifyIndicatorInstrument@${instrumentID}`)
+        if(this.userData.subscribeIndicator && this.userData.subscribeIndicator.includes(instrumentID)){
+          this.ws.ws.send(`NotifyIndicatorInstrument@${instrumentID}`)
+        }
+       
         const {width, height} = getClientSize()
         const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
         if(!info){
@@ -821,6 +854,7 @@
         const {quotVOList } = this.userData;
         // const quotAddr = '101.132.114.246:19189'.split(':');
         // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209', 'j2301'],   iCmdID: 101});
+        
         quotVOList.forEach((e) => {
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')

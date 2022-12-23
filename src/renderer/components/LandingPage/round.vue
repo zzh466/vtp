@@ -114,10 +114,11 @@
                             return 0
                         } 
                         
+                        const  {Price, ClosePrice, open = 0, closeToady = 0, close = 0} = data;
                         const {OpenRatioByMoney, OpenRatioByVolume, CloseTodayRatioByMoney, CloseTodayRatioByVolume, CloseRatioByMoney, CloseRatioByVolume} = rate;
                         const {VolumeMultiple} = info;
-                        let commission  = (VolumeMultiple * OpenRatioByMoney * data.Price + OpenRatioByVolume )* data.open +  (VolumeMultiple * CloseTodayRatioByMoney * data.ClosePrice + CloseTodayRatioByVolume )* data.closeToady +
-                         (VolumeMultiple * CloseRatioByMoney * data.ClosePrice + CloseRatioByVolume )* data.close;
+                        let commission  = (VolumeMultiple * OpenRatioByMoney * Price + OpenRatioByVolume )* open +  (VolumeMultiple * CloseTodayRatioByMoney * ClosePrice + CloseTodayRatioByVolume )* closeToady +
+                         (VolumeMultiple * CloseRatioByMoney * ClosePrice + CloseRatioByVolume )* close;
                         
                         // switch (data.closeType) {
                         //     case "0":
@@ -213,14 +214,14 @@
     methods: {
         init(){
             let arr = []
-            const yesterday = {};
-            this.positions.forEach(({ Volume, Direction, InstrumentID}) => {
-                if(!yesterday[InstrumentID]){
-                    yesterday[InstrumentID] = [0,0]
-                }
-                yesterday[InstrumentID][Direction] += Volume;
-            })
-            this.yesterday = yesterday;
+            // const yesterday = {};
+            // this.positions.forEach(({ Volume, Direction, InstrumentID}) => {
+            //     if(!yesterday[InstrumentID]){
+            //         yesterday[InstrumentID] = [0,0]
+            //     }
+            //     yesterday[InstrumentID][Direction] += Volume;
+            // })
+            // this.yesterday = yesterday;
            
                 
             this.data.forEach(e => {
@@ -239,8 +240,8 @@
         },
         findAnDmatch(e, arr){
                 
-                const yesterday = this.yesterday || {};
-                const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID, CombOffsetFlag} = e;
+                // const yesterday = this.yesterday || {};
+                const {InstrumentID, Volume, Direction, Price, OpenDate, TradeTime, TradeDate, ExchangeID, OrderSysID, CombOffsetFlag, open =0, close =0, closeToady=0} = e;
                 
                  let _volume = e._volume;
                  if(_volume === undefined){
@@ -257,19 +258,19 @@
                  }
                
                  const combOffsetFlag = !TradeTime || CombOffsetFlag === '0';
-                 let open = 0, close = 0, closeToady = 0;
-                 if(combOffsetFlag){
-                     open = _volume;
-                 }else {
+                //  let open = 0, close = 0, closeToady = 0;
+                //  if(combOffsetFlag){
+                //      open = _volume;
+                //  }else {
                      
-                     const _d = Direction === '0'? '1': '0';
-                     if(yesterday[InstrumentID] &&yesterday[InstrumentID][_d] >= _volume){
-                         close = _volume
-                         yesterday[InstrumentID][_d] -= _volume
-                     }else{
-                         closeToady = _volume;
-                     }
-                 }
+                //      const _d = Direction === '0'? '1': '0';
+                //      if(yesterday[InstrumentID] &&yesterday[InstrumentID][_d] >= _volume){
+                //          close = _volume
+                //          yesterday[InstrumentID][_d] -= _volume
+                //      }else{
+                //          closeToady = _volume;
+                //      }
+                //  }
 
                  if(item){
                      
@@ -281,18 +282,17 @@
                             e._volume = _volume - gap;
                             if(open){
                                 item.open += gap;
+                                e.oepn = open - gap
                             }
                             if(close){
-                                //多计算的平昨要给他加回去
+                               
                                 item.close += gap;
-                                const _d = Direction === '0'? '1': '0';
-                                if(yesterday[InstrumentID]){
-                                    yesterday[InstrumentID][_d] += e._volume
-                                }
+                                e.close = close - gap;
                                 
                             }
                              if(closeToady){
                                 item.closeToady += gap;
+                                e.closeToady = closeToady - gap;
                             }
                            
                         

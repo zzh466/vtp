@@ -88,7 +88,7 @@ export class TraderSocket{
         }
         ws.onclose = ()=>{
             if (timerId) {
-                cancelTimeout(timerId);
+                clearTimeout(timerId);
             }
             this.ready=false;
             ipcRenderer.send('err-log', `socket已关闭`)

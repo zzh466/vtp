@@ -94,7 +94,7 @@ export default class FakeTrader{
         this.ws.onclose = ()=>{      
             this.ws = null;
             if (timerId) {
-                cancelTimeout(timerId);
+                clearTimeout(timerId);
             }
             setTimeout( ()=>{
               

@@ -60,6 +60,10 @@
               data
           })
             const { futureAccountVOList} = data;
+            if(!futureAccountVOList && !futureAccountVOList.length){
+              this.$message.error('当前账户没有绑定期货账户');
+              return
+            }
             this.changeActive(futureAccountVOList[0].id);
           if(this.checked){
              ipcRenderer.send('resize-main',  {width: 1600, height: 770});

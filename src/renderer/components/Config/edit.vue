@@ -43,54 +43,54 @@
     </el-dialog>
 </template>
 <script>
-const arr = ['key', 'code', 'action', 'direction', 'overprice', 'volume', '', 'close']
-export default {
-    props: ['actions', 'vlomeaction', 'editItem', 'orderaction', 'typeMap', 'visible'],
-    data() {
-        return {
-            config: {
-                action: '',
-                direction: '',
-                overprice: '',
-                volume: '',
-                close: '',
-                key: '',
-                code: ''
+    const arr = ['key', 'code', 'action', 'direction', 'overprice', 'volume', '', 'close']
+    export default {
+        props: ['actions', 'vlomeaction', 'editItem', 'orderaction', 'typeMap', 'visible'],
+        data() {
+            return {
+                config: {
+                    action: '',
+                    direction: '',
+                    overprice: '',
+                    volume: '',
+                    close: '',
+                    key: '',
+                    code: ''
+                }
+            }
+        },
+        methods: {
+            inputHotkey(e) {
+                            
+                e.preventDefault();
+                this.config.key = e.key;
+                this.config.code = e.keyCode.toString();
+                
+            },
+            cofirm(){
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        const data = []
+                        arr.forEach((key,index)=>{
+                            if(key){
+                            data[index] = this.config[key] || 0
+                            }
+                            
+                        })
+                        this.$emit('update-form', data)
+                    }
+                })
+            }
+        },
+        watch: {
+            editItem(val){
+                arr.forEach((key,index)=>{
+                    if(key){
+                        this.config[key] = val[index] ===undefined? '': val[index];
+                    }
+                    
+                })
             }
         }
-    },
-    methods: {
-        inputHotkey(e) {
-                        
-            e.preventDefault();
-            this.config.key = e.key;
-            this.config.code = e.keyCode.toString();
-            
-        },
-        cofirm(){
-            this.$refs['form'].validate((valid) => {
-                if (valid) {
-                    const data = []
-                    arr.forEach((key,index)=>{
-                        if(key){
-                        data[index] = this.config[key] || 0
-                        }
-                        
-                    })
-                    this.$emit('update-form', data)
-                }
-            })
-        }
-    },
-    watch: {
-        editItem(val){
-            arr.forEach((key,index)=>{
-                if(key){
-                    this.config[key] = val[index] ===undefined? '': val[index];
-                }
-                
-            })
-        }
     }
-}
 </script>
