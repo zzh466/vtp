@@ -12,7 +12,7 @@ import  './export';
 import  request  from './request';
 import '../renderer/store';
 import {version, winURL, specialExchangeId } from '../renderer/utils/utils'
-import console from 'console';
+import console, { time } from 'console';
 
 
 let COLOSEALL = false;
@@ -28,7 +28,7 @@ let mainWindow;
 let trade;
 let STARTTRADE = false;
 let Maincycle;
-
+let LOCK = false
 function createWindow () {
   /**
    * Initial window options
@@ -63,7 +63,8 @@ function createWindow () {
       })
       trade.shouldReconnect = false
       trade.logout();
-      
+      infoLog(`${trade.m_UserId} 登出`)
+
     }
     if(childwin){
       childwin.close();
@@ -441,7 +442,7 @@ ipcMain.on('trade-login', (event, args) => {
   })
   trade.emitterOn('connect', function () {
     if(!mainWindow)return;
-    infoLog(`ctp第${connectcount + 1}次链接`)
+    infoLog(`${trade.m_UserId}第${connectcount + 1}次链接`)
     console.log('ctp已连接')
     tradeMap = [];
     trade.tasks = [];
@@ -545,7 +546,7 @@ ipcMain.on('confirm-settlement', (event)=>{
 })
 ipcMain.on('trade', (event, args) => {
   STARTTRADE= true;
- 
+  if(LOCK) return;
   infoLog(JSON.stringify(args));
   trade.trade(args);
 })
@@ -567,17 +568,21 @@ function findCancelorder(args, title){
  return arr;
 }
 ipcMain.on('cancel-order', (event, args) => {
+  if(LOCK) return;
  const arr = findCancelorder(args, '撤单');
 
  console.log('cancel',arr)
  trade.cancel(arr);
 })
 ipcMain.handle('async-cancel-order', (event, args)=>{
+  if(LOCK) return;
   const arr = findCancelorder(args, '先撤后下');
   return trade.cancel(arr);
 })
 ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
-
+  console.log('触发强平1111111111111111')
+  if(LOCK === true) return;
+  LOCK = true;
   const tarderarr = positionMap.concat(tradeMap);
   let length = tradeMap.length;
   let count = 0;
@@ -593,8 +598,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
   }
   function closeALL(){
     let tradering = []
-    console.log(map);
-
+   
     for(let key in map){
         let direction = '1',
         arr = map[key].buy;
@@ -677,15 +681,23 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
         clearInterval(interval);
         console.log('结束')
         infoLog('强平结束')
-        
+        setTimeout(()=>  LOCK = false, 3000)
+       
+      
     }else{
       infoLog(`开始第${count+1}次强平`);
+     
       if(count){
         setTimeout(()=>{
           tradeList.forEach(e => trade.trade(e))
         }, 100)
       }else{
         tradeList.forEach(e => trade.trade(e))
+      }
+      if(count> 3){
+        LOCK = false;
+        clearInterval(interval);
+        errorLog('强平次数过多。清手动强平!!!!')
       }
     }
   }
@@ -711,8 +723,9 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
     }
   }
   tarderarr.forEach(fixMap);
-  closeALL()
+  
   interval = setInterval(function(){
+    console.log('进入循环111111111111')
     cancel()
     let arr = [];
     if(tradeMap.length> length){
@@ -723,6 +736,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
     count ++;
     closeALL();
   }, 1500)
+  closeALL()
 })
 //行情相关
 const decodeMsg = new cppmsg.msg(receiveData['SP'])
@@ -1217,20 +1231,30 @@ ipcMain.on('import-trades', function(event,){
     title: '导入交易信息',
     
     filters: [
-      { name: 'Excel', extensions: ['csv', 'xls', 'xlsx'] },
+      { name: 'Excel', extensions: ['xls', 'xlsx'] },
   
     ]
   }).then(result => {
+    console.log(result)
     if(result.filePaths){
-     event.sender.send('file-path', result.filePaths)
+      const path =result.filePaths[0] 
+      const instrument = path.match(/[A-Za-z]+[0-9]+/)
+      if(instrument){
+        const win = findedopened(instrument[0]);
+        if(win && win.sender){ 
+          win.sender.send('clear-trader');
+        }
+        trade.importTrade(instrument[0], path)
+      }
+   
     }
   }).catch(err => {
     console.log(err)
   })
 })
-ipcMain.on('parse-trades', function(event,{instrumentID, filepath}){
-  trade.importTrade(instrumentID, filepath)
-})
+// ipcMain.on('parse-trades', function(event,{instrumentID, filepath}){
+ 
+// })
 ipcMain.on('jump-next', function(event, instrumentID){
  
   if(trade.TradeDateMap[instrumentID]){

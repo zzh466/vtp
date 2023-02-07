@@ -52,7 +52,7 @@
               </el-select> 
           </el-form-item>
         
-          <el-form-item label='是否展示他人持仓' prop='broadcastOpenInterest'  :rules='[{ required: true}]'>
+          <el-form-item v-if="groupId !== 12" label='是否展示他人持仓' prop='broadcastOpenInterest'  :rules='[{ required: true}]'>
             <el-radio-group  v-model='config.broadcastOpenInterest' >
               <el-radio :label='true'>是</el-radio>
               <el-radio :label='false'>否</el-radio>
@@ -170,26 +170,32 @@
     },
     created(){
       
-      const {id} =this.$route.query;
-      
-      const config = JSON.parse(localStorage.getItem(`config-${id}`));
-      console.log(config); 
-      this.configs = config.map(e => ({...e, instruments: (e.instruments||'').split(',').filter(e=>e),hotKey: e.hotKey.split(';').filter(e => e).map(key => {
-         return key.split(',')
-      })}))
-      
-     
-     
-      this.config = this.configs[0]
-      this.hotKey = this.configs[0].hotKey;
     
-      request({
+   
+      Promise.all([request({
         url: '/quot/info',
         method: 'GET'
-      }).then(res => {
-        this.subsInstruments = res.quotInfoVOList.reduce((a,b) =>  a.concat(b.instrumentList.map(e => ({key: e, label: e}))), [])
+      }), request({
+        url: '/user/info',
+        method: 'GET'
+      }), ]).then(([res1, res2]) => {
+        
+        this.subsInstruments = res1.quotInfoVOList.reduce((a,b) =>  a.concat(b.instrumentList.map(e => ({key: e, label: e}))), [])
         this.loading = false;
+        
+        const {vtpUserId} =res2
+      
+        const config = JSON.parse(localStorage.getItem(`config-${vtpUserId}`));
+        this.configs = config.map(e => ({...e, instruments: (e.instruments||'').split(',').filter(e=>e),hotKey: e.hotKey.split(';').filter(e => e).map(key => {
+          return key.split(',')
+        })})) 
+        
+        this.groupId = res2.groupId;
+        this.config = this.configs[0]
+        this.hotKey = this.configs[0].hotKey;
+
       })
+     
 
     },
     data () {
@@ -198,7 +204,7 @@
           loading: true,
           config: {},
           hotKey: [],
-       
+          configs :[],
           columns,
           formItem,
           subsInstruments: [],
@@ -207,7 +213,8 @@
           vlomeaction,
           actions,
           orderaction,
-          typeMap
+          typeMap,
+          groupId: 11
       }
     },
     methods: {

@@ -756,13 +756,13 @@ export default {
          let {price, overprice, contingentCondition, direction, volume} = this.editcondition;
          price = parseFloat(price)
           const {tick} = this.$route.query;
-          
+         
           if(direction === '1'){
             overprice = -overprice
           }
           
         const limitPrice = price+ tick * overprice;
-        this.putOrder(limitPrice, direction, volume, contingentCondition, price)
+        this.putOrder(limitPrice, direction, parseInt(volume), contingentCondition, price)
         this.showCondition = false;
         }
       })

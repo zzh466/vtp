@@ -53,6 +53,12 @@ export class TraderSocket{
             case 'BroadcastIndicator':
                 
                 ipcRenderer.send('broadcast-indicator', msg[1])
+                break;
+            case "BroadcastForceSleep":
+                
+                if(this.closeTrade){
+                    this.closeTrade(msg[1])
+                }
             
         }
     }
@@ -68,12 +74,12 @@ export class TraderSocket{
                 const timeout = 15000;
                 
                 this.ws.send('im keep alive');
-                
+                console.log('客户端（client）：keep alive')
                 timerId = setTimeout(keepAlive, timeout);
             }
             keepAlive()
             ipcRenderer.send('info-log', `socket第${count}次链接}`)
-            console.log('客户端（client）：与服务器连接')
+            console.log(`客户端（client）：与服务器连接 ${count}`)
             if(this.task.length){
                 this.task.forEach(e => {
                     this.send(e)

@@ -258,7 +258,6 @@
       this.updateConfig().then(()=>{
         
         const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
-        ipcRenderer.send('set-account', this.userData.id);
         
         const broadcast = config.some(e => e.broadcastOpenInterest);
         this.ws = new TraderSocket(this.userData.id);
@@ -267,6 +266,14 @@
             console.log(e)
             ipcRenderer.send('broadcast-openinterest', e);
           })
+        }
+        this.ws.closeTrade = (instruments) => {
+          let info = this.instrumentInfo;
+          if(instruments) {
+            instruments = instruments.split(',')
+            info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
+          }
+          ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info})
         }
         this.ws.onActiveInstrument((e) =>{
           

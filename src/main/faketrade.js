@@ -172,7 +172,7 @@ export default class FakeTrader{
         TradeDateMap[instrumentID] = {data: tradeData, flag: 0};
       
         const workbook = xlsx.readFile(path)
-        console.log(workbook.SheetNames[0]);
+        console.log(workbook.SheetNames);
         const data = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
         function parse(e, type, directionType){
             const time = + new Date(e[`${type}时间`]);
@@ -183,6 +183,7 @@ export default class FakeTrader{
             const closeText = e['锁仓说明'];
             tradeData.push({time, price, direction, volume, openText, closeText});
         }
+        console.log(data)
         data.forEach((e) => {
             parse(e, '开仓', '多')
             parse(e, '锁仓', '空')

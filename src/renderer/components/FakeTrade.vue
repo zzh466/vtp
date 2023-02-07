@@ -19,7 +19,11 @@
         
          <div>
            <div class="label">回合信息：
-              <el-button  type="primary" size="small" @click="exportroud">导出</el-button> <el-button v-if="false" @click='clear'>清除</el-button>
+              <el-button  type="primary" size="small" @click="exportroud">导出</el-button>
+              <template>
+                <el-button @click='importExcel'>导入</el-button>
+                 <el-button @click='clear'>清除</el-button>
+              </template>
               </div>
           <Round ref="round" @round-click='jump' :data='tradeData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions"></Round>
         </div>
@@ -68,11 +72,6 @@
               
                 
             </el-select>
-        </el-form-item>
-        <el-form-item label='交易信息' prop='importPath'>
-            <el-input v-model="subscribelData.importPath"   clearable/>
-            <el-button @click='importExcel'>导入</el-button>
-           
         </el-form-item>
        <el-form-item label='时间' prop='time' :rules='[{ required: true, message: `请选择合约`,trigger: "change"}]'>
             <el-date-picker
@@ -171,7 +170,6 @@ export default {
             this.rates = commissionRateList.sort((a, b) => b.InstrumentID.length - a.InstrumentID.length);
             this.loading = false;
             const storageKey= `fake-trade-${this.userData.id}`;
-            ipcRenderer.send('set-account', this.userData.id);
             let history = localStorage.getItem(storageKey);
             const now = this.getTime();
             if(history){
@@ -211,15 +209,20 @@ export default {
           this.checkDate();
           if(Array.isArray(trade)){
             this.tradeData = trade
-            this.$refs.round.traderColumns.push({
+            if(!this.$refs.round.traderColumns.find(e => e.prop === 'openText')){
+              this.$refs.round.traderColumns.push({
                label: '开仓说明',
               prop: 'openText',
               width: '100' })
-            this.$refs.round.traderColumns.push({
-               label: '锁仓说明',
-              prop: 'closeText',
-               width: '100' 
-            })
+
+            }
+            if(!this.$refs.round.traderColumns.find(e => e.prop === 'closeText')){
+              this.$refs.round.traderColumns.push({
+                label: '锁仓说明',
+                prop: 'closeText',
+                width: '100' 
+              })
+            }
             this.$nextTick(function(){
                 this.$refs.round.init();
             })
@@ -233,9 +236,7 @@ export default {
         ipcRenderer.on('receive-price', (event, price) => {
           this.price = price
         })
-        ipcRenderer.on('file-path', (event, [path]) => {
-          this.subscribelData.importPath = path;
-        })
+       
         this.timer = setInterval(()=> {
           const {commission, total} = this.$refs.round.traderData.reduce((a,b) => {
             a.commission = a.commission + parseFloat(b.commission);
@@ -400,9 +401,7 @@ export default {
               ipcRenderer.send('close-all-sub');
               ipcRenderer.send('send-fake-trade-msg',`NotifyQuotDataHistCancel`)
             }
-            if(importPath){
-              ipcRenderer.send('parse-trades', {instrumentID: instrumentId, filepath: importPath})
-            }
+           
             ipcRenderer.send('send-fake-trade-msg',`NotifyQuotDataHist@${instrumentId}:${time}`)
               const active = this.$store.state.user.activeCtpaccount;
             const account = this.userData.futureAccountVOList.find(e => e.id === active);

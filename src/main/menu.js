@@ -1,8 +1,7 @@
 import {Menu,BrowserWindow, shell, ipcMain } from 'electron'
 import {baseURL, winURL} from '../renderer/utils/utils'
 import { logPath } from './log';
-let account;
-ipcMain.on('set-account', (_, args) => account = args);
+
 
 let childwin = null;
 export { childwin};
@@ -51,7 +50,7 @@ export default function(checked){
                 webSecurity: false
               }
             })
-            childwin.loadURL(`${winURL}#config?id=${account}`)
+            childwin.loadURL(`${winURL}#config`)
             childwin.removeMenu()
             childwin.on('closed', function(){
               childwin = null;
