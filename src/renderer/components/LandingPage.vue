@@ -525,6 +525,7 @@
     methods: {
       exportroud(){
         const {traderColumns, traderData} =  this.$refs.round
+        
         this.exportExcel('回合信息', traderData, traderColumns)
       },
       exportorder(){
@@ -705,6 +706,7 @@
           })
           return result
         })
+        
         title = this.userData.userAccount + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },

@@ -228,7 +228,7 @@ export default {
             })
           }else{
             this.$refs.round.update(trade);
-          this.tradeData.push(trade)
+            this.tradeData.push(trade)
           }
            
           this.setStroge()

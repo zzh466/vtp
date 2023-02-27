@@ -34,8 +34,11 @@
                     label: '日期',
                     prop:'TradeDate'
                 },{
-                    label: '时间',
+                    label: '开仓时间',
                     prop: 'TradeTime'
+                },{
+                    label: '平仓时间',
+                    prop: 'CloseTime'
                 },{
                     label: '方向',
                     prop: 'Direction',
@@ -229,9 +232,9 @@
                 this.findAnDmatch(e, arr);
             }); 
             
-           
+            
             this.traderData = arr.filter(a=> {
-                return a.TradeTime || a.Volume !== a.CloseVolume 
+                return a.CloseTime || a.Volume !== a.CloseVolume 
             })
              this.$emit('history-trade', this.traderData.filter(a => a.Volume  &&!a.OpenTime))
         },
@@ -312,7 +315,7 @@
                             }
                             
                         }
-                        item.TradeTime = TradeTime;
+                        item.CloseTime = TradeTime;
                      }else{
                          
                         

@@ -17,6 +17,7 @@ export default function generate(hotKey){
          const haskey = hotKey.find(key => key.length && key[1] === keyCode.toString());
          console.log(haskey)
          function order() {
+            
             if(!chart.data.length)return;
             
             const direction = haskey[3];

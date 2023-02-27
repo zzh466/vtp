@@ -79,7 +79,7 @@ export default class FakeTrader{
             const mess = data[0];
             if(mess === 'QuotDataHist' || mess ==='GroupQuotDataHist'){
                 data = data[1];
-            
+                // console.log(data)
                 data = JSON.parse(data);
                
                 this.emitter.emit('data', parseData(data));
@@ -183,7 +183,7 @@ export default class FakeTrader{
             const closeText = e['锁仓说明'];
             tradeData.push({time, price, direction, volume, openText, closeText});
         }
-        console.log(data)
+        // console.log(data)
         data.forEach((e) => {
             parse(e, '开仓', '多')
             parse(e, '锁仓', '空')
@@ -236,9 +236,16 @@ export default class FakeTrader{
                     tradeed = true;
                     price =  LimitPrice
                 }
-            }
-            console.log(tradeed)
+            }    
             if(tradeed){
+                let open = 0, close=0, closeToady=0;
+                if(CombOffsetFlag === '0'){
+                    open = VolumeTotalOriginal
+                }else if(CombOffsetFlag === '1'){
+                    close = VolumeTotalOriginal
+                }else {
+                    closeToady = VolumeTotalOriginal
+                }
                 this.emitter.emit('trade', {
                     Direction,
                     InstrumentID,
@@ -246,7 +253,10 @@ export default class FakeTrader{
                     CombOffsetFlag,
                     TradeDate: getDay(),
                     TradeTime: data.UpdateTime || priceData[InstrumentID][4],
-                    Volume: VolumeTotalOriginal
+                    Volume: VolumeTotalOriginal,
+                    close,
+                    open,
+                    closeToady
                 });
                 item.StatusMsg = '已成交';
                 item.OrderStatus = '0';

@@ -669,6 +669,7 @@ export default {
       
       
       let {TradingDay, UpdateTime, Volume, LastPrice} = arg;
+      if(!TradingDay) return;
       TradingDay = TradingDay.substr(0, 4) + '-' + TradingDay.substr(4, 2)+ '-'+ TradingDay.substr(6, 2);
       const time = +new Date(`${TradingDay} ${UpdateTime}`);
       const args = this.args;
