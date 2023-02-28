@@ -2268,16 +2268,13 @@ Local<Value> WrapTrader::pkg_rspinfo(void *vpRspInfo)
     HandleScope scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
 
+    Local<Object> jsonInfo = Object::New(isolate);
     if (vpRspInfo)
     {
         CThostFtdcRspInfoField *pRspInfo = static_cast<CThostFtdcRspInfoField *>(vpRspInfo);
-        Local<Object> jsonInfo = Object::New(isolate);
+        jsonInfo = Object::New(isolate);
         jsonInfo->Set(context, String::NewFromUtf8(isolate, "ErrorID").ToLocalChecked(), Number::New(isolate, pRspInfo->ErrorID));
         jsonInfo->Set(context, String::NewFromUtf8(isolate, "ErrorMsg").ToLocalChecked(), String::NewFromUtf8(isolate, gbkToUTF8(pRspInfo->ErrorMsg)).ToLocalChecked());
-        return jsonInfo;
     }
-    else
-    {
-        return Local<Value>::New(isolate, Undefined(isolate));
-    }
+    return jsonInfo;
 }
