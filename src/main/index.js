@@ -6,11 +6,11 @@ import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
-import meun from  './menu';
+import meun, {childwin} from  './menu';
 import  './export';
 import  request  from './request';
 import '../renderer/store';
-import {version,specialExchangeId } from '../renderer/utils/utils'
+import {version, winURL, specialExchangeId } from '../renderer/utils/utils'
 import console from 'console';
 
 
@@ -27,9 +27,6 @@ let mainWindow;
 let trade;
 let STARTTRADE = false;
 let Maincycle;
-const winURL = process.env.NODE_ENV === 'development'
-  ? `http://localhost:9080`
-  : `file://${__dirname}/index.html`
 
 function createWindow () {
   /**
@@ -48,11 +45,11 @@ function createWindow () {
       contextIsolation: false
     }
   })
-  mainWindow.setMenu(meun(false));
+  
   // mainWindow.webContents.openDevTools({mode:'detach'});
   console.log('start')
   mainWindow.loadURL(winURL)
-
+  mainWindow.removeMenu()
   mainWindow.on('closed', () => {
   
     mainWindow = null
@@ -63,8 +60,12 @@ function createWindow () {
       request({
         url: 'access/logoutClient', 
       })
+      trade.logout();
+      trade.shouldReconnect = false
     }
-   
+    if(childwin){
+      childwin.close();
+    }
     clearInterval(Maincycle);
     closeALLData();
     closeALLsubs();
@@ -73,6 +74,7 @@ function createWindow () {
 
 ipcMain.on('resize-main', (evnt, {width, height}) => {
   mainWindow.setSize(width, height)
+  mainWindow.setMenu(meun(false));
 })
 ipcMain.on('close-main', (event, arg) => {
   if(arg){
@@ -85,7 +87,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex}) => {
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
  
@@ -104,7 +106,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -155,7 +157,7 @@ let orderMap = {};
 let tradeMap = [];
 let positionMap = [];
 let rateMap =[];
-const catchRate  = new Set()
+let catchRate  = new Set()
 let InstrumetsData =[];
 const PriceData ={};
 const broadcast_Data = {};
@@ -193,15 +195,18 @@ ipcMain.on('register-event',  (event, args) =>{
     }
   })
 })
-ipcMain.on('update-instrumentsData',  (event, args) =>{
+ipcMain.on('update-instrumentsData',  (event, args, init) =>{
   InstrumetsData = args;
-  // InstrumetsData.forEach(instrumet =>{
-  //   const {instrumentID} = instrumet;
-  //   const win =  findedopened(instrumentID);
-  //   if(win && win.sender){
-  //     win.sender.send('instrumet-data',instrumet);
-  //   }
-  // })
+  if(init){
+    InstrumetsData.forEach(instrumet =>{
+      const {instrumentID} = instrumet;
+      const win =  findedopened(instrumentID);
+      if(win && win.sender){
+        win.sender.send('instrumet-data',instrumet);
+      }
+    })
+  }
+
 })
 
 //停止订阅
@@ -229,12 +234,33 @@ function getUnCatchCommission(args){
   
 }
 
-
+let connectcount = 0;
 ipcMain.on('trade-login', (event, args) => {
   orderMap = {};
   tradeMap = [];
   positionMap = [];
   rateMap =[];
+  let TRADETIME = setTimeout(() => {
+    event.sender.send('receive-trade', tradeMap);
+    event.sender.send('finish-loading', 'trade')
+    TRADETIME= null;
+  }, 5000)
+  let ORDERTIME =  setTimeout(() => {
+    event.sender.send('finish-loading', 'order')
+  }, 5000);
+  if(trade){
+    rateMap = [];
+    catchRate = new Set();
+    trade.init(args);
+  
+    connectcount = 0;
+    STARTTRADE= false;
+    trade.logout();
+    trade.shouldReconnect = true;
+    opedwindow.forEach(({sender}) => sender.send('clear-tarder'))
+    return
+
+  }
   trade = new Trade(args);
 
   function getorderKey(obj){
@@ -244,20 +270,16 @@ ipcMain.on('trade-login', (event, args) => {
     const orderRef = OrderRef;
     return frontId + sessionId + orderRef;
   }
-  let TRADETIME = setTimeout(() => {
-    event.sender.send('receive-trade', tradeMap);
-    event.sender.send('finish-loading', 'trade')
-    TRADETIME= null;
-  }, 5000)
-  let connectcount = 0;
+
+  
   trade.on('rtnTrade', function(field){
     console.log('emmit---rtnTrade');
     
     infoLog(JSON.stringify(field));
     const { Volume, Price, InstrumentID} = field
-    if(args.instruments.includes(InstrumentID)){
+    // if(args.instruments.includes(InstrumentID)){
       infoLog(JSON.stringify(field));
-    }
+    // }
     const win = findedopened(InstrumentID);
     tradeMap.push(field);
     getUnCatchCommission(field)
@@ -296,18 +318,16 @@ ipcMain.on('trade-login', (event, args) => {
    
     
   })
-  let ORDERTIME =  setTimeout(() => {
-    event.sender.send('finish-loading', 'order')
-  }, 5000);
+  
   
   trade.on('rtnOrder', function(field){
     const key = getorderKey(field);
     const needUpdate = !!orderMap[key];
     const old = orderMap[key] || {}
     // const orderStatus = old.OrderStatus;
-    if(args.instruments.includes(field.InstrumentID)){
+    // if(args.instruments.includes(field.InstrumentID)){
       infoLog(JSON.stringify(field));
-    }
+    // }
     //返回可能不按时序 先返回已完成的后返回中间状态，所以一旦订单已经完成就要将中间状态舍弃
     if(old.OrderStatus){
       const status = old.OrderStatus;
@@ -362,7 +382,7 @@ ipcMain.on('trade-login', (event, args) => {
           console.log(field)
           win.sender.send('order-error',field.StatusMsg);
         }
-        win.sender.send('total-order',orderMap);
+        win.sender.send('total-order',orderMap, field);
       }
     // }
     console.log('StarSTARTTRADE', STARTTRADE)
@@ -379,10 +399,14 @@ ipcMain.on('trade-login', (event, args) => {
     event.sender.send('receive-order', orderMap[key], key, needUpdate);
   })
  
-  
+  let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    event.sender.send('add-loading', 'position')
+    if( !isLast && !send){
+      event.sender.send('add-loading', 'position')
+      send = true;
+    }
+  
     if(OpenDate !==TradingDay) {
       field.Price = LastSettlementPrice;
       field.Volume = field.Volume + field.CloseVolume;
@@ -390,6 +414,7 @@ ipcMain.on('trade-login', (event, args) => {
     };  
     if(isLast){
       console.log('111111111111111111111111111111111111111')
+      send = false;
       event.sender.send('receive-position', positionMap);
       event.sender.send('finish-loading', 'position')
     }
@@ -408,14 +433,19 @@ ipcMain.on('trade-login', (event, args) => {
     }
   })
   trade.emitterOn('connect', function () {
-    infoLog('行情已连接')
+    infoLog('ctp已连接')
+    console.log('ctp已连接')
     tradeMap = [];
     trade.tasks = [];
     if(connectcount){
    
       trade.tasks.push(setTimeout(()=>{
         trade.next()
-    }, 1500))
+      }, 1500))
+      TRADETIME = setTimeout(() => {
+        event.sender.send('finish-loading', 'trade')
+        TRADETIME= null;
+      }, 5000)
     }
    
     STARTTRADE =false;
@@ -714,8 +744,8 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new net.Socket();
   if(!Maincycle){
     Maincycle=setInterval(()=>{
-      // console.log(trade.tasks)
-      if( trade.tasks.length < 2){
+     
+      if(trade && trade.tasks.length < 2){
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
         })
@@ -870,7 +900,7 @@ ipcMain.on('start-receive', (event, args) =>{
         setTimeout(()=> connect(), 1000)
       
       }
-      infoLog('data close', hadError);
+      infoLog(`data close${JSON.stringify(hadError)}`);
     })
   
     tcp_client.on('error', function (e) {
@@ -931,7 +961,18 @@ ipcMain.on('broadcast-openinterest', function(_, arg){
   }
   
 })
-
+ipcMain.on('update-all-config', function(_, arg){
+  // console.log(arg);
+  opedwindow.forEach(({sender}) => sender.send('update-config') )
+})
+// ipcMain.on('tarder-login-out', function(){
+//   trade.logout();
+//   positionMap = [];
+//   tradeMap = [];
+//   orderMap = [];
+//   STARTTRADE = false;
+//   trade = null;
+// })
 /**
  * Auto Updater
  *

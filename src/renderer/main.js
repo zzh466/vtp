@@ -58,8 +58,8 @@ Vue.component('Table', {
             
             >
             <template v-if="column.render || column.component" scope="scope">
-              <div v-if='column.render' :class='column.class? typeof column.class === "function"?column.class(scope.row): column.class: ""'>{{column.render(scope.row)}}</div>
-              <component v-if='column.component' :is='column.component' :data='scope.row'></component>
+              <div v-if='column.render' :class='column.class? typeof column.class === "function"?column.class(scope.row): column.class: ""'>{{column.render(scope.row, scope.$rowIndex )}}</div>
+              <component v-if='column.component' :is='column.component' :data='scope.row' :index='scope.$rowIndex' @action='$emit(column.component, $event)'></component>
             </template>
           </vxe-column>
         </vxe-table>`,

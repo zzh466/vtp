@@ -1,10 +1,11 @@
-import {Menu,BrowserWindow, shell } from 'electron'
-import {baseURL} from '../renderer/utils/utils'
-import { logPath } from './log'
-const url = baseURL.split(':')[0]
+import {Menu,BrowserWindow, shell, ipcMain } from 'electron'
+import {baseURL, winURL} from '../renderer/utils/utils'
+import { logPath } from './log';
+let account;
+ipcMain.on('set-account', (_, args) => account = args);
 
-
-
+let childwin = null;
+export { childwin};
 export default function(checked){
   // console.log(checked)
   return Menu.buildFromTemplate([{
@@ -35,8 +36,28 @@ export default function(checked){
       },{
         label: '配置',
         click(){
+          if(childwin){
+            childwin.show();
+          }else{
+            childwin = new BrowserWindow({
+              height: 1000,
+              useContentSize: true,
+              width: 1000,
+              // parent: mainWindow,
+              title: '修改配置快捷键',
+              webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+                webSecurity: false
+              }
+            })
+            childwin.loadURL(`${winURL}#config?id=${account}`)
+            childwin.removeMenu()
+            childwin.on('closed', function(){
+              childwin = null;
+            })
+          }
           
-          shell.openExternal(`http://${url}:8090/userConfig`);
         },
       
       }])

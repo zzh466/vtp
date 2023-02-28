@@ -43,18 +43,11 @@ export default function generate(hotKey){
                     break;
                 case '1':
                      //保证先撤单
-                    if(timer){
-                        clearTimeout(timer);
-                        order();
-                        return;
-                    }
+                   
                     ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id}).then((cancel)=>{
-                        vue.chart.holdVolume = [0, 0];
+                        
                         if(cancel){
-                            timer = setTimeout(()=>{
-                                order();
-                                timer = null;
-                            }, 30 )
+                           vue.tasks.push(order);
                         }else {
                             order()
                         }

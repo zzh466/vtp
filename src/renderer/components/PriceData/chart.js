@@ -22,7 +22,7 @@ class Chart {
         const {
             barToBorder,
             barVolume,
-            barWeight = 10,
+            barWidth = 10,
             calcBarType,
             volumeScaleCount,
             volumeScaleHeight = 30,
@@ -32,7 +32,7 @@ class Chart {
         this.ctx = dom.getContext('2d');
         
         this.barToBorder = barToBorder;
-        this.stepwidth =barWeight;
+        this.stepwidth =barWidth;
         this.stepHeight = volumeScaleHeight;
         this.volumeScaleType = volumeScaleType;
         this.volumeScaleCount =volumeScaleCount;
@@ -405,7 +405,7 @@ class Chart {
         ctx.setLineDash([]);
         ctx.strokeStyle = FONTCOLOR;
 
-        console.log(volume, this.volume)
+        // console.log(volume, this.volume)
         if(this.volume < volume){
             ctx.strokeStyle = '#ffff00';
         };

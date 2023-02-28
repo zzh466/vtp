@@ -15,10 +15,10 @@ console.log(getIPAdress())
 
 export const hostname = os.hostname();//主机名
 console.log(hostname);
-const typeMap = ['锁仓', '平今', '开仓', '平仓'];
-const closeTypeMap = ['一键全平', '按指定手数平仓']
-export function getWinName(instrumentID, volume = 1, type = 0, closeType=0){
-    return `${instrumentID}   （手数：${volume} 平仓方式：${closeTypeMap[closeType]} 平今策略：${typeMap[type]} ）`
+export const typeMap = ['锁仓', '平今', '开仓', '平仓'];
+export const closeTypeMap = ['一键全平', '按指定手数平仓']
+export function getWinName(instrumentID, accountIndex, volume = 1, type = 0, closeType=0){
+    return `${instrumentID}-${accountIndex}   （手数：${volume} 平仓方式：${closeTypeMap[closeType]} 平今策略：${typeMap[type]} ）`
 }
 
 export function getHoldCondition(data={}){
@@ -33,7 +33,7 @@ export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
 export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '尚未触发', key: 'b'},{msg: '已触发', key: 'c'}]
 
 
-export const version = '220328c';
+export const version = '220425a';
 export function getyyyyMMdd(){
     var d = new Date();
     var curr_date = d.getDate();
@@ -45,8 +45,8 @@ export function getyyyyMMdd(){
     return yyyyMMdd;
 } 
 
-// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.108:8080/vtpmanagerapi': '139.196.41.155:8080/vtpmanagerapi'
-export const baseURL = '139.196.41.155:8080/vtpmanagerapi'
+// export const baseURL = process.env.NODE_ENV === 'development'?'192.168.0.18:8082/vtpmanagerapi': '139.196.41.155:8082/vtpmanagerapi'
+export const baseURL = '139.196.41.155:8082/vtpmanagerapi'
 
 const key = 'user-client';
 export function getClientSize(){
@@ -68,3 +68,6 @@ export function setClientSize(width, height){
 }
 
 export const specialExchangeId = ['INE', 'SHFE']
+export const winURL = process.env.NODE_ENV === 'development'
+? `http://localhost:9080`
+: `file://${__dirname}/index.html`

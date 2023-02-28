@@ -1,5 +1,7 @@
 <template>
+    <div>
     <Table :tableData='traderData' height="280" :columns='traderColumns'/>
+    </div>
 </template>
 
 <script>

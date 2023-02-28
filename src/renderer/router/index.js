@@ -19,6 +19,10 @@ export default new Router({
       path: '/price',
       name: 'data-page',
       component: require('@/components/PriceData').default
+    }, {
+      path: '/config',
+      name: 'config-page',
+      component: require('@/components/Config').default
     },
     {
       path: '*',
