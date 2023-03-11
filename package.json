@@ -18,7 +18,7 @@
     "test": "npm run unit && npm run e2e",
     "unit": "karma start test/unit/karma.conf.js",
     "postinstall": "",
-    "rebuildCTP:dev": "node-gyp -j 16 rebuild --debug",
+    "rebuildCTP": "node-gyp -j 16 rebuild --debug",
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {

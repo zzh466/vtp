@@ -1,5 +1,5 @@
 
-var ctp = require('../../build/Release/ctp.node');
+var ctp = require('../../build/Release/ctp/ctp.node');
 var events = require('events');
 ctp.settings({ log: 
 false
