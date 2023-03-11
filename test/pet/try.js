@@ -1,6 +1,6 @@
 var pet = require('../../build/Debug/pet.node');
 pet.settings({ log: true });
-
+//
 var HOST="pet.iudge.cn"
 var PORT=9125
 var USER="54522"
