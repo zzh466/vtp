@@ -27,6 +27,10 @@ export default new Router({
       path: '/trade',
       name: 'trade-page',
       component: require('@/components/FakeTrade').default
+    }, {
+      path: '/stock',
+      name: 'stock-page',
+      component: require('@/components/StockTrade').default
     },
     {
       path: '*',

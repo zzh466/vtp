@@ -70,7 +70,7 @@ export default class FakeTrader{
        
     }
     connect(id){
-        this.ws = new ws(`ws://${baseURL}/ws/${id}`);
+        this.ws = new ws(`ws://${baseURL}/ws/${id}/9999`);
         let timerId; 
         this.ws.onmessage = ({data}) => {
             // 

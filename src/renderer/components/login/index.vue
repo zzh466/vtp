@@ -23,7 +23,7 @@
 
   import { ipcRenderer } from 'electron';
   
- 
+  import request from '../../utils/request';
   import loginform from './form.vue'
   export default {
     components : {
@@ -76,19 +76,34 @@
             this.$nextTick(()=>  this.step = 2)
             
           }else{
-            ipcRenderer.send('resize-main',  {width: 1600, height: 770});
-              this.$router.push('main');
+           
+              this.checkactive()
           }
               
              
       },
+      checkactive(){
+        request({
+        url: `monitor/fawsstate/${this.accountId}`, 
+        method: 'GET',
+        }).then((res) => {
+          if(res.code === 'REQ_SUCCESS'){
+            if(res.isBusy){
+              this.$message.error('当前账户已经登录请联系管理员')
+              return
+            }
+            ipcRenderer.send('resize-main',  {width: 1600, height: 770});
+            this.$router.push('main');
+          }
+          
+        })
+       
+      },
       cofirm(){
-        
-        ipcRenderer.send('resize-main',  {width: 1600, height: 770});
-        this.$router.push('main');
+        this.checkactive()
       },
       changeActive(value){
-        console.log(arguments)
+        this.accountId = value;
         this.$store.commit('setstate', {
               key: 'activeCtpaccount',
               data:value

@@ -80,8 +80,8 @@
   import Edit from'./edit'
   import request from '../../utils/request';
   import {closeTypeMap, typeMap } from '../../utils/utils';
-  const actions = ['下单','先撤再下','当前交易所全部撤单','修改手数','修改平仓方式','切换平今策略','设置平今策略','全交易所全部撤单','当前合约全部撤单','当前合约撤最近一手报单' ,'撤最近一手报单' ,'当前合约全部平仓'];
-  const orderaction = ['0', '1']
+  const actions = ['下单','先撤再下','当前交易所全部撤单','修改手数','修改平仓方式','切换平今策略','设置平今策略','全交易所全部撤单','当前合约全部撤单','当前合约撤最近一手报单' ,'撤最近一手报单' ,'当前合约全部平仓', '市价下单'];
+  const orderaction = ['0', '1', '12']
   const vlomeaction = ['3']
   const formItem = [{
     name: '柱子滚动最小刻度',

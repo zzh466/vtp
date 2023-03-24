@@ -16,7 +16,7 @@ export default function generate(hotKey){
          const {keyCode} = e;
          const haskey = hotKey.find(key => key.length && key[1] === keyCode.toString());
          console.log(haskey)
-         function order() {
+         function order(config) {
             
             if(!chart.data.length)return;
             
@@ -31,7 +31,7 @@ export default function generate(hotKey){
 
             }
        
-            vue.putOrder(fixPirce(price, vue.chart.decimal), direction);
+            vue.putOrder(fixPirce(price, vue.chart.decimal), direction, undefined,config);
          }
          if(haskey){
              e.preventDefault();
@@ -84,6 +84,8 @@ export default function generate(hotKey){
                 case '8':
                     ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id});
                     break
+                case '12':
+                    order({OrderPriceType: '1'})
              }
          }
      }

@@ -560,7 +560,7 @@ export default {
       this.putOrder(limitPrice, direction,volumeTotalOriginal)
 
     },
-    putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume, contingentCondition, stopPrice){
+    putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume, configs){
        const instrumentID = this.$route.query.id;
       let combOffsetFlag = '0'
       let {traded, holdVolume} = this.chart;
@@ -593,13 +593,13 @@ export default {
       }
       if(Array.isArray(traderData.volumeTotalOriginal)){
         if(traderData.volumeTotalOriginal[0]){
-          ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId, contingentCondition, stopPrice})
+          ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId, ...configs})
         }
          
-        ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal: traderData.volumeTotalOriginal[1],combOffsetFlag: '3', ExchangeID: this.exchangeId, contingentCondition, stopPrice})
+        ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal: traderData.volumeTotalOriginal[1],combOffsetFlag: '3', ExchangeID: this.exchangeId, ...configs})
 
       }else{
-        ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId, contingentCondition, stopPrice})
+        ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId, ...configs})
       }
       
     },
@@ -763,7 +763,7 @@ export default {
           }
           
         const limitPrice = price+ tick * overprice;
-        this.putOrder(limitPrice, direction, parseInt(volume), contingentCondition, price)
+        this.putOrder(limitPrice, direction, parseInt(volume), {ContingentCondition: contingentCondition, StopPrice: price})
         this.showCondition = false;
         }
       })
@@ -809,7 +809,7 @@ export default {
   position: absolute;
   top: 1px;
   display: flex;
-  width: 98vw;
+  width: calc( 100% - 10px );
   z-index: 10;
 }
 .buy-orders {

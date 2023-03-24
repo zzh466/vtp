@@ -7,6 +7,7 @@
 <script>
   import { Direction} from '../../utils/utils'
  import Vue from 'vue';
+import { stat } from 'original-fs';
   Vue.component('Tag', {
         template: `<div class='trade-tag'>
             <div class='finish' :style='{width: width + "%"}'></div>
@@ -39,6 +40,31 @@
                 },{
                     label: '平仓时间',
                     prop: 'CloseTime'
+                },{
+                    label: '持仓时间（秒）',
+                    prop: 'HoldTime',
+                    render(item){
+                        let time;
+                        if(item.TradeTime && item.CloseTime){
+                            const start = item.TradeTime.split(':')
+                            const end =  item.CloseTime.split(':')
+                            let time1 = end[0] - start[0];
+                            let time2;
+                            if(end[1] > start[1]){
+                                time2 = end[1] - start[1];
+                            }else{
+                                time2 = -(start[1]-end[1]);
+                            }
+                            let time3;
+                            if(end[2] > start[2]){
+                                time3 = end[2] - start[2];
+                            }else{
+                                time3 = -(start[2]-end[2]);
+                            }
+                            time = 60*60*time1 + 60*time2 + time3;
+                        }
+                        return time
+                    }
                 },{
                     label: '方向',
                     prop: 'Direction',
@@ -89,16 +115,26 @@
 ;
                      
                        const {ClosePrice , Price, Volume, CloseVolume, Direction, InstrumentID} = data;
-                      
+                        if(!CloseVolume && !_this.price[InstrumentID]){
+                            return 0
+                        }
                        let range = ClosePrice - Price;
-                       if(_this.price[InstrumentID] && Volume > CloseVolume){
+                       if(_this.price[InstrumentID] &&  _this.price[InstrumentID][Direction] && Volume > CloseVolume){
                            range = (range * CloseVolume + (Volume -CloseVolume) *( _this.price[InstrumentID][Direction] -Price)) / Volume;
                        }
                         if(data.Direction==='1'){
                            range = -range;
                        }
-                       data.range = range;
-                       return range.toFixed(2)
+                       
+                       range = range.toFixed(2)
+                       if(range > 0 && range > data.maxProfit){
+                            
+                            data.maxProfit = parseFloat(range);
+                        }else if(range < 0 && range < data.minProfit){
+                            
+                            data.minProfit = parseFloat(range);
+                        }
+                       return range
                     }
                 },
                 {
@@ -198,14 +234,24 @@
                     prop: 'true',
                      type: 'number',
                     render(data){
-                        return (data.closeProfit + data.optionProfit - data.commission).toFixed(2);
+                        const price = (data.closeProfit + data.optionProfit - data.commission).toFixed(2)
+                       
+                        return price;
                     }
                 },
+                {
+                    label: '最大持仓盈利',
+                    prop: 'maxProfit'
+                },
+                {
+                    label: '最大持仓亏损',
+                    prop: 'minProfit'
+                }
                 //   {
                 //      label: 'pp',
                 //     prop: 'true',
                 //      type: 'number',
-                //     render(data){
+                //     render(data){ 
                 //         return data.open +'/'+ data.close +'/'+ data.closeToady
                 //     }
                 // }
@@ -338,7 +384,9 @@
                                 close,
                                 closeToady,
                                 openText: e.openText,
-                                parseIndex: e.parseIndex
+                                parseIndex: e.parseIndex,
+                                maxProfit: 0,
+                                minProfit: 0
                             }) 
                          }else {
                               item.open += open ;
@@ -369,7 +417,9 @@
                         close,
                         closeToady,
                         openText: e.openText,
-                         parseIndex: e.parseIndex
+                         parseIndex: e.parseIndex,
+                         maxProfit: 0,
+                        minProfit: 0
                     })
                 }
             }

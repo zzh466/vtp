@@ -256,23 +256,27 @@ class Trade {
         this[key]++;
         return value.toString();
     }
-    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID, contingentCondition: ContingentCondition,   stopPrice: StopPrice,}){
+    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID, ContingentCondition, StopPrice, OrderPriceType}){
         // console.log(this.getInstrumentList, instrumentID)
         // const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
-
+        let TimeCondition;
+        if(OrderPriceType === '1'){
+            TimeCondition = '1';
+            limitPrice = 0;
+        }
         var insertOrder = {
             "BrokerID": this.m_BrokerId,
             "InvestorID": this.m_InvestorId,
             "InstrumentID": instrumentID,
             "OrderRef": this.getKey('orderRef'),
             "UserID": this.m_UserId,
-            //"OrderPriceType": "",
+            OrderPriceType,
             "Direction": direction,
             "CombOffsetFlag": combOffsetFlag,
             //"CombHedgeFlag": "",
             "LimitPrice": limitPrice,
             "VolumeTotalOriginal": volumeTotalOriginal,
-            //"TimeCondition": "",
+            TimeCondition,
             //"GTDDate": "",
             //"VolumeCondition": "",
             //"MinVolume": "",

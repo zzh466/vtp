@@ -21,7 +21,7 @@
                     <el-option value='1' label='卖'></el-option>
                 </el-select>
             </el-form-item>
-            <el-form-item label='超价' prop='overprice'  :rules="[{ required: true, message: `请输入超价`,trigger: 'blur'}]">
+            <el-form-item v-if="config.action !== '12'" label='超价' prop='overprice'  :rules="[{ required: true, message: `请输入超价`,trigger: 'blur'}]">
                 <el-input v-model="config.overprice"></el-input>
             </el-form-item>
         </template>

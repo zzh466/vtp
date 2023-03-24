@@ -10,9 +10,11 @@ export default function request(config){
     })
 } 
 let count = 0
+let shutdown = false;
 export class TraderSocket{
-    constructor(id){
+    constructor(id,acountId){
         this.id = id;
+        this.acountId = acountId;
         this.reconnect();
         this.task = [];
         this.ready=false;
@@ -59,12 +61,21 @@ export class TraderSocket{
                 if(this.closeTrade){
                     this.closeTrade(msg[1])
                 }
+                break;
+            case "FutureAccountBusy":
+                ipcRenderer.send('info-log','stock发送指令关闭客户端')
+                this.shutdownClient();
+                break
+            case "ShutDownClient":
+                ipcRenderer.send('info-log','stock发送指令关闭客户端')
+                this.shutdownClient();
             
         }
     }
     reconnect(){
-      
-        const ws = new WebSocket(`ws://${baseURL}/ws/${this.id}`);
+        if(shutdown) return;
+        
+        const ws = new WebSocket(`ws://${baseURL}/ws/${this.id}/${this.acountId}`);
         let timerId =0;
         this.ws =ws ;
         count++
@@ -100,6 +111,7 @@ export class TraderSocket{
             ipcRenderer.send('err-log', `socket已关闭`)
             
             this.ws = null;
+            console.log('客户端（client）已关闭');
             setTimeout( ()=>{
               
                 this.reconnect()
@@ -108,6 +120,11 @@ export class TraderSocket{
      
         this.ws.onmessage = this.onmessageResolve.bind(this);
         
+    }
+    shutdownClient(){
+        shutdown = true;
+        this.ws.close();
+        ipcRenderer.send('close-main');
     }
     send(msg){
         console.log(msg)

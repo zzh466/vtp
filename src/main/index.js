@@ -13,8 +13,9 @@ import  request  from './request';
 import '../renderer/store';
 import {version, winURL, specialExchangeId } from '../renderer/utils/utils'
 import console, { time } from 'console';
+import  events  from 'events';
 
-
+const Mainemitter = new  events.EventEmitter();
 let COLOSEALL = false;
 /**
  * Set `__static` path to static files in production
@@ -336,6 +337,11 @@ ipcMain.on('trade-login', (event, args) => {
     // if(args.instruments.includes(field.InstrumentID)){
       // infoLog(JSON.stringify(field));
     // }
+    //保证强平撤单
+    if(LOCK && field.OrderStatus === '5'){
+      infoLog(`强平撤单${JSON.stringify(field)}`);
+      Mainemitter.emit('closeall')
+    }
     //返回可能不按时序 先返回已完成的后返回中间状态，所以一旦订单已经完成就要将中间状态舍弃
     if(old.OrderStatus){
       const status = old.OrderStatus;
@@ -421,8 +427,9 @@ ipcMain.on('trade-login', (event, args) => {
       positionMap.push(field);
     };  
     if(isLast){
-      console.log('111111111111111111111111111111111111111')
+      console.log(positionMap.map(e => e.InstrumentID) , '111111111111111111111111111111111111111')
       send = false;
+    
       event.sender.send('receive-position', positionMap);
       event.sender.send('finish-loading', 'position')
     }
@@ -591,9 +598,14 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
 
   }
   let interval = null;
+  let lag = false
   cancel()
   function cancel(){
     const arr = findCancelorder('', '撤单');
+    if(arr.length){
+      lag = true
+      Mainemitter.once('closeall', closeALL)
+    }
     trade.cancel(arr);
   }
   function closeALL(){
@@ -675,7 +687,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
       }
       
     })
-    console.log(tradeList, 'tradeList')
+    infoLog(JSON.stringify(tradeList))
     if(!tradeList.length){
         event.sender.send('force-close-finish');
         clearInterval(interval);
@@ -687,13 +699,9 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
     }else{
       infoLog(`开始第${count+1}次强平`);
      
-      if(count){
-        setTimeout(()=>{
-          tradeList.forEach(e => trade.trade(e))
-        }, 100)
-      }else{
-        tradeList.forEach(e => trade.trade(e))
-      }
+    
+      tradeList.forEach(e => trade.trade(e))
+      
       if(count> 3){
         LOCK = false;
         clearInterval(interval);
@@ -726,6 +734,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
   
   interval = setInterval(function(){
     console.log('进入循环111111111111')
+    lag = false
     cancel()
     let arr = [];
     if(tradeMap.length> length){
@@ -734,9 +743,14 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
     };
     arr.forEach(fixMap)
     count ++;
-    closeALL();
+    if(!lag){
+      closeALL()
+    }
   }, 1500)
-  closeALL()
+  if(!lag){
+    closeALL()
+  }
+  
 })
 //行情相关
 const decodeMsg = new cppmsg.msg(receiveData['SP'])
@@ -769,7 +783,7 @@ function sendParseData(parseData){
     ];
     trade.checktrade(parseData);
   }
-}
+}``
 function parseReceiveData(data){
      
   

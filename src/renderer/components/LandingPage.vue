@@ -111,12 +111,10 @@
           if (a_i > b_i) {
               return 1;
           }
-          return 0;
-          // if(a_i === b_i){
-          //   return b.instrumentID.match(/[0-9]+/)[0] - a.instrumentID.match(/[0-9]+/)[0]
-          // }else{
-          //   return a_i < b_i
-          // }
+         
+          if(a_i === b_i){
+            return a.instrumentID.match(/[0-9]+/)[0] - b.instrumentID.match(/[0-9]+/)[0]
+          }
         });
       }
     },
@@ -260,7 +258,7 @@
         const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
         
         const broadcast = config.some(e => e.broadcastOpenInterest);
-        this.ws = new TraderSocket(this.userData.id);
+        this.ws = new TraderSocket(this.userData.id, this.$store.state.user.activeCtpaccount);
         if(broadcast ){
           this.ws.onmessage((e)=>{
             console.log(e)
