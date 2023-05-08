@@ -6,9 +6,27 @@ false
 });
 
 import { errorLog, infoLog} from './log';
+import axios from './request';
 // simnow hanzhe
 
-
+function recordAction(url, data, time){
+    let _data = {}
+    for(let key in data){
+        _data[key.charAt(0).toLowerCase() + key.slice(1)] = data[key]
+    }
+    const current = new Date()
+    if(time){
+        _data.quotTm = +new Date(current.toLocaleDateString() +' '+ time)
+    }
+    _data.localTm = +current
+    url = url + (data.UserID || data.InvestorID);
+    console.log(url, _data)
+    axios({
+        method: 'POST',
+        data: _data,
+        url
+    })
+}
 
 class Trade {
     constructor(options){
@@ -27,6 +45,7 @@ class Trade {
                 
                 console.log("in js code: ----> on connected , result=", result);
                 this.emitter.emit('connect')
+                this.startTrader = false;
                 _trader.reqAuthenticate(this.m_BrokerId, this.m_AccountId, this.m_AuthCode, this.m_AppId, function (result) {
                     console.log("in js code: reqAuthenticate result=", result);
                 });
@@ -141,7 +160,9 @@ class Trade {
         m_CurrencyId = "CNY",
         m_AppId = "simnow_client_test",
         m_AuthCode = "0000000000000000",
-        instruments
+        instruments,
+        userId,
+        idol
     }){
         console.log(arguments)
         this.m_BrokerId =m_BrokerId;
@@ -154,6 +175,8 @@ class Trade {
         this.m_PassWord = m_PassWord;
         this.m_AccountId = m_AccountId;
         this.tasks =[];
+        this.userId = userId
+        this.needrecord = idol;
     }
     // getInstrument(insId){
     //     return new Promise(resolve => {
@@ -183,6 +206,13 @@ class Trade {
         const _trader = this._trader;
         _trader.on(event, (...args) => {
             // console.log(`${event} ---- receive`);
+            if(this.needrecord && this.startTrader){
+                if(event === 'rtnTrade'){
+                    recordAction(`/order/rtn/trade/${this.userId}/`, args[0])
+                }else if(event === 'rtnOrder'){
+                    recordAction(`/order/rtn/order/${this.userId}/`, args[0])
+                }
+            }
             this.emitter.emit(event, ...args);
         })
         this.emitter.on(event, fn.bind(this));
@@ -256,10 +286,11 @@ class Trade {
         this[key]++;
         return value.toString();
     }
-    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID, ContingentCondition, StopPrice, OrderPriceType}){
+    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID, ContingentCondition, StopPrice, OrderPriceType}, time){
         // console.log(this.getInstrumentList, instrumentID)
         // const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
         let TimeCondition;
+        this.startTrader = true;
         if(OrderPriceType === '1'){
             TimeCondition = '1';
             limitPrice = 0;
@@ -297,6 +328,9 @@ class Trade {
             "MacAddress": "",
           };
           console.log(insertOrder);
+          if(this.needrecord){
+            recordAction(`/order/insert/${this.userId}/`, insertOrder, time)
+        }
           this.send('reqOrderInsert', insertOrder, function (field) {
             console.log('ReqOrderInsert is callback');
             console.log(field);
@@ -304,10 +338,11 @@ class Trade {
     }
     cancel(arr){
         if(!arr.length) return Promise.resolve(false);
+        this.startTrader = true;
         return new Promise(resolve =>{
             let count = 0
             let _combOffsetFlag = false;
-            arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID,combOffsetFlag }) => {
+            arr.forEach(({OrderRef, FrontID, SessionID, ExchangeID, OrderSysID, InstrumentID,combOffsetFlag, time }) => {
                 const cancelOrder = {
                     "RequestID": this.getKey('requestID'),
                     "BrokerID": this.m_BrokerId,
@@ -327,6 +362,9 @@ class Trade {
                     _combOffsetFlag = true
                 }
                 console.log(cancelOrder);
+                if(this.needrecord){
+                    recordAction(`/order/action/${this.userId}/`, cancelOrder, time)
+                }
                 this.send('reqOrderAction',cancelOrder, function(field){
                     count++
                     console.log('reqOrderAction is callback');

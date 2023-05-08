@@ -16,6 +16,10 @@ ipcMain.on('err-log', function(_, msg){
 ipcMain.on('info-log', function(_, msg){
     infoLog(msg)
 })
+ipcMain.on('data-log', function(_, msg){
+    console.log(msg)
+    log.info(msg)
+})
 export function errorLog(err){
     if(!needLog) return
     log.error(err)

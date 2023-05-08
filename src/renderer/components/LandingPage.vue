@@ -863,6 +863,7 @@
         // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209', 'j2301'],   iCmdID: 101});
         
         quotVOList.forEach((e) => {
+          // e.quotAddr = '127.0.0.1:18301'
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')
              ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
@@ -891,11 +892,11 @@
         const userData = this.userData;
         const active = this.$store.state.user.activeCtpaccount;
         const account = userData.futureAccountVOList.find(e => e.id === active);
-       this.currentAccount = account;
+        this.currentAccount = account;
       
         const {
           tradeAddr:ctp1_TradeAddress,
-        
+         
           brokerId: m_BrokerId,
           authCode: m_AuthCode,
           futureUserId: m_InvestorId,
@@ -914,6 +915,8 @@
             m_PassWord,
             m_AppId,
             m_AccountId,
+            userId: userData.id,
+            idol: userData.idol
           //  instruments: this.subscribelInstruments
           });
       },

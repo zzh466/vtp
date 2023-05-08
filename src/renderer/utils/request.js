@@ -89,7 +89,7 @@ export class TraderSocket{
                 timerId = setTimeout(keepAlive, timeout);
             }
             keepAlive()
-            ipcRenderer.send('info-log', `socket第${count}次链接}`)
+            ipcRenderer.send('info-log', `${this.acountId}socket第${count}次链接`)
             console.log(`客户端（client）：与服务器连接 ${count}`)
             if(this.task.length){
                 this.task.forEach(e => {
@@ -99,7 +99,7 @@ export class TraderSocket{
             }
         }
         ws.onerror=(e) =>{
-            ipcRenderer.send('err-log', `socket已断开${JSON.stringify(e)}`)
+            ipcRenderer.send('err-log', `${this.acountId}socket已断开${JSON.stringify(e)}`)
             console.log('客户端（client）：与服务器的连接已断开'+ e);
             this.ws.close();
         }
@@ -108,7 +108,7 @@ export class TraderSocket{
                 clearTimeout(timerId);
             }
             this.ready=false;
-            ipcRenderer.send('err-log', `socket已关闭`)
+            ipcRenderer.send('err-log', `${this.acountId}socket已关闭`)
             
             this.ws = null;
             console.log('客户端（client）已关闭');

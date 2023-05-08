@@ -44,26 +44,30 @@ import { stat } from 'original-fs';
                     label: '持仓时间（秒）',
                     prop: 'HoldTime',
                     render(item){
-                        let time;
-                        if(item.TradeTime && item.CloseTime){
-                            const start = item.TradeTime.split(':')
-                            const end =  item.CloseTime.split(':')
-                            let time1 = end[0] - start[0];
-                            let time2;
-                            if(end[1] > start[1]){
-                                time2 = end[1] - start[1];
-                            }else{
-                                time2 = -(start[1]-end[1]);
-                            }
-                            let time3;
-                            if(end[2] > start[2]){
-                                time3 = end[2] - start[2];
-                            }else{
-                                time3 = -(start[2]-end[2]);
-                            }
-                            time = 60*60*time1 + 60*time2 + time3;
+                        let time = [];
+                        
+                        if(item.TradeTime && item.CloseTime.length){
+                            time = item.CloseTime.map(e =>{
+                                const start = item.TradeTime.split(':')
+                                const end =  e.split(':')
+                                let time1 = end[0] - start[0];
+                                let time2;
+                                if(end[1] > start[1]){
+                                    time2 = end[1] - start[1];
+                                }else{
+                                    time2 = -(start[1]-end[1]);
+                                }
+                                let time3;
+                                if(end[2] > start[2]){
+                                    time3 = end[2] - start[2];
+                                }else{
+                                    time3 = -(start[2]-end[2]);
+                                }
+                                return 60*60*time1 + 60*time2 + time3;
+                            })
+                           
                         }
-                        return time
+                        return time.join('|')
                     }
                 },{
                     label: '方向',
@@ -280,7 +284,8 @@ import { stat } from 'original-fs';
             
             
             this.traderData = arr.filter(a=> {
-                return a.CloseTime || a.Volume !== a.CloseVolume 
+                
+                return a.CloseTime.length || a.Volume !== a.CloseVolume 
             })
              this.$emit('history-trade', this.traderData.filter(a => a.Volume  &&!a.OpenTime))
         },
@@ -331,7 +336,7 @@ import { stat } from 'original-fs';
                             e._volume = _volume - gap;
                             if(open){
                                 item.open += gap;
-                                e.oepn = open - gap
+                                e.open = open - gap
                             }
                             if(close){
                                
@@ -361,7 +366,10 @@ import { stat } from 'original-fs';
                             }
                             
                         }
-                        item.CloseTime = TradeTime;
+                        if(TradeTime){
+                            item.CloseTime.push(TradeTime);
+                        }
+                       
                      }else{
                          
                         
@@ -386,7 +394,8 @@ import { stat } from 'original-fs';
                                 openText: e.openText,
                                 parseIndex: e.parseIndex,
                                 maxProfit: 0,
-                                minProfit: 0
+                                minProfit: 0,
+                                CloseTime: []
                             }) 
                          }else {
                               item.open += open ;
@@ -419,7 +428,8 @@ import { stat } from 'original-fs';
                         openText: e.openText,
                          parseIndex: e.parseIndex,
                          maxProfit: 0,
-                        minProfit: 0
+                        minProfit: 0,
+                        CloseTime: []
                     })
                 }
             }

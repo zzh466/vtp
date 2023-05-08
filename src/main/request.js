@@ -19,6 +19,7 @@ axios.interceptors.request.use(function(config){
     if(cookie){
         config.headers.Cookie = cookie;
     }
+    // console.log(config)
     return config;
 })
 

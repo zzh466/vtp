@@ -67,14 +67,17 @@ export default class FakeTrader{
         this.TradeDateMap =TradeDateMap;
         console.log(id)
         this.connect(id)
+        this.accountId = (Math.random() * 100000000).toFixed()
+      
        
     }
     connect(id){
-        this.ws = new ws(`ws://${baseURL}/ws/${id}/9999`);
+        console.log('socket链接')
+        this.ws = new ws(`ws://${baseURL}/ws/${id}/${this.accountId}`);
         let timerId; 
         this.ws.onmessage = ({data}) => {
             // 
-            // console.log(data)
+            console.log(data)
             data =  data.split('@')
             const mess = data[0];
             if(mess === 'QuotDataHist' || mess ==='GroupQuotDataHist'){
@@ -91,7 +94,8 @@ export default class FakeTrader{
             console.log('客户端（client）：与服务器的连接已断开'+ e);
             this.ws.close();
         }
-        this.ws.onclose = ()=>{      
+        this.ws.onclose = ()=>{    
+            console.log('客户端被关闭')  
             this.ws = null;
             if (timerId) {
                 clearTimeout(timerId);
@@ -146,7 +150,7 @@ export default class FakeTrader{
         })
     }
     send(msg){
-        console.log(msg)
+        // console.log(msg, this)
         this.ws.send(msg);
     }
     getTime(instrumentID, time){

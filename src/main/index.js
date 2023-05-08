@@ -14,6 +14,7 @@ import '../renderer/store';
 import {version, winURL, specialExchangeId } from '../renderer/utils/utils'
 import console, { time } from 'console';
 import  events  from 'events';
+import { mas } from 'process';
 
 const Mainemitter = new  events.EventEmitter();
 let COLOSEALL = false;
@@ -29,7 +30,8 @@ let mainWindow;
 let trade;
 let STARTTRADE = false;
 let Maincycle;
-let LOCK = false
+let LOCK = false;
+let CFFEXLACK = false;
 function createWindow () {
   /**
    * Initial window options
@@ -129,7 +131,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
       }
     })
     childwin.setMenu(meun(checked))
-    
+  
     childwin.setAlwaysOnTop(checked, 'screen-saver')
     opedwindow.push({
       id: insId,
@@ -515,7 +517,12 @@ ipcMain.on('trade-login', (event, args) => {
     if(skip && !STARTTRADE) return;
     const win = BrowserWindow.getFocusedWindow();
     const opened = opedwindow.find(e=> e.win === win)
-    
+    console.log(msg.ErrorID)
+    if(LOCK && msg.ErrorID === 31){
+      errorLog("资金不足")
+      CFFEXLACK = true;
+      console.log('ctp错误' ,msg)
+    }
     if(win && opened){
       opened.sender.send('order-error',msg);
     }else {
@@ -555,7 +562,8 @@ ipcMain.on('trade', (event, args) => {
   STARTTRADE= true;
   if(LOCK) return;
   infoLog(JSON.stringify(args));
-  trade.trade(args);
+  const time = PriceData[args.instrumentID].UpdateTime + `.${PriceData[args.instrumentID].UpdateMillisec}`
+  trade.trade(args, time);
 })
 function findCancelorder(args, title){
   const arr = [];
@@ -577,13 +585,25 @@ function findCancelorder(args, title){
 ipcMain.on('cancel-order', (event, args) => {
   if(LOCK) return;
  const arr = findCancelorder(args, '撤单');
+ if(arr.length){
+    arr.forEach(e => {
+      e.time = PriceData[arr[0].InstrumentID].UpdateTime + `.${PriceData[arr[0].InstrumentID].UpdateMillisec}`
+    })
+     
+ }
 
  console.log('cancel',arr)
  trade.cancel(arr);
 })
 ipcMain.handle('async-cancel-order', (event, args)=>{
   if(LOCK) return;
+ 
   const arr = findCancelorder(args, '先撤后下');
+  if(arr.length){
+    arr.forEach(e => {
+      e.time = PriceData[arr[0].InstrumentID].UpdateTime + `.${PriceData[arr[0].InstrumentID].UpdateMillisec}`
+    })
+ }
   return trade.cancel(arr);
 })
 ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
@@ -666,8 +686,17 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
         if(limitPrice > priceData.UpperLimitPrice){
           limitPrice = priceData.UpperLimitPrice;
         }
+         const d = (PriceTick.toString().split('.')[1] || []).length;
+         console.log(d, '小数点')
+         if(d){
+          const times = Math.pow(10, d);
+          limitPrice =  Math.round(limitPrice * times) / times;
+         }
+          
+      
         let combOffsetFlag = ( specialExchangeId.includes(ExchangeID)  && combOffsetFlagMap[id]!=='1')? '3': '1';
-        if(!count){
+        console.log(info, 111111111111)
+        if(ExchangeID === 'CFFEX' && !CFFEXLACK){
           combOffsetFlag = '0';
           for(let key in orderMap){
          
@@ -694,7 +723,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
         console.log('结束')
         infoLog('强平结束')
         setTimeout(()=>  LOCK = false, 3000)
-       
+        CFFEXLACK = false
       
     }else{
       infoLog(`开始第${count+1}次强平`);
@@ -706,6 +735,8 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
         LOCK = false;
         clearInterval(interval);
         errorLog('强平次数过多。清手动强平!!!!')
+        event.sender.send('force-close-finish');
+        CFFEXLACK = false
       }
     }
   }
@@ -783,7 +814,7 @@ function sendParseData(parseData){
     ];
     trade.checktrade(parseData);
   }
-}``
+}
 function parseReceiveData(data){
      
   
@@ -916,21 +947,9 @@ class TcpClient{
     this.tcp_client.destroy()
   }
   changeIns(instruments){
-    const {instrumentIDs, size, iCmdID} = this.args;
    
-    instruments.filter(e => !instrumentIDs.includes(e)).forEach((InstrumentID) => {
-      this.index ++; 
-      console.log(InstrumentID,this.index)
-      this.tcp_client.write(this.msg.encodeMsg2({
-        size,
-        iCmdID,
-        Stru_ReqSubscribe: {
-          RequestID: this.index,
-          InstrumentID: InstrumentID
-        }
-      }))
-    })
     this.args.instrumentIDs = instruments;
+    this.destroy()
   }
 }
 ipcMain.on('start-receive', (event, args) =>{

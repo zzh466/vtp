@@ -173,7 +173,14 @@ export default {
            
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
+              const time = +Date.now()
               console.log(arg)
+              // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
+              // if(this.time){
+              //   ipcRenderer.send('data-log', `${id}, ${time - this.time}, ${arg.UpdateTime}`)
+              // }
+              
+              this.time = time;
               this.arg = arg;
               this.chart.render(arg)
               this.calc(arg)
