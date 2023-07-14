@@ -32,6 +32,7 @@ let STARTTRADE = false;
 let Maincycle;
 let LOCK = false;
 let CFFEXLACK = false;
+let DicatorMap = {};
 function createWindow () {
   /**
    * Initial window options
@@ -199,6 +200,10 @@ ipcMain.on('register-event',  (event, args) =>{
   win.sender.send('instrumet-data',instrumet);
   win.sender.send('total-order',orderMap);
   win.sender.send('receive-broadcast',broadcast_Data[args])
+  if(DicatorMap[args]){
+    win.sender.send('broadcast-indicator', DicatorMap[args][0], DicatorMap[args][1]);
+  }
+ 
   positionMap.concat(tradeMap).forEach(field=>{
     if(field.InstrumentID === args){
       win.sender.send('trade-order',field, true);
@@ -316,6 +321,15 @@ ipcMain.on('trade-login', (event, args) => {
         event.sender.send('receive-trade', tradeMap);
         event.sender.send('finish-loading', 'trade')
         console.log('connectcount', connectcount)
+        //防止重连时候成交 要重新更新下
+        opedwindow.forEach(({sender, id}) => {
+          sender.send('clear-trader')
+          positionMap.concat(tradeMap).forEach(field=>{
+            if(field.InstrumentID === id){
+              sender.send('trade-order',field, true);
+            }
+          })
+        })
         if(connectcount > 1 ){
           STARTTRADE = true;
         }
@@ -406,7 +420,7 @@ ipcMain.on('trade-login', (event, args) => {
       clearTimeout(ORDERTIME)
       ORDERTIME = setTimeout(() => {
         event.sender.send('receive-order', orderMap);
-       
+        opedwindow.forEach(({sender}) => sender.send('total-order',orderMap))
         
       }, 5000)
       return
@@ -513,7 +527,7 @@ ipcMain.on('trade-login', (event, args) => {
     }
   }, '');
 
-  trade.emitterOn('error', (msg, skip) =>{
+  trade.emitterOn('error', (msg = {}, skip) =>{
     if(skip && !STARTTRADE) return;
     const win = BrowserWindow.getFocusedWindow();
     const opened = opedwindow.find(e=> e.win === win)
@@ -789,7 +803,8 @@ const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
 function sendParseData(parseData){
  
      //开盘会有错误数据进入 todo判断正无穷
-  if(parseData.OpenPrice >=  Number.MAX_VALUE  ||  parseData.AskPrice1>=  Number.MAX_VALUE){
+    //  console.log(parseData, parseData.AskPrice1)
+  if(parseData.OpenPrice >=  Number.MAX_VALUE  ||  parseData.LastPrice>=  Number.MAX_VALUE){
       console.log(parseData.InstrumentID, 'data')
       return
   }
@@ -799,6 +814,7 @@ function sendParseData(parseData){
  
   const win = findedopened(InstrumentID);
   // console.log(InstrumentID)
+  // infoLog(JSON.stringify(parseData))
   if(win && win.sender){ 
     // console.log(InstrumentID, '11111111111111111111111111111111111')
     
@@ -1322,6 +1338,7 @@ ipcMain.on('broadcast-indicator', function(event, msg){
     msg = msg.split('-')
     console.log(msg)
   const instrumentID = msg[0];
+  DicatorMap[instrumentID] = [msg[1], msg[2]];
   const win = findedopened(instrumentID);
   if(win && win.sender){ 
     win.sender.send('broadcast-indicator', msg[1], msg[2]);

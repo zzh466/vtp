@@ -73,7 +73,7 @@ export default class FakeTrader{
     }
     connect(id){
         console.log('socket链接')
-        this.ws = new ws(`ws://${baseURL}/ws/${id}/${this.accountId}`);
+        this.ws = new ws(`ws://${baseURL}/ws/${id}/${this.accountId}/1`);
         let timerId; 
         this.ws.onmessage = ({data}) => {
             // 

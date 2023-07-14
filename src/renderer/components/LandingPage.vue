@@ -253,6 +253,8 @@
     created(){
       this.forceCloseCount = 0;
       this.historyTraders = [];
+      let audio = new Audio()
+      audio.src = __static+ "/trade.wav";
       this.updateConfig().then(()=>{
         
         const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
@@ -349,7 +351,10 @@
           
           this.traders = trader 
         }else{
-         
+        
+          audio.load();
+          audio.play();
+          
           this.updateTrader(trader);
           const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
        
@@ -417,7 +422,8 @@
               
               const updateHour = +UpdateTime.slice(0,2);
               const current = new Date().getHours()
-              if(Math.abs(updateHour - current) > 1)continue;
+              
+              if((updateHour >= 15 && updateHour < 20) &&  (current < 15 ||current > 17))continue;
               if(TradeDate  < TradingDay){
                 price = PreSettlementPrice - PreClosePrice
               }else {
@@ -573,6 +579,9 @@
         ipcRenderer.send('update-instrumentsData', data, true);
         this.instrumentsData = data;
         this.deviation = 0;
+        //重连时间太长导致遮罩层bug关闭不了
+        const a = document.querySelectorAll('.v-modal')
+        a.forEach(e => e.remove());
         this.$nextTick(function(){
           this.$refs.round.init();
     
@@ -863,7 +872,10 @@
         // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209', 'j2301'],   iCmdID: 101});
         
         quotVOList.forEach((e) => {
-          // e.quotAddr = '127.0.0.1:18301'
+          // if(this.userData.id === 18 ){
+            
+          //     e.quotAddr = '127.0.0.1:18301'
+          // }
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')
              ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});

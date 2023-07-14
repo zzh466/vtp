@@ -299,8 +299,7 @@ export default {
        
        
       })
-      let audio = new Audio()
-      audio.src = __static+ "/trade.wav";
+   
       ipcRenderer.on('clear-trader', ()=>{
         this.traded = [];
       })
@@ -350,10 +349,7 @@ export default {
           //有成交单进来就把先撤后下的队列给清除 防止出现撤单后成交依然挂着
           this.tasks =[]; 
           this.traded.push(field);
-          if(this.startTrade){
-            audio.load();
-            audio.play();
-          }
+          
           //  console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
           
         // })

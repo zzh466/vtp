@@ -7,7 +7,6 @@
 <script>
   import { Direction} from '../../utils/utils'
  import Vue from 'vue';
-import { stat } from 'original-fs';
   Vue.component('Tag', {
         template: `<div class='trade-tag'>
             <div class='finish' :style='{width: width + "%"}'></div>
@@ -39,7 +38,10 @@ import { stat } from 'original-fs';
                     prop: 'TradeTime'
                 },{
                     label: '平仓时间',
-                    prop: 'CloseTime'
+                    prop: 'CloseTime',
+                    render(item){
+                        return [...new Set(item.CloseTime)].join('\n')
+                    }
                 },{
                     label: '持仓时间（秒）',
                     prop: 'HoldTime',
@@ -47,7 +49,12 @@ import { stat } from 'original-fs';
                         let time = [];
                         
                         if(item.TradeTime && item.CloseTime.length){
-                            time = item.CloseTime.map(e =>{
+
+                            item.CloseTime.map(e =>{
+                                if(time[time.length-1] && time[time.length-1].time ===e){
+                                    time[time.length-1].count++
+                                    return
+                                }
                                 const start = item.TradeTime.split(':')
                                 const end =  e.split(':')
                                 let time1 = end[0] - start[0];
@@ -63,11 +70,15 @@ import { stat } from 'original-fs';
                                 }else{
                                     time3 = -(start[2]-end[2]);
                                 }
-                                return 60*60*time1 + 60*time2 + time3;
+                                time.push({
+                                    count: 1,
+                                    time: e,
+                                    range: 60*60*time1 + 60*time2 + time3
+                                }) 
                             })
                            
                         }
-                        return time.join('|')
+                        return time.map(e => `${e.range} (${e.count})`).join('\n')
                     }
                 },{
                     label: '方向',

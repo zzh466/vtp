@@ -18,6 +18,7 @@ export class TraderSocket{
         this.reconnect();
         this.task = [];
         this.ready=false;
+        this.reconnectFlag = Date.now();
     }
     onmessage(fn){
         this.onmessagefn = fn;
@@ -30,6 +31,10 @@ export class TraderSocket{
         console.log(msg)
         msg = msg.data.split('@');
         switch(msg[0]){
+            case 'heart':
+                //heartbeat
+                this.reconnectFlag = Date.now();
+                break;
             case 'BroadcastOpenInterest': 
                 if(this.onmessagefn){
                     this.onmessagefn(msg[1]);
@@ -74,15 +79,19 @@ export class TraderSocket{
     }
     reconnect(){
         if(shutdown) return;
-        
-        const ws = new WebSocket(`ws://${baseURL}/ws/${this.id}/${this.acountId}`);
+        let reconnecting = 0;
+        let now = Date.now();
+        if(count && now - this.reconnectFlag < 30 * 60 * 1000){
+            reconnecting = 1
+        }
+        const ws = new WebSocket(`ws://${baseURL}/ws/${this.id}/${this.acountId}/${reconnecting}`);
         let timerId =0;
         this.ws =ws ;
         count++
         ws.onopen =  (e) =>{
             this.ready=true;
             const keepAlive =()=>  {
-                const timeout = 15000;
+                const timeout = 15 * 1000;
                 
                 this.ws.send('im keep alive');
                 console.log('客户端（client）：keep alive')

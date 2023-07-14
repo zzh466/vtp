@@ -44,13 +44,13 @@
               <el-option :value='3' label="非线性有上限"></el-option>
               </el-select> 
           </el-form-item>
-          <el-form-item label='柱子参数类型' prop='calcBarType'  :rules='[{ required: true, message: `请选择挂柱子参数类型`}]'>
+          <!-- <el-form-item label='柱子参数类型' prop='calcBarType'  :rules='[{ required: true, message: `请选择挂柱子参数类型`}]'>
               <el-select  v-model='config.calcBarType'>
               <el-option :value='0' label="自动适应"></el-option>
               <el-option :value='1' label="以数量计算">  </el-option>
               <el-option :value='2'  label="以宽度计算"></el-option>
               </el-select> 
-          </el-form-item>
+          </el-form-item> -->
         
           <el-form-item v-if="groupId !== 12" label='是否展示他人持仓' prop='broadcastOpenInterest'  :rules='[{ required: true}]'>
             <el-radio-group  v-model='config.broadcastOpenInterest' >
@@ -86,10 +86,6 @@
   const formItem = [{
     name: '柱子滚动最小刻度',
     key: 'barToBorder',
-  },{
-    name: '柱子标尺',
-    key: 'barVolume',
-   
   },{
     name: '柱子宽度',
     key: 'barWidth',
