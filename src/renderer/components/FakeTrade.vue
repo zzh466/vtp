@@ -46,7 +46,7 @@
       <template v-if='showButton'>
       <el-button type="primary" @click='visible=true'>打开合约</el-button>
       <el-button type="primary" @click='topicvisible=true'>选择主题</el-button>
-       <!-- <el-button type="primary" @click='startVolume'>实盘数据</el-button> -->
+       <el-button type="primary" @click='startVolume'>实盘数据</el-button>
       </template>
        <div class="label">选择主题合约： </div>
       <div style="display: flex;">

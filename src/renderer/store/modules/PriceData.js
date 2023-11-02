@@ -11,10 +11,14 @@ const state = {
     'changeactive'(state, data) {
       // console.log(data, '11')
       state.activeIns  = data;
-      state.InstrumentIDs.push(data);
+      if(!state.InstrumentIDs.includes(data)){
+        state.InstrumentIDs.push(data);
 
+      }
+     
    },
    removeactive(state, data) {
+    
       if(state.activeIns  === data){
         state.activeIns = ''
       }

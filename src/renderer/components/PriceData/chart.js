@@ -156,7 +156,7 @@ class Chart {
         this.renderPrice()
     }
      initData(price){
-         if(!price) return;
+         if(!price || price > Number.MAX_SAFE_INTEGER) return;
          
         const count = this.count / 2;
         const decimal = this.decimal;
@@ -194,7 +194,10 @@ class Chart {
         } 
         
         let askIndex = this.askIndex - start;
-      
+        if(askIndex < 0) {
+            askIndex = 0;
+        } 
+        
         
         if(askIndex  > this.count || askIndex === 0) {
             askIndex = this.count ;
@@ -353,7 +356,7 @@ class Chart {
     }
     getindex(price, pure){
         // console.log(price, pure);
-        if(Math.abs(price) >= 10000000){
+        if(Math.abs(price) > Number.MAX_SAFE_INTEGER){
            return 0
         }
         if(!price) return this.start
@@ -587,6 +590,7 @@ class Chart {
         if(!arg.LastPrice){
             arg.LastPrice = arg.AskPrice1 || arg.BidPrice1
         }
+        if(arg.LastPrice > Number.MAX_SAFE_INTEGER) return
         if(this.data.length === 0) {
             console.log(arg.LastPrice)
             this.initData(arg.LastPrice);
@@ -597,8 +601,12 @@ class Chart {
         
         this.args= arg
         this.renderTime(arg.UpdateTime)
-        this.clearData(arg.BidPrice5 || arg.LastPrice, arg.BidPrice1 || arg.LastPrice);
-        this.clearData(arg.AskPrice1 || arg.LastPrice, arg.AskPrice5  || arg.LastPrice );
+        if(arg.BidPrice5  &&  arg.BidPrice5 <= Number.MAX_SAFE_INTEGER){
+            this.clearData(arg.BidPrice5 , arg.BidPrice1 );
+        }
+        if(arg.AskPrice5  &&  arg.AskPrice5 <= Number.MAX_SAFE_INTEGER){
+            this.clearData(arg.AskPrice1 , arg.AskPrice5 );
+        }
         
         for(let i=1; i<= 5; i++){
             let buyPirce = arg[`BidPrice${i}`];

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog , Notification} from 'electron'
 import  { receiveData }  from '../ctp/dataStruct';
 import { errorLog, infoLog} from './log';
 
@@ -7,7 +7,7 @@ import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
 import FakeTrade from './faketrade';
-import meun, {childwin} from  './menu';
+import meun, {childwin, subscribeIndicatorWin} from  './menu';
 import  './export';
 import  request  from './request';
 import '../renderer/store';
@@ -73,6 +73,10 @@ function createWindow () {
     if(childwin){
       childwin.close();
     }
+    if(subscribeIndicatorWin){
+      subscribeIndicatorWin.close();
+    }
+    
     clearInterval(Maincycle);
     closeALLData();
     closeALLsubs();
@@ -141,6 +145,83 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
   }
 })
 
+// let noti1, noti2, noti3
+// let notiList = []
+// ipcMain.on('instrument-notification', (event, ins, text)=>{
+//     if(noti1 && noti2 && noti3){
+//       notiList.push([event, ins, text])
+//       return
+//     }
+//     showNotification(event, ins, text)
+// })
+// function showNextNotification(){
+//   if(notiList.length){
+//     showNotification.apply(undefined, notiList.shift())
+//   }
+// }
+// function showNotification(event, ins, text){
+//   if(!noti1){
+//     console.log(111111111111111)
+//     noti1 = new Notification({
+//       title: '通知',
+//       body:  text,  
+//     })
+//     noti1.on('click', function(){
+//       console.log('click 11111111')
+//       noti1 = null;
+//       showNextNotification()
+//       event.sender.send('open-noti-ins', ins)
+//     })
+//     noti1.on('close', function(){
+//       console.log('close  noti1')
+//       noti1 = null;
+//       showNextNotification()
+//     })
+//     noti1.show();
+//     return
+//   }
+//   if(!noti2){
+//     console.log(222222222222)
+//     noti2 = new Notification({
+//       title: '通知',
+//       body:  text,  
+//     })
+//     noti2.on('click', function(){
+//       console.log('click 22222222222')
+//       noti2 = null;
+//       showNextNotification()
+//       event.sender.send('open-noti-ins', ins)
+//     })
+//     noti2.on('close', function(){
+//       console.log('close 222222222')
+//       noti2 = null;
+//       showNextNotification()
+//     })
+//     noti2.show();
+//     return
+//   }
+//   if(!noti3){
+//     console.log(33333333)
+//     noti3 = new Notification({
+//       title: '通知',
+//       body:  text,  
+//     })
+//     noti3.on('click', function(){
+//       console.log('click 33333333')
+//       noti3 = null;
+//       showNextNotification()
+//       event.sender.send('open-noti-ins', ins)
+//     })
+//     noti3.on('close', function(){
+//       console.log('close 33333333' )
+//       noti3 = null;
+//       showNextNotification()
+//     })
+//     noti3.show();
+//     return
+//   }
+  
+// }
 ipcMain.on('change-title', (event, {id, title})=>{
   const win = findedopened(id);
   win.win.setTitle(title);
@@ -169,6 +250,7 @@ let rateMap =[];
 let catchRate  = new Set()
 let InstrumetsData =[];
 const PriceData ={};
+const historyData = {};
 const broadcast_Data = {};
 let tcp_client_list = [];
 let tcp_reconnct_count = 0;
@@ -196,7 +278,7 @@ ipcMain.on('register-event',  (event, args) =>{
   //   }
   // }
   const instrumet = InstrumetsData.find(({instrumentID}) => instrumentID===args);
-  win.sender.send(`receive-${args}`, PriceData[args])
+  win.sender.send(`receive-history`, historyData[args])
   win.sender.send('instrumet-data',instrumet);
   win.sender.send('total-order',orderMap);
   win.sender.send('receive-broadcast',broadcast_Data[args])
@@ -412,6 +494,9 @@ ipcMain.on('trade-login', (event, args) => {
           console.log(field)
           win.sender.send('order-error',field.StatusMsg);
         }
+        // setTimeout(()=>
+        // win.sender.send('total-order',orderMap, field), 500
+        // )
         win.sender.send('total-order',orderMap, field);
       }
     // }
@@ -800,18 +885,32 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
 //行情相关
 const decodeMsg = new cppmsg.msg(receiveData['SP'])
 const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
+
 function sendParseData(parseData){
- 
+
      //开盘会有错误数据进入 todo判断正无穷
-    //  console.log(parseData, parseData.AskPrice1)
-  if(parseData.OpenPrice >=  Number.MAX_VALUE  ||  parseData.LastPrice>=  Number.MAX_VALUE){
+    //  console.log(parseData.InstrumentID)
+  if(parseData.OpenPrice >  Number.MAX_SAFE_INTEGER  ||  parseData.LastPrice> Number.MAX_SAFE_INTEGER){
       console.log(parseData.InstrumentID, 'data')
       return
   }
   
-  const {InstrumentID} = parseData; 
+  let {InstrumentID} = parseData; 
+                                                  
+  // if(InstrumentID.startsWith('LC')){
+  //   console.log(InstrumentID)
+  //   InstrumentID = 'lc' + InstrumentID.substring(2)
+  // }
+  if(!historyData[InstrumentID]){
+    historyData[InstrumentID] = [parseData]
+  }else{
+    historyData[InstrumentID].push(parseData)
+    if(historyData[InstrumentID].length > 20){
+      historyData[InstrumentID].shift()
+    }
+  }
   PriceData[InstrumentID] = parseData
- 
+
   const win = findedopened(InstrumentID);
   // console.log(InstrumentID)
   // infoLog(JSON.stringify(parseData))
@@ -872,8 +971,14 @@ class TcpClient{
     this.tcp_client = tcp_client;
     tcp_client.setKeepAlive(true, 5*1000);
     tcp_client.connect({host, port},()=>{
-    console.log('connected to Server');
+   
     instrumentIDs.forEach((InstrumentID) => {
+      
+      // if(InstrumentID.startsWith('lc')){
+      //   InstrumentID = 'LC' + InstrumentID.substring(2)
+      //   console.log(InstrumentID);
+      // }
+     
       this.index ++; 
       tcp_client.write(this.msg.encodeMsg2({
         size,
@@ -885,7 +990,7 @@ class TcpClient{
       }))
     })
   
-      console.log('success')
+
     })
   
    
@@ -897,7 +1002,7 @@ class TcpClient{
     let cacheArr = [];
   
     tcp_client.on('data',function(data){
-      // console.log(data)
+      // console.log(111111111111111)
       // console.log(data.length)
       cacheArr.push(data);
       const length = cacheArr.reduce((a,b)=> a + b.length, 0);
@@ -973,6 +1078,7 @@ ipcMain.on('start-receive', (event, args) =>{
   let tcp_client = new TcpClient(args);
 
   if(!Maincycle){
+    let taskcount =0
     Maincycle=setInterval(()=>{
      
      
@@ -983,10 +1089,18 @@ ipcMain.on('start-receive', (event, args) =>{
         }
         event.sender.send('receive-price', data)
       }
+      //防止网络波动导致一些请求没有返回堵塞请求队列
       if(trade && trade.tasks.length < 2){
+        taskcount = 0
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
         })
+      }else{
+        taskcount ++;
+        if(taskcount > 1.5*60 && trade.tasks.length ){
+          trade.tasks = []
+          taskcount = 0
+        }
       }
     }, 1000)
   }

@@ -134,8 +134,16 @@
                             return 0
                         }
                        let range = ClosePrice - Price;
+                       if(!ClosePrice)  range = 0
                        if(_this.price[InstrumentID] &&  _this.price[InstrumentID][Direction] && Volume > CloseVolume){
-                           range = (range * CloseVolume + (Volume -CloseVolume) *( _this.price[InstrumentID][Direction] -Price)) / Volume;
+                            let _price = _this.price[InstrumentID][Direction]
+                            if(!_price ){
+                                _price = Price
+                            }
+                            if(_price > Number.MAX_SAFE_INTEGER){
+                                _price = _this.price[InstrumentID][Direction + 2]
+                            }
+                           range = (range * CloseVolume + (Volume -CloseVolume) *( _price -Price)) / Volume;
                        }
                         if(data.Direction==='1'){
                            range = -range;

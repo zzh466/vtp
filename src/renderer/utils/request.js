@@ -11,12 +11,39 @@ export default function request(config){
 } 
 let count = 0
 let shutdown = false;
+   //因为会出现行情重复提醒情况 所以要做过滤
+const big_vix_arr = [];
+const volume_ratio_arr =[]
+const all_arr = []
+const together_arr = [];
+const expireTime = 10 *60*1000
+function checkExpire(arr, instrument){
+    if(arr.includes(instrument) || together_arr.includes(instrument)){
+        return true
+    }
+    arr.push(instrument)
+    together_arr.push(instrument)
+    setTimeout(()=>{ 
+        const index = together_arr.indexOf(instrument);
+        if(index >-1){
+            together_arr.splice(index,1)
+        }
+      }, 60 * 1000)
+    setTimeout(()=>{ 
+      const index = arr.indexOf(instrument);
+      if(index >-1){
+        arr.splice(index,1)
+      }
+    }, expireTime)
+}
 export class TraderSocket{
     constructor(id,acountId){
         this.id = id;
         this.acountId = acountId;
-        this.reconnect();
         this.task = [];
+        this.initTask = []
+        this.reconnect();
+        
         this.ready=false;
         this.reconnectFlag = Date.now();
     }
@@ -52,14 +79,37 @@ export class TraderSocket{
             case 'UnLockUser':
                 window._$store.commit('unlock-user');
                 break
-            case 'BroadcastBigMarket': 
+            case 'BroadcastBigMarketX': 
+                ipcRenderer.send('info-log', `收到大行情信息 ${msg[1]}`)
+                if(checkExpire(all_arr, msg[1]))return
+                
+
                 if(this.onActiveInstrumentFn){
                     this.onActiveInstrumentFn(msg[1])
                 }
                 break;
-            case 'BroadcastIndicator':
-                
-                ipcRenderer.send('broadcast-indicator', msg[1])
+            case 'BroadcastIndicatorX':
+                ipcRenderer.send('info-log', `收到异动信息 ${msg[1]}`)
+
+                const _Msg = msg[1].split('-')
+                const instrument = _Msg[0]
+                const type = _Msg[1]
+                let notifi;
+                switch(type){
+                    case 'big_vix':
+                        if(checkExpire(big_vix_arr, instrument))return
+                    
+                        notifi = '有异动'
+                        break
+                    case 'volume_ratio':
+                        if(checkExpire(volume_ratio_arr, instrument))return
+                        notifi = '有大盘口'
+                        break
+                }
+                if(this.onActiveInstrumentFn){
+                    this.onActiveInstrumentFn(instrument, true, notifi)
+                }
+                // ipcRenderer.send('broadcast-indicator', msg[1])
                 break;
             case "BroadcastForceSleep":
                 
@@ -89,6 +139,8 @@ export class TraderSocket{
         this.ws =ws ;
         count++
         ws.onopen =  (e) =>{
+            
+            this.task = this.initTask.concat(this.task)
             this.ready=true;
             const keepAlive =()=>  {
                 const timeout = 15 * 1000;
@@ -102,7 +154,7 @@ export class TraderSocket{
             console.log(`客户端（client）：与服务器连接 ${count}`)
             if(this.task.length){
                 this.task.forEach(e => {
-                    this.send(e)
+                    this.ws.send(e)
                 });
                 this.task = [];
             }

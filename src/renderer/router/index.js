@@ -23,7 +23,13 @@ export default new Router({
       path: '/config',
       name: 'config-page',
       component: require('@/components/Config').default
-    }, {
+    }, 
+    {
+      path: '/subscribeIndicator',
+      name: 'subscribeIndicator-page',
+      component: require('@/components/subscribeIndicator').default
+    }, 
+    {
       path: '/trade',
       name: 'trade-page',
       component: require('@/components/FakeTrade').default

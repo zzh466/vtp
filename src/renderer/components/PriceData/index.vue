@@ -59,6 +59,8 @@ import Gen from './hotkey';
 import {getWinName, getHoldCondition, setClientSize, specialExchangeId} from '../../utils/utils'
 import {Notification} from 'element-ui'
 import Controller from './controller.vue'
+
+const delayList = []
 export default {
   components: {
     Controller
@@ -166,7 +168,44 @@ export default {
          
         // })
       // })
-        
+        ipcRenderer.on('receive-history', (event, historyData) => {
+          if(historyData && historyData.length){
+            const last = historyData[historyData.length-1]
+            console.log(historyData, last)
+            this.arg = last;
+            this.chart.initData(last.LastPrice);
+            this.chart.renderPrice();
+            for(let i = 0; i < historyData.length - 1; i++){
+              
+                const priceData = historyData[i];
+               
+                
+                for(let j=1; j<= 5; j++){
+                  let buyPirce = priceData[`BidPrice${j}`];
+                  if(buyPirce){
+                      const buyIndex = this.chart.getindex(buyPirce, true)
+                      const buyData = this.chart.data[buyIndex];
+                      if(buyData){
+                          buyData.volum = priceData[`BidVolume${j}`];
+                          buyData.type = 'buy';
+                      }                                        
+                  }                 
+                  const askPirce = priceData[`AskPrice${j}`] ;
+                  if(askPirce){
+                      const askIndex = this.chart.getindex(askPirce, true)
+                      const askData = this.chart.data[askIndex];
+                      if(askData){
+                          askData.volum = priceData[`AskVolume${j}`];
+                          askData.type = 'ask';
+                      }                              
+                  }
+              }
+            }
+            console.log(this.chart.data)
+            this.chart.render(last)
+
+          }
+        })
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
             
@@ -174,16 +213,21 @@ export default {
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               const time = +Date.now()
-              console.log(arg)
-              // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
-              // if(this.time){
-              //   ipcRenderer.send('data-log', `${id}, ${time - this.time}, ${arg.UpdateTime}`)
-              // }
               
+              // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
+              // if(this.time && id.startsWith('I')){
+              //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
+              //   console.log(log)
+              //   ipcRenderer.send('data-log', log)
+              // }
+              // for(let i =1; i<=5;i++){
+              //   arg[`BidPrice${i}`] = Number.MAX_VALUE
+              //   arg[`BidVolume${i}`] = 0;
+              // }
               this.time = time;
               this.arg = arg;
               this.chart.render(arg)
-              this.calc(arg)
+              // this.calc(arg)
             }
             
           // })
@@ -236,7 +280,7 @@ export default {
       // })
       ipcRenderer.on('total-order', (_, orders, current = {}) => { 
         // p.then(()=>{
-          console.log(orders, current, 111)
+          // console.log(orders, current, 111)
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
             if(orders[key].InstrumentID === id){
@@ -269,6 +313,16 @@ export default {
             if(this.tasks.length && current.OrderStatus === '5'){
               this.tasks.forEach(e => e());
               this.tasks =[];
+            }
+            if(delayList.length && current){
+              for(let i = delayList.length-1; i>=0; i--){
+                if( delayList[i].id === current.ExchangeID + current.OrderSysID){
+                  delayList[i].fn(current.CombOffsetFlag);
+                  delayList.splice(i,1)
+                }
+               
+               
+              }
             }
           }
          
@@ -305,6 +359,7 @@ export default {
       })
       ipcRenderer.on('trade-order', (_, field, flag) => {
         let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag, TradeID, TradeType} = field;
+        console.log(field, 22222)
           const index = this.traded.findIndex(e => e.TradeType === TradeType && e.ExchangeID + e.OrderSysID + e.TradeID===ExchangeID + OrderSysID + TradeID);
           if(index > -1){
             console.log(this.traded, field, 1112356)
@@ -313,9 +368,8 @@ export default {
           if(!flag){
             
             const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-           if(item){
-             CombOffsetFlag = item.CombOffsetFlag;
-           }
+           //以为网络等原因拍单情况下 成交信息会比报单信息先返回，所以这里一单出现这种情况将成交信息放到延迟队列中等报单信息返回在做操作
+           const delay = function(CombOffsetFlag){
             if(CombOffsetFlag === '0'){
               const key = Direction  === '0' ? 'todayBuy': 'todayAsk';
               this.instrumet[key] += Volume;
@@ -324,7 +378,7 @@ export default {
               let yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
               let todayAsk = Direction  === '0' ? 'todayAsk': 'todayBuy';
               //中金先平今再平昨
-              console.log(CombOffsetFlag)
+            
               if(this.exchangeId === 'CFFEX'){
                 const temp= todayAsk;
                 todayAsk = yesterDay;
@@ -345,6 +399,17 @@ export default {
                }
             }
             this.update();
+           }
+           if(item){
+             CombOffsetFlag = item.CombOffsetFlag;
+             delay.call(this, CombOffsetFlag)
+           }else{
+
+              delayList.push({id:ExchangeID + OrderSysID, fn: delay.bind(this)})
+              ipcRenderer.send('info-log', `${field.InstrumentID} 报单比成交晚返回`);
+
+           }
+           
           }
           //有成交单进来就把先撤后下的队列给清除 防止出现撤单后成交依然挂着
           this.tasks =[]; 
@@ -587,7 +652,20 @@ export default {
       if(!traderData) return
       console.log({limitPrice, instrumentID, ...traderData})
       this.startTrade = true;
-      
+      const _combOffsetFlag = traderData.combOffsetFlag;
+      const _volumeTotalOriginal = traderData.volumeTotalOriginal;
+      if(_combOffsetFlag === '0' && this.instrumet.openvolume_limit !== '无'){
+        const openvolume_limit = parseInt(this.instrumet.openvolume_limit)
+        const open = this.instrumet.todayVolume
+        if( _volumeTotalOriginal + open >= openvolume_limit){
+          Notification({
+                message: '今日开仓超过交易所限制'
+          })
+          return 
+        }
+       
+       
+      }
       if(limitPrice < this.chart.lowerLimitPrice){
         limitPrice = this.chart.lowerLimitPrice;
       }

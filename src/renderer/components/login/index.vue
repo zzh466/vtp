@@ -15,6 +15,7 @@
         <el-button type="primary" @click="cofirm">确认</el-button>
       </el-form-item>
    </el-form>
+    <el-checkbox v-if='step === 1' v-model='datachecked'> 行情监测</el-checkbox>
       <el-checkbox v-if='step === 1' v-model='checked'> 历史行情交易</el-checkbox>
   </div>
 </template>
@@ -38,7 +39,8 @@
       return {
        
         step: this.$store.state.user.activeCtpaccount? 2: 1,
-        checked: false
+        checked: false,
+        datachecked: true
         
        
       }
@@ -55,6 +57,7 @@
     },
     methods: {
       login(data){
+          data = {...data, _datachecked:this.datachecked}
           this.$store.commit('setstate', {
               key: 'userData',
               data

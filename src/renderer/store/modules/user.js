@@ -1,4 +1,5 @@
 import request from "../../utils/request"; 
+import {subscribeIndicatorKey} from '../../utils/utils'
 const state = {
    userData: {
      
@@ -7,7 +8,8 @@ const state = {
     openvolume_limit: '',
     broadcast: true,
     config: {},
-    activeCtpaccount: 0
+    activeCtpaccount: 0,
+    vtp_server_indicator_array: []
   }
   
   const mutations = {
@@ -29,6 +31,7 @@ const state = {
       state.userData = {...userData, thrRealProfit}
     },
     'update-config'(state, instrumentConfigVOList){
+      
       localStorage.setItem(`config-${state.userData.id}`, JSON.stringify(instrumentConfigVOList));
       const {userData} = state;
       state.userData = {...userData, instrumentConfigVOList}
@@ -39,20 +42,12 @@ const state = {
    
     async 'get-config'({ commit,state }){
      
-      const [ over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit ] = await Promise.all([request({
-        url: 'property/info/vtp_client_forced_liquidation_over_price',
+      const [ over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit, vtp_server_indicator_array ] = await Promise.all(
+        [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'vtp_client_openvolume_limit', 'vtp_client_cancelvolume_limit', 'vtp_server_indicator_array'].map(e => request({
+        url: 'property/info/'+ e,
         method: 'GET'
-      }), request({
-        url: 'property/info/vtp_client_broadcast_openinterest',
-        method: 'GET'
-      }), request({
-        url: 'property/info/vtp_client_openvolume_limit',
-        method: 'GET'
-      }), request({
-        url: 'property/info/vtp_client_cancelvolume_limit',
-        method: 'GET'
-      })]);
-      
+      })));
+      // localStorage.setItem(subscribeIndicatorKey, state.userData.subscribeIndicator);
       localStorage.setItem(`config-${state.userData.id}`, JSON.stringify(state.userData.instrumentConfigVOList));
       commit('setstate', {
         key: 'over_price',
@@ -69,6 +64,10 @@ const state = {
       commit('setstate', {
         key: 'vtp_client_cancelvolume_limit',
         data: vtp_client_cancelvolume_limit.propertyValue || ''
+      })
+      commit('setstate', {
+        key: 'vtp_server_indicator_array',
+        data: vtp_server_indicator_array.propertyValue || ''
       })
      
     },

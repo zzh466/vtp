@@ -43,7 +43,7 @@
       <div style="display: flex;">
          
       
-          <Table v-for='instrument in subscribelInstruments' :key ='instrument.id'  height='300' @row-dblclick='start' :tableData='instrumentsData | changeNo(instrument.instruments)' :columns= 'instrumentsColumns'/>
+          <Table v-for='instrument in subscribelInstruments' :key ='instrument.id'  height='300' @row-dblclick='start($event, instrument.id)' :tableData='instrumentsData | changeNo(instrument.id)' :columns= 'instrumentsColumns'/>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
@@ -73,7 +73,7 @@
 <script>
   import { ipcRenderer } from 'electron';
 
-  import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId} from '../utils/utils';
+  import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId, subscribeIndicatorKey} from '../utils/utils';
   import request, {TraderSocket}  from '../utils/request';
   import Round from './LandingPage/round.vue';
    import Order from './LandingPage/Order.vue';
@@ -100,9 +100,9 @@
       }
     },
       filters: {
-      changeNo(instruments, _instruments){
+      changeNo(instruments, id){
         
-        return instruments.filter(e=> _instruments.includes(e.instrumentID)).sort((a,b) =>{
+        return instruments.filter(e=> e.id.includes(id)).sort((a,b) =>{
           const a_i = a.instrumentID.match(/[a-zA-Z]+/)[0];
           const b_i = b.instrumentID.match(/[a-zA-Z]+/)[0];
           if (a_i < b_i) {
@@ -125,6 +125,7 @@
       subscribelInstruments (){
         
         // return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
+        
          return this.userData.instrumentConfigVOList.map(e=> ({
           instruments: (e.instruments|| '').split(',').map(e => e.replace(/[\n\r]/g, '')).filter(e=>e),
           id: e.id
@@ -275,53 +276,118 @@
           }
           ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info})
         }
-        this.ws.onActiveInstrument((e) =>{
-          
-          console.log(e)
-          if(this.opened.includes(e) || this.loading.length)return;
-          this.$confirm(`合约${e}波动剧烈是否打开？（未订阅合约会以配置一打开）`, '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning',
-            closeOnClickModal: true
-          }).then(() => {
-            console.log(this.subscribelInstruments)
-            let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
-            
-            if(!config){
-             
-           
-              const configs = this.userData.instrumentConfigVOList.slice();
+        
+         
+        this.ws.initTask.push(`NotifyIndicatorBroadcast@${!!this.userData._datachecked}`)
+        
+        window.$$ws = this.ws
+        const activeArr = [];
+     
+        this.ws.onActiveInstrument((e, needfiter, notifi) =>{
+          if(needfiter && !this.subscribelInstruments.find(a => a.instruments.includes(e))){
+             return;
+          }
+          //因为会出现行情重复提醒情况 所以要做过滤
+          // if(activeArr.includes(e))return
+          // activeArr.push(e)
+          // setTimeout(()=>{ 
+          //   const index = activeArr.indexOf(e);
+          //   if(index >-1){
+          //     activeArr.splice(index,1)
+          //   }
+          // }, 10*60*1000)
+          // console.log(e)
+          var u = new SpeechSynthesisUtterance();
+          if(!notifi){
+            notifi = '来大行情了'
+          }
+          const text = `合约${e}${notifi}`
+          //部分合约TA bu等会被当成拼音 所以加个空格
+          u.text = `合约${e.replace(/^([a-zA-Z])(?=[a-zA-Z])/, '$1 ')}${notifi}`;
+          speechSynthesis.speak(u);
+          // ipcRenderer.send('instrument-notification', e, text)
+          let notification =  new Notification('通知', {body: text})
+          notification.onclose = () => {
+            console.log('close 111111111')
+            notification = null
+          }
+          ipcRenderer.send('info-log', `触发行情弹窗 ${text}`)
+          notification.onclick = () => {
+            console.log('click 111111111')
+            if(this.opened.includes(e) || this.loading.length)return;
+         
+              let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
               
-              const instruments = configs[0].instruments;
-              configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
-              this.$store.commit('update-config', configs);
-              const openvolume_limit = this.openvolume_limit
-              config = configs[0]
-              const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
-              const data = {
-                instrumentID: e,
-                id: configs[0].id,
-                yesterdayBuy: 0,
-                yesterdayAsk: 0,
-                todayBuy: 0,
-                todayAsk:0,
-                todayVolume: 0,
-                'todayCancel': 0,
-                openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
-                vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
+              if(!config){
+                
+              
+                const configs = this.userData.instrumentConfigVOList.slice();
+                
+                const instruments = configs[0].instruments;
+                configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
+                this.$store.commit('update-config', configs);
+                const openvolume_limit = this.openvolume_limit
+                config = configs[0]
+                const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+                const data = {
+                  instrumentID: e,
+                  id: [configs[0].id],
+                  yesterdayBuy: 0,
+                  yesterdayAsk: 0,
+                  todayBuy: 0,
+                  todayAsk:0,
+                  todayVolume: 0,
+                  'todayCancel': 0,
+                  openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
+                  vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
+                }
+                ipcRenderer.send('add-sub-instruments', e)
+                this.instrumentsData.push(data);
+      
               }
-              ipcRenderer.send('add-sub-instruments', e)
-              this.instrumentsData.push(data);
-
-            }
-            this.start({row:{instrumentID: e, id: config.id}})
-          })
+              this.start({row:{instrumentID: e}}, config.id)
+          }
+       
         })
         this.login()
          
       })
       this.getCtpInfo();
+      // ipcRenderer.on('open-noti-ins', (event,e)=>{
+        
+      //   if(this.opened.includes(e) || this.loading.length)return;
+         
+      //   let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
+        
+      //   if(!config){
+          
+        
+      //     const configs = this.userData.instrumentConfigVOList.slice();
+          
+      //     const instruments = configs[0].instruments;
+      //     configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
+      //     this.$store.commit('update-config', configs);
+      //     const openvolume_limit = this.openvolume_limit
+      //     config = configs[0]
+      //     const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+      //     const data = {
+      //       instrumentID: e,
+      //       id: [configs[0].id],
+      //       yesterdayBuy: 0,
+      //       yesterdayAsk: 0,
+      //       todayBuy: 0,
+      //       todayAsk:0,
+      //       todayVolume: 0,
+      //       'todayCancel': 0,
+      //       openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
+      //       vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
+      //     }
+      //     ipcRenderer.send('add-sub-instruments', e)
+      //     this.instrumentsData.push(data);
+
+      //   }
+      //   this.start({row:{instrumentID: e}}, config.id)
+      // })
       ipcRenderer.on('receive-order', (event, orders, key, needUpdate) =>{
         
         console.log(orders, key, needUpdate)
@@ -339,7 +405,7 @@
       })
        ipcRenderer.on('receive-position', (event, position) =>{
         // console.log(position.filter(a => a.InstrumentID==='IC2201'))
-        
+        // console.log(this.currentAccount,123456)
         this.positions = position;
         this.finishLoading('position')
       });
@@ -551,8 +617,20 @@
 
     
         const openvolume_limit = this.openvolume_limit
+        
         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
-        const data = this.subscribelInstruments.reduce((a,b)=> a.concat(b.instruments.map(e=>({ins:e, id: b.id}))), []).map(e=>({
+        const data = this.subscribelInstruments.reduce((a,b)=> {
+          b.instruments.forEach(e =>{
+            const repeat = a.find(c=> c.ins===e)
+            if(repeat){
+              repeat.id.push(b.id)
+            }else{
+              a.push(({ins:e, id: [b.id]}))
+            }
+          })
+          return a;
+          }
+          , []).map(e=>({
           instrumentID: e.ins,
           id: e.id,
           yesterdayBuy: 0,
@@ -561,7 +639,7 @@
           todayAsk:0,
           todayVolume: 0,
           'todayCancel': 0,
-          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
+          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e.ins) || {limit: "无"}).limit,
           vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.ins.includes(instrumentID)) || {limit: "无"}).limit
         }))
         
@@ -717,21 +795,22 @@
         title = this.userData.userAccount + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
-      start({row}) {
+      start({row},id) {
+        
         if(this.locked){
           this.$alert('当前账号已锁定', '锁定' )
           return
         }
         
-        const {instrumentID, id} = row;
-        if(this.userData.subscribeIndicator && this.userData.subscribeIndicator.includes(instrumentID)){
-          this.ws.ws.send(`NotifyIndicatorInstrument@${instrumentID}`)
-        }
+        const {instrumentID} = row;
+        // if(this.userData.subscribeIndicator && this.userData.subscribeIndicator.includes(instrumentID)){
+        //   this.ws.ws.send(`NotifyIndicatorInstrument@${instrumentID}`)
+        // }
        
         const {width, height} = getClientSize()
         const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
         if(!info){
-           this.$alert('改合约尚未订阅行情，请联系管理员订阅！');
+           this.$alert('合约尚未订阅行情，请联系管理员订阅！');
            return;
         };
         const {PriceTick, ExchangeID} = info;
