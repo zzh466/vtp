@@ -1,6 +1,6 @@
 
 import { ipcRenderer } from 'electron';
-import { baseURL } from './utils';
+import { baseURL, speak } from './utils';
 // const baseURL = '192.168.0.18:8082/vtpmanagerapi'
 export default function request(config){
     
@@ -80,16 +80,16 @@ export class TraderSocket{
                 window._$store.commit('unlock-user');
                 break
             case 'BroadcastBigMarketX': 
-                ipcRenderer.send('info-log', `收到大行情信息 ${msg[1]}`)
+               
                 if(checkExpire(all_arr, msg[1]))return
                 
-
+                ipcRenderer.send('info-log', `收到大行情信息 ${msg[1]}`)
                 if(this.onActiveInstrumentFn){
                     this.onActiveInstrumentFn(msg[1])
                 }
                 break;
             case 'BroadcastIndicatorX':
-                ipcRenderer.send('info-log', `收到异动信息 ${msg[1]}`)
+               
 
                 const _Msg = msg[1].split('-')
                 const instrument = _Msg[0]
@@ -106,6 +106,7 @@ export class TraderSocket{
                         notifi = '有大盘口'
                         break
                 }
+                ipcRenderer.send('info-log', `收到异动信息 ${msg[1]}`)
                 if(this.onActiveInstrumentFn){
                     this.onActiveInstrumentFn(instrument, true, notifi)
                 }
@@ -117,6 +118,7 @@ export class TraderSocket{
                     this.closeTrade(msg[1])
                 }
                 break;
+                
             case "FutureAccountBusy":
                 ipcRenderer.send('info-log','stock发送指令关闭客户端')
                 this.shutdownClient();
@@ -124,6 +126,9 @@ export class TraderSocket{
             case "ShutDownClient":
                 ipcRenderer.send('info-log','stock发送指令关闭客户端')
                 this.shutdownClient();
+                break;
+            case "MarketCloseImmediately":
+                speak('还有一分钟就收盘啦，请注意平仓')
             
         }
     }

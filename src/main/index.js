@@ -9,6 +9,7 @@ import Trade from './trade';
 import FakeTrade from './faketrade';
 import meun, {childwin, subscribeIndicatorWin} from  './menu';
 import  './export';
+import  './config';
 import  request  from './request';
 import '../renderer/store';
 import {version, winURL, specialExchangeId } from '../renderer/utils/utils'
@@ -99,7 +100,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = ''}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = '', accountStatus}) => {
   console.log('open-window')
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
@@ -119,7 +120,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}&showController=${showController}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}&showController=${showController}&accountStatus=${accountStatus}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -672,7 +673,7 @@ function findCancelorder(args, title){
  for(let key in orderMap){
    const item = orderMap[key];
    if(needCancel(item)){
-     console.log(item, '123133')
+    //  console.log(item, '123133')
      arr.push(item)
    }
  }
@@ -717,10 +718,29 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
 
   }
   let interval = null;
-  let lag = false
+  let lag = false;
+  let lowAndUPerOrderMap ={}; 
   cancel()
   function cancel(){
-    const arr = findCancelorder('', '撤单');
+    lowAndUPerOrderMap = {}
+    const arr = findCancelorder('', '撤单')
+    .filter(e => {
+      const {LimitPrice, InstrumentID, Direction, VolumeTotal, VolumeTraded} = e;
+      const priceData = PriceData[InstrumentID] || {};
+      const {LowerLimitPrice, UpperLimitPrice} = priceData;
+      if(LimitPrice >LowerLimitPrice && LimitPrice < UpperLimitPrice){
+        return true
+      }
+      const volume = VolumeTotal - VolumeTraded;
+      if(!lowAndUPerOrderMap[InstrumentID]){
+        lowAndUPerOrderMap[InstrumentID] = [0,0]
+      }
+     
+      lowAndUPerOrderMap[InstrumentID][Direction] += volume
+      infoLog(`强平涨跌停挂单 ${JSON.stringify(e)}`)
+      return false
+    });
+    
     if(arr.length){
       lag = true
       Mainemitter.once('closeall', closeALL)
@@ -731,6 +751,15 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
     let tradering = []
    
     for(let key in map){
+        if(lowAndUPerOrderMap[key]){
+          const cancelarr = lowAndUPerOrderMap[key]
+          if(cancelarr[0] && map[key].ask.length ){
+            map[key].ask.splice(0, cancelarr[0])
+          }
+          if(cancelarr[1] && map[key].buy.length ){
+            map[key].buy.splice(0, cancelarr[1])
+          }
+        }
         let direction = '1',
         arr = map[key].buy;
         if(map[key].ask.length){
@@ -753,7 +782,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
               })
             }
             return a
-          }, _arr);
+          },  _arr);
         
           tradering= tradering.concat(_arr);
         }
@@ -834,6 +863,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
         LOCK = false;
         clearInterval(interval);
         errorLog('强平次数过多。清手动强平!!!!')
+        event.sender.send('error-msg', {msg: '强平次数过多。请联系管理员手动强平!!!!'})
         event.sender.send('force-close-finish');
         CFFEXLACK = false
       }

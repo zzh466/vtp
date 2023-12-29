@@ -188,16 +188,23 @@ class Chart {
         const start = this.start;
         ctx.clearRect(_x-2 , y - 5 ,this.width - 30 - _x, this.height);
         const stepwidth = this.stepwidth;
+       
         let buyIndex = this.buyIndex - start;
+       
         if(buyIndex < 0) {
             buyIndex = 0;
         } 
-        
+        if( this.buyIndex === this.lowerLimitindex){
+            buyIndex = buyIndex -1
+        }
         let askIndex = this.askIndex - start;
         if(askIndex < 0) {
             askIndex = 0;
         } 
         
+        if( this.askIndex === this.UpperLimitindex){
+            askIndex = askIndex +1
+        }
         
         if(askIndex  > this.count || askIndex === 0) {
             askIndex = this.count ;
@@ -357,7 +364,7 @@ class Chart {
     getindex(price, pure){
         // console.log(price, pure);
         if(Math.abs(price) > Number.MAX_SAFE_INTEGER){
-           return 0
+           return undefined
         }
         if(!price) return this.start
         let index = Math.round((price - this.data[0].price) / this.step);
@@ -497,9 +504,11 @@ class Chart {
             let cindex;
             if(direction === '0'){
                 cindex = this.buyIndex;
+                
             }else{
                 cindex = this.askIndex;
             }
+
             cindex = cindex - start;
             let begin, end, _direction;
             if(index <= cindex){
@@ -560,13 +569,10 @@ class Chart {
         this.renderLimited()
     }
     renderLimited(){
-        const low = this.lowerLimitPrice ;
-        const high =this.UpperLimitPrice ;
-        const lowindex = this.getindex(low, true);
-        const highindex = this.getindex(high, true);
-      
-        this.lowerLimitindex = lowindex;
-        this.UpperLimitindex = highindex;
+    
+        const lowindex = this.lowerLimitindex
+        const highindex =  this.UpperLimitindex;
+   
         const offset= X + 49.5;
         const {start, ctx, count, stepwidth, height} = this;
         ctx.save()
@@ -610,7 +616,7 @@ class Chart {
         
         for(let i=1; i<= 5; i++){
             let buyPirce = arg[`BidPrice${i}`];
-            let buyIndex = this.start;
+            let buyIndex ;
             const flag = i > 1;
             if(buyPirce){
                 buyIndex = this.getindex(buyPirce, flag)
@@ -623,7 +629,7 @@ class Chart {
           
             
             const askPirce = arg[`AskPrice${i}`] ;
-            let askIndex = this.start + this.count;
+            let askIndex;
             if(askPirce){
                 askIndex = this.getindex(askPirce, flag)
                 const askData = this.data[askIndex];
@@ -632,8 +638,14 @@ class Chart {
                     askData.type = 'ask';
                 }                              
             }
-           
+            
             if(i === 1) {
+                if(buyIndex === undefined){
+                    buyIndex = askIndex 
+                }
+                if(askIndex === undefined){
+                    askIndex = buyIndex 
+                }
                 this.buyIndex = buyIndex;
                 this.askIndex = askIndex;
                 
@@ -641,19 +653,23 @@ class Chart {
         }
         this.lowerLimitPrice = arg.LowerLimitPrice;
         this.UpperLimitPrice = arg.UpperLimitPrice;
+        this.lowerLimitindex = this.getindex(arg.LowerLimitPrice, true);
+        this.UpperLimitindex = this.getindex(arg.UpperLimitPrice, true);
         if(!arg.BidPrice1){
           
-            this.buyIndex = this.getindex(arg.LowerLimitPrice)
+            this.buyIndex = this.lowerLimitindex
         }
         if(!arg.AskPrice1){
            
-            this.askIndex = this.getindex(arg.UpperLimitPrice)
+            this.askIndex = this.UpperLimitindex
         }
         this.LowestPrice = arg.LowestPrice;
         this.HighestPrice = arg.HighestPrice;
+       
         this.renderBakcground();
-        this.renderVolume();
         this.renderHighandLow()
+        this.renderVolume();
+       
       
         
         this.renderCurrentPirce(arg.LastPrice, arg.Volume);

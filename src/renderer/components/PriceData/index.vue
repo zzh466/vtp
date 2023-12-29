@@ -117,9 +117,9 @@ export default {
       const chartDom = document.getElementById('can');
       this.instrumet = {};
      this.tasks = [];
-     const {id, tick, exchangeId, showController} = this.$route.query;
-
-     
+     const {id, tick, exchangeId, showController,accountStatus} = this.$route.query;
+    
+     this.accountStatus =accountStatus;
       const config = this.setConfig()
       ipcRenderer.send('register-event', id);
      this.showController = !!showController;
@@ -209,7 +209,7 @@ export default {
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
             
-           
+            console.log(arg)
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               const time = +Date.now()
@@ -654,7 +654,8 @@ export default {
       this.startTrade = true;
       const _combOffsetFlag = traderData.combOffsetFlag;
       const _volumeTotalOriginal = traderData.volumeTotalOriginal;
-      if(_combOffsetFlag === '0' && this.instrumet.openvolume_limit !== '无'){
+      
+      if((this.accountStatus === '1' || this.accountStatus === '10') && _combOffsetFlag === '0' && this.instrumet.openvolume_limit !== '无'){
         const openvolume_limit = parseInt(this.instrumet.openvolume_limit)
         const open = this.instrumet.todayVolume
         if( _volumeTotalOriginal + open >= openvolume_limit){

@@ -286,8 +286,7 @@
         const {index} = tab;
         this.config = this.configs[index];
         this.hotKey = this.configs[index].hotKey;
-      },
-      
+      }
     }
   }
 </script>

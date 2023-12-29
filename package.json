@@ -1,6 +1,6 @@
 {
   "name": "vtp",
-  "version": "1.8.1",
+  "version": "1.8.4",
   "author": "",
   "description": "trade",
   "license": null,
@@ -22,7 +22,7 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "vtp 3 in 1",
+    "productName": "vtp2023",
     "appId": "xinqi",
     "nsis": {
       "allowToChangeInstallationDirectory": true,
@@ -78,7 +78,8 @@
     "xlsx": "^0.17.4",
     "xe-utils": "^3.5.4",
     "vxe-table": "^3.5.1",
-    "silly-datetime": "^0.1.2"
+    "silly-datetime": "^0.1.2",
+    "electron-store": "8.1.0"
   },
   "devDependencies": {
     "ajv": "^6.5.0",

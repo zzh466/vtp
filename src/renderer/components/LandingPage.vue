@@ -6,7 +6,7 @@
      
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
       <el-descriptions-item label="当前账户">{{currentAccount.futureUserName}}</el-descriptions-item>
-      <el-descriptions-item label="期货账户状态"><span :style="{color:accounStatus?'green': 'red'}">{{accounStatus?'在线': '离线'}}</span></el-descriptions-item>
+      <el-descriptions-item label="期货账户状态"><span :style="{color:accountStatus?'green': 'red'}">{{accountStatus?'在线': '离线'}}</span></el-descriptions-item>
       <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="当前账户盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="隔节误差">{{deviation.toFixed(2)}}</el-descriptions-item>
@@ -39,6 +39,7 @@
      
     </main>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
+        <p >账户昨仓合约：{{positionsList }}</p>
        <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button></div>
       <div style="display: flex;">
          
@@ -73,7 +74,7 @@
 <script>
   import { ipcRenderer } from 'electron';
 
-  import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId, subscribeIndicatorKey} from '../utils/utils';
+  import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId, subscribeIndicatorKey, speak} from '../utils/utils';
   import request, {TraderSocket}  from '../utils/request';
   import Round from './LandingPage/round.vue';
    import Order from './LandingPage/Order.vue';
@@ -159,6 +160,14 @@
         set(){
           this.$store.commit('lock-user');
         }
+      },
+      positionsList(){
+        return this.positions.reduce((a,b) => {
+          if(!a.includes(b.InstrumentID)){
+            a.push(b.InstrumentID)
+          }
+          return a
+        }, []).join(',')
       }
    
     },
@@ -248,7 +257,7 @@
         totalProfit: 0,
         deviation: 0,
          loginVisible: false,
-         accounStatus: false
+         accountStatus: false
       }
     },
     created(){
@@ -297,14 +306,14 @@
           //   }
           // }, 10*60*1000)
           // console.log(e)
-          var u = new SpeechSynthesisUtterance();
+         
           if(!notifi){
             notifi = '来大行情了'
           }
           const text = `合约${e}${notifi}`
           //部分合约TA bu等会被当成拼音 所以加个空格
-          u.text = `合约${e.replace(/^([a-zA-Z])(?=[a-zA-Z])/, '$1 ')}${notifi}`;
-          speechSynthesis.speak(u);
+          speak(`合约${e.replace(/^([a-zA-Z])(?=[a-zA-Z])/, '$1 ')}${notifi}`);
+          
           // ipcRenderer.send('instrument-notification', e, text)
           let notification =  new Notification('通知', {body: text})
           notification.onclose = () => {
@@ -314,7 +323,7 @@
           ipcRenderer.send('info-log', `触发行情弹窗 ${text}`)
           notification.onclick = () => {
             console.log('click 111111111')
-            if(this.opened.includes(e) || this.loading.length)return;
+            if( this.loading.length)return;
          
               let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
               
@@ -338,8 +347,8 @@
                   todayAsk:0,
                   todayVolume: 0,
                   'todayCancel': 0,
-                  openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
-                  vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
+                  openvolume_limit: this.findLimit(openvolume_limit, e.ins),
+                  vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins)
                 }
                 ipcRenderer.send('add-sub-instruments', e)
                 this.instrumentsData.push(data);
@@ -401,7 +410,7 @@
         
       });
       ipcRenderer.on('account-connect',  (event, status) =>{
-        this.accounStatus = status;
+        this.accountStatus = status;
       })
        ipcRenderer.on('receive-position', (event, position) =>{
         // console.log(position.filter(a => a.InstrumentID==='IC2201'))
@@ -484,12 +493,15 @@
               
               let price
               
-              const { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay, UpdateTime} = priceData[4];
+              let { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay, UpdateTime} = priceData[4];
               
-              const updateHour = +UpdateTime.slice(0,2);
+           
               const current = new Date().getHours()
-              
-              if((updateHour >= 15 && updateHour < 20) &&  (current < 15 ||current > 17))continue;
+              if(UpdateTime.length < 8){
+                UpdateTime='0' + UpdateTime
+              }
+              // if(((updateHour >= 15 && updateHour < 20) || (updateHour < 9 && updateHour > 3)) &&  (current < 15 ||current > 17))continue;
+              if(((current > 18||current < 3) && UpdateTime < '20:59:00') || (current >3 && UpdateTime < '08:59:00'))continue;
               if(TradeDate  < TradingDay){
                 price = PreSettlementPrice - PreClosePrice
               }else {
@@ -639,8 +651,8 @@
           todayAsk:0,
           todayVolume: 0,
           'todayCancel': 0,
-          openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e.ins) || {limit: "无"}).limit,
-          vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.ins.includes(instrumentID)) || {limit: "无"}).limit
+          openvolume_limit: this.findLimit(openvolume_limit, e.ins),
+          vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins)
         }))
         
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
@@ -795,7 +807,7 @@
         title = this.userData.userAccount + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
-      start({row},id) {
+      async start({row},id) {
         
         if(this.locked){
           this.$alert('当前账号已锁定', '锁定' )
@@ -807,7 +819,7 @@
         //   this.ws.ws.send(`NotifyIndicatorInstrument@${instrumentID}`)
         // }
        
-        const {width, height} = getClientSize()
+        const {width, height} = await getClientSize()
         const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
         if(!info){
            this.$alert('合约尚未订阅行情，请联系管理员订阅！');
@@ -821,7 +833,8 @@
         }
         
         const accountIndex = this.currentAccount.futureUserName;
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex});
+        const accountStatus = this.currentAccount.accountStatus
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex, accountStatus});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
@@ -969,6 +982,18 @@
          ipcRenderer.send('confirm-settlement');
         
       },
+      findLimit(limits, instrumentId){
+        let limit = limits.find(({instrumentID}) => instrumentID === instrumentId)
+        if(limit){
+          return limit.limit
+        }
+        instrumentId = instrumentId.replace(/\d+/, '')
+        limit = limits.find(({instrumentID}) => instrumentID === instrumentId)
+        if(limit){
+          return limit.limit
+        }
+        return '无'
+      },
       reset(){
       
         this.loading.push('order');
@@ -983,6 +1008,7 @@
         const userData = this.userData;
         const active = this.$store.state.user.activeCtpaccount;
         const account = userData.futureAccountVOList.find(e => e.id === active);
+        
         this.currentAccount = account;
       
         const {
