@@ -44,7 +44,7 @@ export default function generate(hotKey){
                     break;
                 case '1':
                      //保证先撤单
-                   
+                    vue.checkCancel()
                     ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id}).then((cancel)=>{
                         
                         if(cancel){
@@ -76,12 +76,15 @@ export default function generate(hotKey){
                      vue.changeConfig('type', type);
                      break;
                 case '2':
+                    vue.checkCancel()
                     ipcRenderer.send('cancel-order', {key: 'ExchangeID' , value: vue.exchangeId});
                      break;
                 case '7':
+                    vue.checkCancel()
                     ipcRenderer.send('cancel-order');
                 break;
                 case '8':
+                    vue.checkCancel()
                     ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: vue.$route.query.id});
                     break
                 case '12':

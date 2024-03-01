@@ -32,14 +32,76 @@ class Trade {
     constructor(options){
       
         this.init(options)
-        const _trader = ctp.createTrader();
-        this._trader = _trader;
+      
        
         // this.getInstrumentList = instruments.map(id => ({id}));
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
-      
+        this.login()
+     
+        this.next();
+        this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
+            console.log(isLast,field, '3333333333333333333333333' );
+            if(!field.ConfirmTime)    
+                this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
+                    this.emitter.emit('settlement-info', _,info)
+                });
+            
+        });
+    }
+    init({
+        ctp1_TradeAddress = "tcp://180.168.146.187:10201",
+        m_BrokerId = "9999",
+        m_UserId = "136380",
+        m_InvestorId = "136380",
+        m_PassWord = "jpf000jpf",
+        m_TradingDay = "20210805",
+        m_AccountId = "136380",
+        m_CurrencyId = "CNY",
+        m_AppId = "simnow_client_test",
+        m_AuthCode = "0000000000000000",
+        instruments,
+        userId,
+        idol
+    }){
+        console.log(arguments)
+        this.m_BrokerId =m_BrokerId;
+        this.m_UserId = m_UserId;
+        this.m_InvestorId = m_InvestorId;
+        this.instruments = instruments;
+        this.m_AppId = m_AppId;
+        this.m_AuthCode= m_AuthCode;
+        this.ctp1_TradeAddress = ctp1_TradeAddress;
+        this.m_PassWord = m_PassWord;
+        this.m_AccountId = m_AccountId;
+        this.tasks =[];
+        this.userId = userId
+        this.needrecord = idol;
+        const _trader = ctp.createTrader();
+        this._trader = _trader;
+    }
+    // getInstrument(insId){
+    //     return new Promise(resolve => {
+    //         const item = this.getInstrumentList.find(({id}) => id===insId);
+    //         if( item.field.PriceTick) {
+    //             item.resolve = null;
+    //             const {PriceTick, ExchangeID} = item.field
+    //             resolve({PriceTick, ExchangeID});
+    //             return;
+    //         }else {
+    //             item.resolve = resolve
+    //         }
+    //         this.chainSend('reqQryInstrument', insId, function (field) {
+    //             // console.log('reqQryInstrument is callback');
+    //             // console.log(field);
+    //         })
+            
+           
+    //     })
+    // }
+    login(){
+        const _trader = this._trader;
         this.login = new Promise((resolve, reject) => {
             _trader.on("connect",  (result)=> {
                 
@@ -139,66 +201,9 @@ class Trade {
                 }
               })     
         })
-        this.next();
-        this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
-            console.log(field, '3333333333333333333333333' );
-            if(!field.ConfirmTime)    
-                this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
-                    this.emitter.emit('settlement-info', _,info)
-                });
-            
-        });
     }
-    init({
-        ctp1_TradeAddress = "tcp://180.168.146.187:10201",
-        m_BrokerId = "9999",
-        m_UserId = "136380",
-        m_InvestorId = "136380",
-        m_PassWord = "jpf000jpf",
-        m_TradingDay = "20210805",
-        m_AccountId = "136380",
-        m_CurrencyId = "CNY",
-        m_AppId = "simnow_client_test",
-        m_AuthCode = "0000000000000000",
-        instruments,
-        userId,
-        idol
-    }){
-        console.log(arguments)
-        this.m_BrokerId =m_BrokerId;
-        this.m_UserId = m_UserId;
-        this.m_InvestorId = m_InvestorId;
-        this.instruments = instruments;
-        this.m_AppId = m_AppId;
-        this.m_AuthCode= m_AuthCode;
-        this.ctp1_TradeAddress = ctp1_TradeAddress;
-        this.m_PassWord = m_PassWord;
-        this.m_AccountId = m_AccountId;
-        this.tasks =[];
-        this.userId = userId
-        this.needrecord = idol;
-    }
-    // getInstrument(insId){
-    //     return new Promise(resolve => {
-    //         const item = this.getInstrumentList.find(({id}) => id===insId);
-    //         if( item.field.PriceTick) {
-    //             item.resolve = null;
-    //             const {PriceTick, ExchangeID} = item.field
-    //             resolve({PriceTick, ExchangeID});
-    //             return;
-    //         }else {
-    //             item.resolve = resolve
-    //         }
-    //         this.chainSend('reqQryInstrument', insId, function (field) {
-    //             // console.log('reqQryInstrument is callback');
-    //             // console.log(field);
-    //         })
-            
-           
-    //     })
-    // }
     send(event, ...args){
-        console.log(event,...args)
+        console.log(event,...args, 'send')
         this._trader[event](...args)
     }
     on(event, fn){
@@ -222,13 +227,13 @@ class Trade {
         this.login.then(()=>{
            
             const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
-            // console.log(`${event} ---- register`, tasks);
+            console.log(`${event} ---- register`, ...extend);
             _trader.on(event, (requestId, isLast, field, info) =>{
                 if(isLast){
                     this.next()
                 }
                 
-                // console.log(`${event} ---- receive`);
+                // console.log(`${event} ---- receive`, field);
                 fn.call(this,isLast,field)
             })
          
@@ -250,10 +255,10 @@ class Trade {
     }
     next(){
         const { tasks} = this;
-    
+       
         var last = tasks.shift();
         const timeout = 1000
-       
+      
        if(tasks.length){
             let task = tasks[0];
             //ctp一秒只能发一个请求
@@ -268,11 +273,14 @@ class Trade {
        }
     }
     chainSend(event, ...args){
+        console.log('chainsend', event, this.haslogin)
         if(!this.haslogin)return;
         const { tasks} = this;
+        console.log('task', tasks.length)
         const task =()=>{
             this.send(event,  ...args)
         }
+        // task()
         if(!tasks.length){
             task()
         }
@@ -286,10 +294,10 @@ class Trade {
         this[key]++;
         return value.toString();
     }
-    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID, ContingentCondition, StopPrice, OrderPriceType}, time){
+    trade({instrumentID, direction, limitPrice, volumeTotalOriginal, combOffsetFlag, ExchangeID, ContingentCondition='1', StopPrice = 0, OrderPriceType ='2'}, time){
         // console.log(this.getInstrumentList, instrumentID)
         // const exchangeID =  this.getInstrumentList.find(({id}) => id===instrumentID).field.ExchangeID;
-        let TimeCondition;
+        let TimeCondition = '3';
         this.startTrader = true;
         if(OrderPriceType === '1'){
             TimeCondition = '1';
@@ -305,16 +313,16 @@ class Trade {
             OrderPriceType,
             "Direction": direction,
             "CombOffsetFlag": combOffsetFlag,
-            //"CombHedgeFlag": "",
+            "CombHedgeFlag": "1",
             "LimitPrice": limitPrice,
             "VolumeTotalOriginal": volumeTotalOriginal,
             TimeCondition,
             //"GTDDate": "",
-            //"VolumeCondition": "",
+            "VolumeCondition": "1",
             //"MinVolume": "",
             ContingentCondition,
             StopPrice,
-            //"ForceCloseReason": "",
+            "ForceCloseReason": "0",
             //"IsAutoSuspend": "",
             //"BusinessUnit": "",
             "RequestID": this.getKey('requestID'),

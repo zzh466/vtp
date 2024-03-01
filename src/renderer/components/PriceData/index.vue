@@ -61,6 +61,7 @@ import {Notification} from 'element-ui'
 import Controller from './controller.vue'
 
 const delayList = []
+let timestamp = 0
 export default {
   components: {
     Controller
@@ -99,7 +100,7 @@ export default {
       }
       this.chart.traded = results;
       this.chart.renderTradeOrder();
-      console.log(results)
+      // console.log(results)
       return results;
 
     },
@@ -201,7 +202,7 @@ export default {
                   }
               }
             }
-            console.log(this.chart.data)
+            // console.log(this.chart.data)
             this.chart.render(last)
 
           }
@@ -209,7 +210,7 @@ export default {
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
             
-            console.log(arg)
+            // console.log(arg)
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               const time = +Date.now()
@@ -233,7 +234,7 @@ export default {
           // })
         })
         ipcRenderer.on(`update-config`, (event, arg) => {
-          const config = this.setConfig();
+          const config = this.setConfig(true);
           const {
               barToBorder,
               
@@ -281,6 +282,7 @@ export default {
       ipcRenderer.on('total-order', (_, orders, current = {}) => { 
         // p.then(()=>{
           // console.log(orders, current, 111)
+          console.log('延迟', +Date.now() - timestamp)
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
             if(orders[key].InstrumentID === id){
@@ -358,8 +360,9 @@ export default {
         this.traded = [];
       })
       ipcRenderer.on('trade-order', (_, field, flag) => {
+       
         let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag, TradeID, TradeType} = field;
-        console.log(field, 22222)
+        // console.log(field, 22222)
           const index = this.traded.findIndex(e => e.TradeType === TradeType && e.ExchangeID + e.OrderSysID + e.TradeID===ExchangeID + OrderSysID + TradeID);
           if(index > -1){
             console.log(this.traded, field, 1112356)
@@ -550,7 +553,7 @@ export default {
     }
   },
   methods: {
-    setConfig(){
+    setConfig(update){
       const {account,configId} = this.$route.query;
        const configs =JSON.parse(localStorage.getItem(`config-${account}`));
        
@@ -560,9 +563,16 @@ export default {
       if(!config) return;
       console.log(config);
       const {sysCloseTStrategy='0', sysCloseType='0', sysOrderVolume=1} = config;
-      this.config.type = sysCloseTStrategy.toString();
-      this.config.closeType=sysCloseType.toString();
-      this.config.volume = sysOrderVolume ;
+      if(update){
+        config.sysCloseTStrategy = this.config.type
+        config.sysCloseType =  this.config.closeType
+        config.sysOrderVolume = this.config.volume
+      }else{
+        this.config.type = sysCloseTStrategy.toString();
+        this.config.closeType=sysCloseType.toString();
+        this.config.volume = sysOrderVolume ;
+      }
+      
       this.broadcastOpenInterest = config.broadcastOpenInterest;
       this.stepwidth = config.barWidth ;
     
@@ -628,6 +638,19 @@ export default {
       this.putOrder(limitPrice, direction,volumeTotalOriginal)
 
     },
+    checkCancel(){
+      if((this.accountStatus === '1' || this.accountStatus === '10')  && this.instrumet.vtp_client_cancelvolume_limit !== '无'){
+        const todayCancel = this.instrumet.todayCancel + 1
+        if(todayCancel >= this.instrumet.vtp_client_cancelvolume_limit){
+          Notification({
+                message: '撤单超过交易所限制！！请注意控住手数'
+          })
+        }
+      }else{
+        timestamp = +Date.now()
+      }
+      
+    },
     putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume, configs){
        const instrumentID = this.$route.query.id;
       let combOffsetFlag = '0'
@@ -654,10 +677,14 @@ export default {
       this.startTrade = true;
       const _combOffsetFlag = traderData.combOffsetFlag;
       const _volumeTotalOriginal = traderData.volumeTotalOriginal;
+      console.log(this.accountStatus, _combOffsetFlag, this.instrumet.openvolume_limit)
       
       if((this.accountStatus === '1' || this.accountStatus === '10') && _combOffsetFlag === '0' && this.instrumet.openvolume_limit !== '无'){
+        
         const openvolume_limit = parseInt(this.instrumet.openvolume_limit)
         const open = this.instrumet.todayVolume
+        console.log(_volumeTotalOriginal + open, openvolume_limit)
+        
         if( _volumeTotalOriginal + open >= openvolume_limit){
           Notification({
                 message: '今日开仓超过交易所限制'
@@ -673,6 +700,7 @@ export default {
       if(limitPrice > this.chart.UpperLimitPrice){
         limitPrice = this.chart.UpperLimitPrice; 
       }
+      timestamp = +Date.now()
       if(Array.isArray(traderData.volumeTotalOriginal)){
         if(traderData.volumeTotalOriginal[0]){
           ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId, ...configs})

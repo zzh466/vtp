@@ -6,6 +6,7 @@ import net from 'net';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
+import OnlineTrade from './onlineTrade';
 import FakeTrade from './faketrade';
 import meun, {childwin, subscribeIndicatorWin} from  './menu';
 import  './export';
@@ -359,7 +360,12 @@ ipcMain.on('trade-login', (event, args) => {
     return
 
   }
-  trade = new Trade(args);
+  if(args.puppet){
+    trade = new OnlineTrade(args);
+  }else{
+    trade = new Trade(args);
+  }
+ 
 
   function getorderKey(obj){
     const {FrontID, SessionID,  OrderRef} = obj;
@@ -371,7 +377,7 @@ ipcMain.on('trade-login', (event, args) => {
 
   
   trade.on('rtnTrade', function(field){
-    console.log('emmit---rtnTrade');
+
     
     // infoLog(JSON.stringify(field));
     const { Volume, Price, InstrumentID} = field
@@ -428,7 +434,7 @@ ipcMain.on('trade-login', (event, args) => {
   
   
   trade.on('rtnOrder', function(field){
-    console.log('emmit---rtnOrder');
+    
     const key = getorderKey(field);
     const needUpdate = !!orderMap[key];
     const old = orderMap[key] || {}
@@ -518,20 +524,22 @@ ipcMain.on('trade-login', (event, args) => {
   let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
+    
     if( !isLast && !send){
       event.sender.send('add-loading', 'position')
       send = true;
     }
   
     if(OpenDate !==TradingDay) {
+   
       field.Price = LastSettlementPrice;
       field.Volume = field.Volume + field.CloseVolume;
       positionMap.push(field);
-    };  
+    }
     if(isLast){
-      console.log(positionMap.map(e => e.InstrumentID) , '111111111111111111111111111111111111111')
+      // console.log(positionMap.map(e => e.InstrumentID) , '111111111111111111111111111111111111111')
       send = false;
-    
+      console.log('position', positionMap.length)
       event.sender.send('receive-position', positionMap);
       event.sender.send('finish-loading', 'position')
     }
@@ -544,7 +552,7 @@ ipcMain.on('trade-login', (event, args) => {
   // })
   
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-    // console.log(field)
+    console.log(field, 'index.js', mainWindow)
     if(mainWindow){
       event.sender.send('receive-account', field);
     }
@@ -1120,6 +1128,7 @@ ipcMain.on('start-receive', (event, args) =>{
         event.sender.send('receive-price', data)
       }
       //防止网络波动导致一些请求没有返回堵塞请求队列
+     
       if(trade && trade.tasks.length < 2){
         taskcount = 0
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {

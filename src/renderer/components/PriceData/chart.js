@@ -452,6 +452,7 @@ class Chart {
         
         const pricearray = this.placeOrder.reduce((a, b) => {
             const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus, OrderSysID} =b;
+            
             if(OrderStatus !== '3' && OrderStatus!=='1' && OrderStatus!=='b'){
                 return a;
             }
@@ -477,6 +478,7 @@ class Chart {
         let _volume = [0, 0];
         pricearray.forEach(({price, volume, direction, OrderSysID = ''}) => {
             const index = this.getindex(price, true);
+            console.log(this.start, this.start + this.count)
             if(index < this.start || index > this.start + this.count)return;
             const  x = _x + (index-this.start) * stepwidth;
             const height = Chart.getHeight(range, volume, stepHeight); 

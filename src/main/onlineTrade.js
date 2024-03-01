@@ -1,0 +1,344 @@
+import net from 'net';
+import Trade from './trade';
+import axios from './request';
+import cppmsg, { msg } from 'cppmsg';
+import { Buffer } from 'buffer';
+import events from 'events'
+import {BrowserWindow } from 'electron'
+const PuppetUrl = '192.168.0.18'
+import  {  
+    orderData, tradeData, inderOrderData, tradingAccountData, cancelOrder, 
+    acctounRsqData, respInfoVOData, commissionRateData, commissionRateRsqData,
+    settlementInfo, rspSettlementInfo, settlementInfoConfirm, 
+    qrySettlementConfirmInfo, qryInvestorPositionDetai}  from '../ctp/dataStruct';
+const headMsg = new cppmsg.msg([
+    ['length', 'int32'],
+    ['head', 'int32']
+  ]); 
+const headMsg2 = new cppmsg.msg([
+['length','int32'],
+['encrygyKey','int64'],
+['head', 'int32']
+]) 
+const orderMsg = new cppmsg.msg(orderData)
+const tardeMsg = new cppmsg.msg(tradeData)
+const insertMsg = new cppmsg.msg(inderOrderData)
+const accountRspmsg = new cppmsg.msg(acctounRsqData)
+const accountMsg = new cppmsg.msg(tradingAccountData)
+const respInfomsg = new cppmsg.msg(respInfoVOData)
+const cancelMsg = new cppmsg.msg(cancelOrder)
+const commissionRateMsg = new cppmsg.msg(commissionRateData)
+const commissionRateRsaMsg = new cppmsg.msg(commissionRateRsqData)
+const settlementInfoConfirmMsg = new cppmsg.msg(settlementInfoConfirm)
+const rspSettlementInfoMsg = new cppmsg.msg(rspSettlementInfo)
+const dettalMsg = new cppmsg.msg(qryInvestorPositionDetai)
+console.log(insertMsg.dsLen,tardeMsg.dsLen, accountMsg.dsLen)
+let list = [];
+let timer = null;
+let count = 0;
+class pupTrade {
+    constructor(){
+        this.encrygyKey = ''
+        this.port = ''
+        this.emitter = new  events.EventEmitter();
+        this.cacheArr = [];
+    }
+    parseData(data){
+       
+        let error;
+        let respInfo;
+        while(data.length > 8){
+          
+            const {head, length} = headMsg.decodeMsg(data.slice(0,8))
+            // console.log('receive =---head', head, length,data.length)
+            if(data.length < length){
+                       
+                return data
+            }
+            switch(head){
+                case 1:                
+                    this.emitter.emit('connect')
+                   
+                    break
+                case 33: 
+                    
+                     error = respInfomsg.decodeMsg(data.slice(8 +insertMsg.dsLen))
+                    this.emitter.emit('error', error.info, true);
+                    break
+                case 35: 
+                
+                
+                     error = respInfomsg.decodeMsg(data.slice(8 +cancelMsg.dsLen))
+                    this.emitter.emit('error', error.info, true);
+                case 38:
+             
+                    
+                    const orderData = orderMsg.decodeMsg(data.slice(8))
+                  
+                    this.emitter.emit('rtnOrder', orderData)
+
+                    break
+                case 39:
+                 
+                    const tradeData = tardeMsg.decodeMsg(data.slice(8))
+               
+                    this.emitter.emit('rtnTrade', tradeData)
+            
+                    break
+                case 41:
+                 
+                 
+                    const  settlementInfoConfirmData = settlementInfoConfirmMsg.decodeMsg(data.slice(8, settlementInfoConfirmMsg.dsLen + 8 ))
+        
+                    console.log(settlementInfoConfirmData)
+                    this.emitter.emit('rqSettlementInfoConfirm',undefined, true, settlementInfoConfirmData)
+                    break
+                case 42:
+                  
+                    console.log('42---', length)
+                    break
+                case 43:
+                 
+                    const  settlementInfoData = rspSettlementInfoMsg.decodeMsg(data.slice(8, rspSettlementInfoMsg.dsLen + 8 ))
+                    respInfo= respInfomsg.decodeMsg(data.slice(rspSettlementInfoMsg.dsLen + 8))
+                    if(respInfo.isLast){
+                        console.log(respInfo.isLast, 111111111)
+                    }
+                   
+                    this.emitter.emit('rqSettlementInfo', respInfo.requestId,respInfo.isLast, settlementInfoData)
+                    break
+                case 57:
+                 
+                    const  detaialPosition = dettalMsg.decodeMsg(data.slice(8, dettalMsg.dsLen + 8 ))
+                   
+                    respInfo= respInfomsg.decodeMsg(data.slice(dettalMsg.dsLen + 8))
+                    // console.log(detaialPosition, respInfo)
+                
+                    //韩喆那边发出顺序不对
+                   
+                    this.emitter.emit('rqInvestorPositionDetail', respInfo.requestId,respInfo.isLast, detaialPosition)
+                    
+                    
+                    break
+                case 49:
+                
+                    const commissionData = commissionRateRsaMsg.decodeMsg(data.slice(8, commissionRateRsaMsg.dsLen + 8 ))
+                    respInfo= respInfomsg.decodeMsg(data.slice(commissionRateRsaMsg.dsLen + 8))
+                    console.log('commissionData', commissionData, respInfo , data.length)
+                    this.emitter.emit('rqInstrumentCommissionRate', respInfo.requestId, respInfo.isLast, commissionData, respInfo.info)
+                    break
+                case 50:
+                    const accountData = accountMsg.decodeMsg(data.slice(8, accountMsg.dsLen + 8))
+                    const {info, requestId, isLast} = respInfomsg.decodeMsg(data.slice(accountMsg.dsLen + 8))
+                   
+                    this.emitter.emit('rqTradingAccount', requestId , isLast,accountData, info)
+                    break;
+
+                default:
+                    return ''
+            }
+            data = data.slice(length)
+           
+        }
+       return data;
+    }
+    connect(callback){
+    
+        let tcp_client = new net.Socket();
+        this.tcp_client = tcp_client;
+        tcp_client.connect({
+            host:PuppetUrl,
+            port: this.port
+        })
+        
+        tcp_client.on('close',(hadError ) =>{
+            
+            console.log('tcp-close', hadError)
+            setTimeout(()=> this.connect(), 1000)
+            this.emitter.emit('disconnected')
+          })
+        tcp_client.on('error',(error ) =>{
+            if(error.code= 'ECONNREFUSED'){
+                const window=  BrowserWindow.getAllWindows();
+                if(window.length){
+                    window[0].webContents.send('error-msg', {msg:'当前账户连接服务器异常请联系管理员'});
+                }
+               
+            }
+            
+        })
+        tcp_client.on('data', (data) => {
+            if(callback){
+                callback()
+                callback= null
+            }
+            const cacheArr= this.cacheArr;
+            cacheArr.push(data)
+            const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+           
+            if(length < 8) return
+            
+            data = Buffer.concat(cacheArr, length)
+            this.cacheArr = []
+            data = this.parseData(data)
+         
+            if(data.length){
+                this.cacheArr.push(data);
+            }
+        })
+    }
+    on(event, fn){
+        console.log(event, 'event')
+        this.emitter.on(event, fn)
+    }
+    sendmsg(message, headcode){
+       
+        const length = headMsg2.dsLen+ message.length;
+        console.log('send =---head', headcode, length, message.length)
+        const head = headMsg2.encodeMsg2({
+            length,
+            encrygyKey: this.encrygyKey,
+            head: headcode
+        })
+    
+        message = Buffer.concat([head, message], length)
+      
+        this.tcp_client.write(message)
+    }
+    reqOrderInsert(orderData, callback){
+        console.log('insert', orderData)
+        const message = insertMsg.encodeMsg2(orderData)
+       
+        this.sendmsg(message, 33)
+        callback()
+    }
+    reqQryTradingAccount(BrokerID, InvestorID){
+        console.log('account', BrokerID, InvestorID)
+        const message = accountRspmsg.encodeMsg2({
+            BrokerID,
+            InvestorID,
+            CurrencyID: '',
+            BizType: '',
+            AccountID: ''
+        })
+        this.sendmsg(message, 50)
+    }
+    reqOrderAction(cancelData, callback){
+        console.log(cancelData)
+        const message = cancelMsg.encodeMsg2(cancelData)
+        this.sendmsg(message, 34)
+        callback()
+    }
+    reqQryInstrumentCommissionRate(BrokerID, InvestorID,InstrumentID){
+        const data = {
+            BrokerID,
+            InvestorID,
+            InstrumentID
+        
+        };
+       
+        const message = commissionRateMsg.encodeMsg2(data)
+        console.log('commission', message.toString())
+        this.sendmsg(message, 49 )
+    }
+    reqQrySettlementInfoConfirm(BrokerID, InvestorID){
+        const msg = new cppmsg.msg(qrySettlementConfirmInfo)
+        const data = {
+            BrokerID,
+            InvestorID,
+        
+        };
+        const message = msg.encodeMsg2(data)
+
+        this.sendmsg(message, 41 )
+
+    }
+    reqQryInvestorPositionDetail(BrokerID, InvestorID){
+        const data = {
+            BrokerID,
+            InvestorID,
+        };
+        const message = commissionRateMsg.encodeMsg2(data)
+      
+        this.sendmsg(message, 57 )
+    }
+    reqQrySettlementInfo(BrokerID, InvestorID){
+        const msg = new cppmsg.msg(settlementInfo)
+        const data = {
+            BrokerID,
+            InvestorID,
+        
+        };
+        const message = msg.encodeMsg2(data)
+
+        this.sendmsg(message, 43 )
+    }
+    reqSettlementInfoConfirm(BrokerID, InvestorID){
+       
+        const data = {
+            BrokerID,
+            InvestorID,
+        
+        };
+        const message = settlementInfoConfirmMsg.encodeMsg2(data)
+
+        this.sendmsg(message, 42 )
+    }
+
+}
+
+class onlineTrade extends Trade{
+    constructor(args){
+        super(args)
+    }
+    init(args){
+        this.tasks =[];
+        this.id = args.id
+        this.m_BrokerId =args.m_BrokerId;
+        this.m_UserId = args.m_UserId;
+        this.m_InvestorId = args.m_InvestorId;
+        this._trader = new pupTrade()
+        this._trader.on('connect', ()=>{
+            this.emitter.emit('connect')
+        })
+        this._trader.on('error', (info,skip)=>{
+            this.emitter.emit('error',  info,skip)
+        })
+        
+    }
+    login(){
+        this.login = axios({
+            url: '/future/puppet',
+            method: 'GET'
+        }).then(({data})=> {
+            
+            if(data.code === 'REQ_SUCCESS'){
+                const list = data.puppetInfoVOList
+                const account = list.find(({futureAccountId}) => futureAccountId === this.id)
+                if(account){
+                    const { encrygyKey, port} = account
+                    this._trader.encrygyKey =encrygyKey;
+                    this._trader.port = port;
+                  
+                    return new Promise((resolve, relect) => {
+                        this._trader.connect(()=>{
+                            console.log(111)
+                            resolve();
+                            this.haslogin = true;
+                        })
+                    })
+                }
+            }else{
+                return Promise.reject()
+            }
+        })
+    }
+
+  
+    logout(){
+
+    }
+
+}
+
+export default onlineTrade
