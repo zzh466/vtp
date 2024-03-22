@@ -325,6 +325,7 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
 function getUnCatchCommission(args){
  
   const {InstrumentID: instrumentID } = args;
+  console.log('commssion--------------', args)
   if(!catchRate.has(instrumentID)){
     catchRate.add(instrumentID)
     trade.chainSend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
@@ -368,6 +369,7 @@ ipcMain.on('trade-login', (event, args) => {
  
 
   function getorderKey(obj){
+ 
     const {FrontID, SessionID,  OrderRef} = obj;
     const frontId = FrontID.toString();
     const sessionId = SessionID.toString();
@@ -524,7 +526,7 @@ ipcMain.on('trade-login', (event, args) => {
   let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    
+    console.log(isLast, field, 'ssssssssssssssssss')
     if( !isLast && !send){
       event.sender.send('add-loading', 'position')
       send = true;
@@ -661,6 +663,10 @@ ipcMain.on('trade-login', (event, args) => {
 //   const result = await trade.getInstrument(arg)
 //   return result
 // })
+ipcMain.on('puppet-reconnect', ()=>{
+  console.log(trade, 'relogin')
+  trade.relogin()
+})
 ipcMain.on('confirm-settlement', (event)=>{
   trade.chainOn('rSettlementInfoConfirm', 'reqSettlementInfoConfirm', function(){
     

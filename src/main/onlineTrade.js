@@ -5,7 +5,8 @@ import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import events from 'events'
 import {BrowserWindow } from 'electron'
-const PuppetUrl = '192.168.0.18'
+import {baseIP as PuppetUrl} from '../renderer/utils/utils'
+
 import  {  
     orderData, tradeData, inderOrderData, tradingAccountData, cancelOrder, 
     acctounRsqData, respInfoVOData, commissionRateData, commissionRateRsqData,
@@ -32,7 +33,7 @@ const commissionRateRsaMsg = new cppmsg.msg(commissionRateRsqData)
 const settlementInfoConfirmMsg = new cppmsg.msg(settlementInfoConfirm)
 const rspSettlementInfoMsg = new cppmsg.msg(rspSettlementInfo)
 const dettalMsg = new cppmsg.msg(qryInvestorPositionDetai)
-console.log(insertMsg.dsLen,tardeMsg.dsLen, accountMsg.dsLen)
+console.log(orderMsg.dsLen,tardeMsg.dsLen, accountMsg.dsLen)
 let list = [];
 let timer = null;
 let count = 0;
@@ -50,16 +51,20 @@ class pupTrade {
         while(data.length > 8){
           
             const {head, length} = headMsg.decodeMsg(data.slice(0,8))
-            // console.log('receive =---head', head, length,data.length)
+            console.log('receive =---head', head, length,data.length)
             if(data.length < length){
                        
                 return data
             }
             switch(head){
-                case 1:                
+                case 1:             
+               
                     this.emitter.emit('connect')
                    
                     break
+                case 2:
+                    this.emitter.emit('relogin')
+                    break;
                 case 33: 
                     
                      error = respInfomsg.decodeMsg(data.slice(8 +insertMsg.dsLen))
@@ -70,11 +75,12 @@ class pupTrade {
                 
                      error = respInfomsg.decodeMsg(data.slice(8 +cancelMsg.dsLen))
                     this.emitter.emit('error', error.info, true);
+                    break
                 case 38:
              
-                    
+                    console.log(data.length)
                     const orderData = orderMsg.decodeMsg(data.slice(8))
-                  
+                    console.log(orderData)
                     this.emitter.emit('rtnOrder', orderData)
 
                     break
@@ -133,7 +139,7 @@ class pupTrade {
                    
                     this.emitter.emit('rqTradingAccount', requestId , isLast,accountData, info)
                     break;
-
+                
                 default:
                     return ''
             }
@@ -145,17 +151,19 @@ class pupTrade {
     connect(callback){
     
         let tcp_client = new net.Socket();
+        console.log('online tcp connect', PuppetUrl, this.port, 12312)
         this.tcp_client = tcp_client;
         tcp_client.connect({
             host:PuppetUrl,
             port: this.port
         })
-        
+     
         tcp_client.on('close',(hadError ) =>{
             
             console.log('tcp-close', hadError)
             setTimeout(()=> this.connect(), 1000)
             this.emitter.emit('disconnected')
+            this.tcp_client = null;
           })
         tcp_client.on('error',(error ) =>{
             if(error.code= 'ECONNREFUSED'){
@@ -304,33 +312,64 @@ class onlineTrade extends Trade{
         this._trader.on('error', (info,skip)=>{
             this.emitter.emit('error',  info,skip)
         })
+        this._trader.on('relogin', ()=>{
+            console.log('relogin')
+            this.relogin()
+        })
         
     }
-    login(){
-        this.login = axios({
+    relogin(){
+        this.getPuppetMsg().then(()=>{
+            if(this._trader.tcp_client){
+                this._trader.tcp_client.destroy()
+            }
+          
+        })
+    }
+    getPuppetMsg(){
+        return axios({
             url: '/future/puppet',
             method: 'GET'
-        }).then(({data})=> {
-            
+        }).then(({data}) => {
+            console.log(data,12133)
             if(data.code === 'REQ_SUCCESS'){
                 const list = data.puppetInfoVOList
-                const account = list.find(({futureAccountId}) => futureAccountId === this.id)
+               
+                const account = list.find(({futureId}) => futureId === this.id)
                 if(account){
+                    console.log(account)
                     const { encrygyKey, port} = account
                     this._trader.encrygyKey =encrygyKey;
                     this._trader.port = port;
                   
-                    return new Promise((resolve, relect) => {
-                        this._trader.connect(()=>{
-                            console.log(111)
-                            resolve();
-                            this.haslogin = true;
-                        })
-                    })
+                   
+                }else{
+                    const window=  BrowserWindow.getAllWindows();
+                    if(window.length){
+                        window[0].webContents.send('error-msg', {msg:'服务器信息不存在请联系管理员'});
+                    }
+                    return Promise.reject()
                 }
             }else{
+                const window=  BrowserWindow.getAllWindows();
+                if(window.length){
+                    window[0].webContents.send('error-msg', {msg:'获取服务器信息异常请联系管理员'});
+                }
                 return Promise.reject()
             }
+        })
+    }
+    login(){
+        this.login = this.getPuppetMsg().then(()=> {
+          
+            return new Promise((resolve, relect) => {
+                console.log('login success')
+                this._trader.connect(()=>{
+                    console.log(111)
+                    resolve();
+                    this.haslogin = true;
+                })
+            })
         })
     }
 

@@ -91,10 +91,10 @@
         method: 'GET',
         }).then((res) => {
           if(res.code === 'REQ_SUCCESS'){
-            if(res.isBusy){
-              this.$message.error('当前账户已经登录请联系管理员')
-              return
-            }
+            // if(res.isBusy){
+            //   this.$message.error('当前账户已经登录请联系管理员')
+            //   return
+            // }
             ipcRenderer.send('resize-main',  {width: 1600, height: 770});
             this.$router.push('main');
           }

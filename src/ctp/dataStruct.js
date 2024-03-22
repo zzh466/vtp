@@ -131,7 +131,7 @@ const orderData = [
     ['FrontID', 'int32'],
     ['SessionID', 'int32'],
     ['UserProductInfo', 'string', 11],
-    ['StatusMsg', 'string',81],
+    ['StatusMsg', 'string',162],
     ['UserForceClose', 'int32'],
     ['ActiveUserID', 'string', 16],
     ['BrokerOrderSeq', 'int32'], 
@@ -291,7 +291,7 @@ const acctounRsqData = [
 const respInfoVOData = [
     ['info', 'object', [
         ['ErrorID', 'int32'],
-        ['ErrorMsg', 'string', 81]
+        ['ErrorMsg', 'string', 162]
     ]],
     ['requestId', 'int32'],
     ['isLast', 'bool']
@@ -350,7 +350,7 @@ const settlementInfoConfirm = [
     ['ConfirmDate', 'string', 9],
     ['ConfirmTime', 'string', 9],
     ['SettlementID', 'int32'],
-    ['AccountID', 'string', 13],
+    ['AccountID', 'string', 26],
     ['CurrencyID', 'string', 4],
 ]
 const qryInvestorPositionDetai = [

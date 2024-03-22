@@ -1,6 +1,6 @@
 {
   "name": "vtp",
-  "version": "1.9.0",
+  "version": "1.9.2",
   "author": "",
   "description": "trade",
   "license": null,
@@ -22,7 +22,7 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "vtp2023",
+    "productName": "vtp2024",
     "appId": "xinqi",
     "nsis": {
       "allowToChangeInstallationDirectory": true,

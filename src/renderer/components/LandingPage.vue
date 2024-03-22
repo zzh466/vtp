@@ -22,7 +22,9 @@
       <div class="left-side">
         
          <div>
-           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button></div>
+         
+           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>  <el-button v-if="currentAccount.puppet" type="primary" style="margin-left: 20px" size="small" @click="puppetReconnect">傀儡机重连</el-button></div>
+           
           <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions" @history-trade="historyTraders = $event"></Round>
         </div>
          
@@ -270,94 +272,94 @@
         const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
         
         const broadcast = config.some(e => e.broadcastOpenInterest);
-        this.ws = new TraderSocket(this.userData.id, this.$store.state.user.activeCtpaccount);
-        if(broadcast ){
-          this.ws.onmessage((e)=>{
-            console.log(e)
-            ipcRenderer.send('broadcast-openinterest', e);
-          })
-        }
-        this.ws.closeTrade = (instruments) => {
-          let info = this.instrumentInfo;
-          if(instruments) {
-            instruments = instruments.split(',')
-            info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
-          }
-          ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info})
-        }
+        // this.ws = new TraderSocket(this.userData.id, this.$store.state.user.activeCtpaccount);
+        // if(broadcast ){
+        //   this.ws.onmessage((e)=>{
+        //     console.log(e)
+        //     ipcRenderer.send('broadcast-openinterest', e);
+        //   })
+        // }
+        // this.ws.closeTrade = (instruments) => {
+        //   let info = this.instrumentInfo;
+        //   if(instruments) {
+        //     instruments = instruments.split(',')
+        //     info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
+        //   }
+        //   ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info})
+        // }
         
          
-        this.ws.initTask.push(`NotifyIndicatorBroadcast@${!!this.userData._datachecked}`)
+        // this.ws.initTask.push(`NotifyIndicatorBroadcast@${!!this.userData._datachecked}`)
         
-        window.$$ws = this.ws
-        const activeArr = [];
+        // window.$$ws = this.ws
+        // const activeArr = [];
      
-        this.ws.onActiveInstrument((e, needfiter, notifi) =>{
-          if(needfiter && !this.subscribelInstruments.find(a => a.instruments.includes(e))){
-             return;
-          }
-          //因为会出现行情重复提醒情况 所以要做过滤
-          // if(activeArr.includes(e))return
-          // activeArr.push(e)
-          // setTimeout(()=>{ 
-          //   const index = activeArr.indexOf(e);
-          //   if(index >-1){
-          //     activeArr.splice(index,1)
-          //   }
-          // }, 10*60*1000)
-          // console.log(e)
+        // this.ws.onActiveInstrument((e, needfiter, notifi) =>{
+        //   if(needfiter && !this.subscribelInstruments.find(a => a.instruments.includes(e))){
+        //      return;
+        //   }
+        //   //因为会出现行情重复提醒情况 所以要做过滤
+        //   // if(activeArr.includes(e))return
+        //   // activeArr.push(e)
+        //   // setTimeout(()=>{ 
+        //   //   const index = activeArr.indexOf(e);
+        //   //   if(index >-1){
+        //   //     activeArr.splice(index,1)
+        //   //   }
+        //   // }, 10*60*1000)
+        //   // console.log(e)
          
-          if(!notifi){
-            notifi = '来大行情了'
-          }
-          const text = `合约${e}${notifi}`
-          //部分合约TA bu等会被当成拼音 所以加个空格
-          speak(`合约${e.replace(/^([a-zA-Z])(?=[a-zA-Z])/, '$1 ')}${notifi}`);
+        //   if(!notifi){
+        //     notifi = '来大行情了'
+        //   }
+        //   const text = `合约${e}${notifi}`
+        //   //部分合约TA bu等会被当成拼音 所以加个空格
+        //   speak(`合约${e.replace(/^([a-zA-Z])(?=[a-zA-Z])/, '$1 ')}${notifi}`);
           
-          // ipcRenderer.send('instrument-notification', e, text)
-          let notification =  new Notification('通知', {body: text})
-          notification.onclose = () => {
-            console.log('close 111111111')
-            notification = null
-          }
-          ipcRenderer.send('info-log', `触发行情弹窗 ${text}`)
-          notification.onclick = () => {
-            console.log('click 111111111')
-            if( this.loading.length)return;
+        //   // ipcRenderer.send('instrument-notification', e, text)
+        //   let notification =  new Notification('通知', {body: text})
+        //   notification.onclose = () => {
+        //     console.log('close 111111111')
+        //     notification = null
+        //   }
+        //   ipcRenderer.send('info-log', `触发行情弹窗 ${text}`)
+        //   notification.onclick = () => {
+        //     console.log('click 111111111')
+        //     if( this.loading.length)return;
          
-              let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
+        //       let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
               
-              if(!config){
+        //       if(!config){
                 
               
-                const configs = this.userData.instrumentConfigVOList.slice();
+        //         const configs = this.userData.instrumentConfigVOList.slice();
                 
-                const instruments = configs[0].instruments;
-                configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
-                this.$store.commit('update-config', configs);
-                const openvolume_limit = this.openvolume_limit
-                config = configs[0]
-                const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
-                const data = {
-                  instrumentID: e,
-                  id: [configs[0].id],
-                  yesterdayBuy: 0,
-                  yesterdayAsk: 0,
-                  todayBuy: 0,
-                  todayAsk:0,
-                  todayVolume: 0,
-                  'todayCancel': 0,
-                  openvolume_limit: this.findLimit(openvolume_limit, e.ins),
-                  vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins)
-                }
-                ipcRenderer.send('add-sub-instruments', e)
-                this.instrumentsData.push(data);
+        //         const instruments = configs[0].instruments;
+        //         configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
+        //         this.$store.commit('update-config', configs);
+        //         const openvolume_limit = this.openvolume_limit
+        //         config = configs[0]
+        //         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+        //         const data = {
+        //           instrumentID: e,
+        //           id: [configs[0].id],
+        //           yesterdayBuy: 0,
+        //           yesterdayAsk: 0,
+        //           todayBuy: 0,
+        //           todayAsk:0,
+        //           todayVolume: 0,
+        //           'todayCancel': 0,
+        //           openvolume_limit: this.findLimit(openvolume_limit, e.ins),
+        //           vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins)
+        //         }
+        //         ipcRenderer.send('add-sub-instruments', e)
+        //         this.instrumentsData.push(data);
       
-              }
-              this.start({row:{instrumentID: e}}, config.id)
-          }
+        //       }
+        //       this.start({row:{instrumentID: e}}, config.id)
+        //   }
        
-        })
+        // })
         this.login()
          
       })
@@ -867,6 +869,7 @@
             this.finishLoading('instrument')
           })
        
+          
       },
       // closeALL(){
         
@@ -1006,7 +1009,12 @@
         this.login();
       },
       reconnect(){
+        
         ipcRenderer.send('tcp-reconnect')
+      },
+      puppetReconnect(){
+        console.log('puppet reconnect')
+        ipcRenderer.send('puppet-reconnect')
       },
       login(){
         
