@@ -210,8 +210,15 @@ class pupTrade {
         })
     
         message = Buffer.concat([head, message], length)
-      
-        this.tcp_client.write(message)
+        if(this.tcp_client){
+            this.tcp_client.write(message)
+        }else{
+            const window=  BrowserWindow.getAllWindows();
+            if(window.length){
+                window[0].webContents.send('error-msg', {msg:'正在重连服务器，请稍后'});
+            }
+        }
+       
     }
     reqOrderInsert(orderData, callback){
         console.log('insert', orderData)

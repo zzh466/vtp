@@ -39,7 +39,7 @@ class Chart {
         this.volumeScaleTick = volumeScaleTick;
         this.width = width;
         this.height = height;
-        this.step = step;
+        this.step = parseFloat(step);
         this.data = [];
         this.start = 0;
         
@@ -116,6 +116,7 @@ class Chart {
         return baseRange
     }
      renderRange(range){
+        
         const ctx= this.ctx;
         ctx.textAlign = 'right'
         ctx.font= '12px 宋体';
@@ -161,10 +162,12 @@ class Chart {
         const count = this.count / 2;
         const decimal = this.decimal;
         const data = []
+        
         data.push({
             price: price.toFixed(decimal)
         })
         for(let i = 1; i <= count; i++ ){
+
             data.push({
                 price: (price + this.step * i).toFixed(decimal)
             })
@@ -225,7 +228,7 @@ class Chart {
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
-            if((price * Math.pow(10, this.decimal))% (this.step * Math.pow(10, this.decimal + 1)) ===0){
+            if((price * Math.pow(10, this.decimal)).toFixed()% (this.step * Math.pow(10, this.decimal + 1)) ===0){
                 ctx.save();
                 ctx.beginPath();
                 ctx.moveTo(x, y + 20);                
@@ -255,7 +258,7 @@ class Chart {
             const { price } = this.data[i];
             const  x = X + 50 + (i - start) * stepwidth;
             const y = Y + 10;
-            if((price * Math.pow(10, this.decimal)) % (this.step * Math.pow(10, this.decimal + 1)) ===0){
+            if((price * Math.pow(10, this.decimal)).toFixed() % (this.step * Math.pow(10, this.decimal + 1)) ===0){
                 ctx.save();
                 ctx.fillText(price, x , 20);
                 ctx.beginPath();
