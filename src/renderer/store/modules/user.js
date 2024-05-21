@@ -42,8 +42,8 @@ const state = {
    
     async 'get-config'({ commit,state }){
      
-      const [ over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit, vtp_server_indicator_array ] = await Promise.all(
-        [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'vtp_client_openvolume_limit', 'vtp_client_cancelvolume_limit', 'vtp_server_indicator_array'].map(e => request({
+      const [ over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit, vtp_server_indicator_array,vtp_client_big_cancelvolume_limit ] = await Promise.all(
+        [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'vtp_client_openvolume_limit', 'vtp_client_cancelvolume_limit', 'vtp_server_indicator_array', 'vtp_client_big_cancelvolume_limit'].map(e => request({
         url: 'property/info/'+ e,
         method: 'GET'
       })));
@@ -69,7 +69,11 @@ const state = {
         key: 'vtp_server_indicator_array',
         data: vtp_server_indicator_array.propertyValue || ''
       })
-     
+      commit('setstate', {
+        key: 'vtp_client_big_cancelvolume_limit',
+        data: vtp_client_big_cancelvolume_limit.propertyValue || ''
+      })
+      
     },
     async lock(){
       const result = await request({

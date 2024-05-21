@@ -63,7 +63,13 @@
             inputHotkey(e) {
                             
                 e.preventDefault();
+                console.log(e)
+                
                 this.config.key = e.key;
+                //区分小键盘
+                if(e.keyCode >=95 && e.keyCode <= 111){
+                    this.config.key = 'Num '+ this.config.key
+                }
                 this.config.code = e.keyCode.toString();
                 
             },

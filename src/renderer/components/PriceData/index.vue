@@ -234,7 +234,7 @@ export default {
           // })
         })
         ipcRenderer.on(`update-config`, (event, arg) => {
-          const config = this.setConfig(true);
+          const config = this.setConfig(true, arg);
           const {
               barToBorder,
               
@@ -256,6 +256,7 @@ export default {
           
           this.chart.ctx.clearRect(0, 0, this.width, this.height);
           this.chart.resize( this.width, this.height);
+          this.changeHotKey(config);
           if(this.arg){
               this.chart.render(this.arg)
           }
@@ -282,7 +283,7 @@ export default {
       ipcRenderer.on('total-order', (_, orders, current = {}) => { 
         // p.then(()=>{
           // console.log(orders, current, 111)
-          console.log('延迟', +Date.now() - timestamp)
+          // console.log('延迟', +Date.now() - timestamp)
           const arr = [];const id = this.$route.query.id;
           for(let key in orders){
             if(orders[key].InstrumentID === id){
@@ -292,20 +293,26 @@ export default {
           
           if(arr.length &&this.chart.data.length ){
             let cancel = 0;
-            let open = 0
+            let open = 0;
+            let big_todayCancel = 0;
             arr.forEach(e => {
-              const {OrderStatus, CombOffsetFlag, VolumeTraded} = e;
+              const {OrderStatus, CombOffsetFlag, VolumeTraded, VolumeTotal} = e;
               if(CombOffsetFlag === '0'){
                 open = VolumeTraded + open;
               }
               if(OrderStatus === '5'){
+                
                 cancel += 1;
+                if( this.instrumet.big_todayCancel_limit_volume && VolumeTotal - VolumeTraded >= this.instrumet.big_todayCancel_limit_volume){
+                  big_todayCancel+= 1
+                }
               }
              
             })
 
             this.instrumet.todayVolume = open;
             this.instrumet.todayCancel = cancel;
+            this.instrumet.big_todayCancel = big_todayCancel;
             this.update();
             this.chart.placeOrder = arr;
             this.chart.renderBakcground();
@@ -351,8 +358,8 @@ export default {
           }
         }
         this.instrumet = instrumet;
-        this.update(instrumet)
-       
+        this.update()
+        
        
       })
    
@@ -553,10 +560,14 @@ export default {
     }
   },
   methods: {
-    setConfig(update){
+    setConfig(update, arg){
       const {account,configId} = this.$route.query;
-       const configs =JSON.parse(localStorage.getItem(`config-${account}`));
-       
+       let configs 
+       if(update){
+          configs = arg
+       }else{
+        configs = JSON.parse(localStorage.getItem(`config-${account}`));
+       }
        const config = configs.find(e => e.id === +configId);
     
       console.log(config, this.$route.query);
@@ -646,8 +657,6 @@ export default {
                 message: '撤单超过交易所限制！！请注意控住手数'
           })
         }
-      }else{
-        timestamp = +Date.now()
       }
       
     },
@@ -773,7 +782,8 @@ export default {
       }
     },
     changeHotKey(config){
-      this.func = Gen(config);
+      console.log(config, 'config')
+      this.func = Gen(config.hotKey);
     },
     calc(arg){
       

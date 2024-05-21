@@ -45,8 +45,9 @@
        <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button></div>
       <div style="display: flex;">
          
-      
-          <Table v-for='instrument in subscribelInstruments' :key ='instrument.id'  height='300' @row-dblclick='start($event, instrument.id)' :tableData='instrumentsData | changeNo(instrument.id)' :columns= 'instrumentsColumns'/>
+        <div v-for='instrument in subscribelInstruments' :key ='instrument.id' :style="{width: 100 / subscribelInstruments.length + '%', marginRight: '4px'}">
+          <Table    height='300' @row-dblclick='start($event, instrument.id)' :tableData='instrumentsData | changeNo(instrument.id)' :columns= 'instrumentsColumns'/>
+        </div>
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
@@ -143,6 +144,18 @@
           }
         })
       },
+      vtp_client_big_cancelvolume_limit(){
+        return this.$store.state.user.vtp_client_big_cancelvolume_limit.split(';').filter(e=>e).map(e =>{
+          const msg = e.split(':')
+          const exchangeId = msg[0];
+          const limit = msg[1].split('-');
+          return {
+            exchangeId,
+            volume: limit[0],
+            limit: limit[1]
+          }
+        })  
+      },
       vtp_client_cancelvolume_limit(){
           return this.$store.state.user.vtp_client_cancelvolume_limit.split(';').filter(e=>e).map(e => {
             const msg= e.split(':')
@@ -198,6 +211,7 @@
         instrumentsColumns:[{
           label: '合约',
           prop: 'instrumentID',
+          fixed: 'left'
         },{
           label: '总多仓',
           prop: 'totalBuy',
@@ -238,19 +252,28 @@
           label: '今开仓',
           prop: 'todayVolume',
            width: 50,
+        },
+        {
+          label: '开仓限制',
+          prop: 'openvolume_limit',
+          width: 50
         },{
           label: '今撤单',
           prop: 'todayCancel',
            width: 50,
         },
         {
-          label: '开仓限制',
-          prop: 'openvolume_limit',
-          width: 60
-        },
-        {
           label: '撤单限制',
           prop: 'vtp_client_cancelvolume_limit',
+          width: 50
+        },{
+          label: '今大额撤单',
+          prop: 'big_todayCancel',
+           width: 50,
+        },
+        {
+          label: '大额撤单限制',
+          prop: 'big_todayCancel_limit',
           width: 60
         }
         ],
@@ -340,6 +363,7 @@
                 const openvolume_limit = this.openvolume_limit
                 config = configs[0]
                 const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+                const big_todayCancel_limit = this.getBigCancelLimit(e.ins);
                 const data = {
                   instrumentID: e,
                   id: [configs[0].id],
@@ -350,7 +374,10 @@
                   todayVolume: 0,
                   'todayCancel': 0,
                   openvolume_limit: this.findLimit(openvolume_limit, e.ins),
-                  vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins)
+                  vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins),
+                  big_todayCancel: 0,
+                  big_todayCancel_limit_volume: big_todayCancel_limit.volume,
+                  big_todayCancel_limit: big_todayCancel_limit.limit
                 }
                 ipcRenderer.send('add-sub-instruments', e)
                 this.instrumentsData.push(data);
@@ -503,7 +530,7 @@
                 UpdateTime='0' + UpdateTime
               }
               // if(((updateHour >= 15 && updateHour < 20) || (updateHour < 9 && updateHour > 3)) &&  (current < 15 ||current > 17))continue;
-              if(((current > 18||current < 3) && UpdateTime < '20:59:00') || (current >3 && UpdateTime < '08:59:00'))continue;
+              if(((current > 18||current < 3) && UpdateTime < '20:59:00') || (current >3 && (UpdateTime > '02:30:00' && UpdateTime < '08:59:00')))continue;
               if(TradeDate  < TradingDay){
                 price = PreSettlementPrice - PreClosePrice
               }else {
@@ -645,7 +672,9 @@
           })
           return a;
           }
-          , []).map(e=>({
+          , []).map(e=>{
+          const big_todayCancel_limit = this.getBigCancelLimit(e.ins);
+          return {
           instrumentID: e.ins,
           id: e.id,
           yesterdayBuy: 0,
@@ -655,13 +684,20 @@
           todayVolume: 0,
           'todayCancel': 0,
           openvolume_limit: this.findLimit(openvolume_limit, e.ins),
-          vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins)
-        }))
+          vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins),
+          big_todayCancel:0,
+          big_todayCancel_limit_volume: big_todayCancel_limit.volume,
+          big_todayCancel_limit: big_todayCancel_limit.limit
+
+
+        }})
         
         this.orderData.filter(e => e.OrderStatus === '5').forEach(order => {
           const {InstrumentID} = order;
           const item = data.find(e => e.instrumentID === InstrumentID);
-          if(item)item.todayCancel += 1;
+          if(!item) return
+          item.todayCancel += 1;
+          if(item.big_todayCancel_limit_volume && order.VolumeTotal - order.VolumeTraded >= item.big_todayCancel_limit_volume) item.big_todayCancel += 1
         })
         //过滤
         const orderData = this.orderData;
@@ -781,6 +817,7 @@
           const {InstrumentID} = order;
           const item = this.instrumentsData.find(e => e.instrumentID === InstrumentID);
           if(item)item.todayCancel += 1;
+          if(item.big_todayCancel_limit_volume && order.VolumeTotal - order.VolumeTraded >= item.big_todayCancel_limit_volume) item.big_todayCancel += 1;
           ipcRenderer.send('update-instrumentsData', this.instrumentsData);
           // if(!this.forceCloseCount){
           //   this.$forceUpdate()
@@ -828,12 +865,19 @@
            this.$alert('合约尚未订阅行情，请联系管理员订阅！');
            return;
         };
+
         const {PriceTick, ExchangeID} = info;
-        //给王曼妮做的hardcode 后期从配置里面取
         let checked  = true;
-        if(this.userData.userAccount.includes('wmn')){
-          checked = false;
+        const config = this.userData.instrumentConfigVOList.find(e => e.id === id );
+        if(config.topQuot !== undefined){
+          checked = config.topQuot
         }
+       
+        //给王曼妮做的hardcode 后期从配置里面取
+       
+        // if(this.userData.userAccount.includes('wmn')){
+        //   checked = false;
+        // }
         
         const accountIndex = this.currentAccount.futureUserName;
         const accountStatus = this.currentAccount.accountStatus
@@ -1002,6 +1046,26 @@
         }
         return '无'
       },
+      getBigCancelLimit(instrumentId){
+        const info = this.instrumentInfo.find(({InstrumentID}) => InstrumentID === instrumentId);
+        if(!info){
+          return{
+            limit: 0,
+            volume:0
+          }
+        }
+        
+        const {ExchangeID, MaxLimitOrderVolume} = info
+        const limit_info = this.vtp_client_big_cancelvolume_limit.find(({exchangeId}) => exchangeId === ExchangeID);
+        let {limit, volume} = limit_info;
+        if(volume < 1){
+          volume = MaxLimitOrderVolume * volume
+        }
+        return {
+          limit,
+          volume
+        }
+      },
       reset(){
       
         this.loading.push('order');
@@ -1126,6 +1190,7 @@
     justify-content: space-between;
     margin-top: 110px;
     top: 0;
+    overflow-x: scroll;
   }
   .label {
     margin: 10px 0;

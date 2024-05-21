@@ -33,8 +33,8 @@ export function getWinName(instrumentID, accountIndex, volume = 1, type = 0, clo
 }
 
 export function getHoldCondition(data={}){
-    const {todayAsk=0, todayBuy=0, yesterdayAsk=0, yesterdayBuy=0, todayVolume=0, todayCancel=0, openvolume_limit ='无', vtp_client_cancelvolume_limit='无'} = data;
-    return `今多：${todayBuy} 今空：${todayAsk} 昨多：${yesterdayBuy} 昨空：${yesterdayAsk} 今开仓：${todayVolume} 今撤单：${todayCancel} 开仓限制：${openvolume_limit} 撤单限制:${vtp_client_cancelvolume_limit}`
+    const {todayAsk=0, todayBuy=0, yesterdayAsk=0, yesterdayBuy=0, todayVolume=0, todayCancel=0, openvolume_limit ='无', vtp_client_cancelvolume_limit='无', big_todayCancel = 0, big_todayCancel_limit = 0} = data;
+    return `今多：${todayBuy} 今空：${todayAsk} 昨多：${yesterdayBuy} 昨空：${yesterdayAsk} 今开仓：${todayVolume} 开仓限制：${openvolume_limit} 今撤单：${todayCancel} 撤单限制:${vtp_client_cancelvolume_limit} 大额撤单: ${big_todayCancel} 大额撤单限制：${big_todayCancel_limit}`
 }
 export const Direction = ['买', '卖'];
 
@@ -44,7 +44,7 @@ export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
 export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '条件单尚未触发', key: 'b'},{msg: '条件单已触发', key: 'c'}]
 
 
-export const version = '240409a';
+export const version = '240521a';
 export function getyyyyMMdd(){
     var d = new Date();
     var curr_date = d.getDate();

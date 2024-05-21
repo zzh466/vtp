@@ -2,6 +2,7 @@ import net from 'net';
 import Trade from './trade';
 import axios from './request';
 import cppmsg, { msg } from 'cppmsg';
+import { errorLog, infoLog} from './log';
 import { Buffer } from 'buffer';
 import events from 'events'
 import {BrowserWindow } from 'electron'
@@ -80,7 +81,7 @@ class pupTrade {
              
                     console.log(data.length)
                     const orderData = orderMsg.decodeMsg(data.slice(8))
-                    console.log(orderData)
+                    // console.log(orderData)
                     this.emitter.emit('rtnOrder', orderData)
 
                     break
@@ -152,6 +153,7 @@ class pupTrade {
     
         let tcp_client = new net.Socket();
         console.log('online tcp connect', PuppetUrl, this.port, 12312)
+        infoLog(`傀儡机链接  ${PuppetUrl} ${ this.port}`)
         this.tcp_client = tcp_client;
         tcp_client.connect({
             host:PuppetUrl,
@@ -170,6 +172,7 @@ class pupTrade {
                 const window=  BrowserWindow.getAllWindows();
                 if(window.length){
                     window[0].webContents.send('error-msg', {msg:'当前账户连接服务器异常请联系管理员'});
+                    errorLog(`傀儡机链接异常 ${JSON.stringify(error)}`)
                 }
                
             }
@@ -354,6 +357,7 @@ class onlineTrade extends Trade{
                     const window=  BrowserWindow.getAllWindows();
                     if(window.length){
                         window[0].webContents.send('error-msg', {msg:'服务器信息不存在请联系管理员'});
+                        errorLog('获取傀儡机信息不存在')
                     }
                     return Promise.reject()
                 }
@@ -361,6 +365,7 @@ class onlineTrade extends Trade{
                 const window=  BrowserWindow.getAllWindows();
                 if(window.length){
                     window[0].webContents.send('error-msg', {msg:'获取服务器信息异常请联系管理员'});
+                    errorLog('获取傀儡机信息异常')
                 }
                 return Promise.reject()
             }

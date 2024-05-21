@@ -325,7 +325,7 @@ ipcMain.on('stop-subscrible',  (event, args) =>{
 function getUnCatchCommission(args){
  
   const {InstrumentID: instrumentID } = args;
-  console.log('commssion--------------', args)
+  // console.log('commssion--------------', args)
   if(!catchRate.has(instrumentID)){
     catchRate.add(instrumentID)
     trade.chainSend('reqQryInstrumentCommissionRate', trade.m_BrokerId, trade.m_InvestorId,instrumentID);
@@ -526,7 +526,7 @@ ipcMain.on('trade-login', (event, args) => {
   let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    console.log(isLast, field, 'ssssssssssssssssss')
+    // console.log(isLast, field, 'ssssssssssssssssss')
     if( !isLast && !send){
       event.sender.send('add-loading', 'position')
       send = true;
@@ -590,6 +590,7 @@ ipcMain.on('trade-login', (event, args) => {
   })
   trade.on('disconnected', (...rest) => {
     console.log('disconnected', rest)
+    STARTTRADE =false;
     if(mainWindow){
       event.sender.send('account-connect', false)
     }
@@ -706,7 +707,7 @@ ipcMain.on('cancel-order', (event, args) => {
      
  }
 
- console.log('cancel',arr)
+//  console.log('cancel',arr)
  trade.cancel(arr);
 })
 ipcMain.handle('async-cancel-order', (event, args)=>{
@@ -1357,7 +1358,7 @@ ipcMain.on('broadcast-openinterest', function(_, arg){
 ipcMain.on('update-all-config', function(_, arg){
   // console.log(arg);
   mainWindow.webContents.send('update-config', arg)
-  opedwindow.forEach(({sender}) => sender.send('update-config'))
+  opedwindow.forEach(({sender}) => sender.send('update-config', arg))
  
   const allInstruments = arg.flatMap(e => e.instruments.split(','));
 

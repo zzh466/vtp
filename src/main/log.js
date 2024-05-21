@@ -1,6 +1,7 @@
 import log from 'electron-log';
 import path from 'path';
 import {ipcMain, app} from 'electron';
+ 
 const needLog =process.env.NODE_ENV !== 'development';
 // const needLog =true;
 let homeDir =  path.dirname(app.getPath('exe'))

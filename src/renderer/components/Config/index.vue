@@ -58,7 +58,12 @@
               <el-radio :label='false'>否</el-radio>
             </el-radio-group>
           </el-form-item>
-        
+          <el-form-item  label='默认置顶' prop='topQuot'  :rules='[{ required: true}]'>
+            <el-radio-group  v-model='config.topQuot' >
+              <el-radio :label='true'>是</el-radio>
+              <el-radio :label='false'>否</el-radio>
+            </el-radio-group>
+          </el-form-item>
        </el-form>
       
     </div>
@@ -110,7 +115,8 @@
    const columns =  [{
         label: '快捷键',
         prop: '0',
-        key: 'name'
+        key: 'name',
+       
       }, {
           label: '动作',
           key: 'action',

@@ -55,7 +55,7 @@ Vue.component('Table', {
             :title="column.label"
             :field="column.prop"
             :width="column.width|| 60"
-            
+            :fixed="column.fixed"
             >
             <template v-if="column.render || column.component" scope="scope">
               <div v-if='column.render' :class='column.class? typeof column.class === "function"?column.class(scope.row): column.class: ""'>{{column.render(scope.row, scope.$rowIndex )}}</div>
