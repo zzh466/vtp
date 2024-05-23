@@ -40,7 +40,7 @@
                     label: '平仓时间',
                     prop: 'CloseTime',
                     render(item){
-                        return [...new Set(item.CloseTime)].join('\n')
+                        return [...new Set(item.CloseTime.map(e => e.split('-')[0]))].join('\n')
                     }
                 },{
                     label: '持仓时间（秒）',
@@ -51,8 +51,13 @@
                         if(item.TradeTime && item.CloseTime.length){
 
                             item.CloseTime.map(e =>{
+                                e = e.split('-');
+                                const count = +e[1];
+                                e = e[0];
+                                
+                              
                                 if(time[time.length-1] && time[time.length-1].time ===e){
-                                    time[time.length-1].count++
+                                    time[time.length-1].count += count;
                                     return
                                 }
                                 const start = item.TradeTime.split(':')
@@ -70,10 +75,14 @@
                                 }else{
                                     time3 = -(start[2]-end[2]);
                                 }
+                                let range= 60*60*time1 + 60*time2 + time3
+                                if(range < 0){
+                                    range = range + 60 *60 * 24
+                                }
                                 time.push({
-                                    count: 1,
+                                    count,
                                     time: e,
-                                    range: 60*60*time1 + 60*time2 + time3
+                                    range
                                 }) 
                             })
                            
@@ -306,6 +315,7 @@
                 
                 return a.CloseTime.length || a.Volume !== a.CloseVolume 
             })
+            console.log(this.traderData, '1111111111111111')
              this.$emit('history-trade', this.traderData.filter(a => a.Volume  &&!a.OpenTime))
         },
         update(data){
@@ -325,6 +335,11 @@
                      const trade = arr[i];
                      if(trade.InstrumentID === InstrumentID && trade.Volume > trade.CloseVolume){
                          item = trade;
+                         //一笔订单多次成交会应该合并所以要是同向的要继续往后面找
+                         if(item.Direction === Direction){
+                            
+                            continue;
+                         }
                          break;
                      }
                    
@@ -348,11 +363,13 @@
                  if(item){
                      
                      if( item.Direction!==Direction){
-                     
+                        
                          if(_volume + item.CloseVolume > item.Volume){
                             const gap = item.Volume - item.CloseVolume;
                             item.ClosePrice = (gap * Price +  item.CloseVolume * item.ClosePrice) / item.Volume;
                             e._volume = _volume - gap;
+                            //为了下面TradeTime 计算准确
+                            _volume = gap;
                             if(open){
                                 item.open += gap;
                                 e.open = open - gap
@@ -385,14 +402,16 @@
                             }
                             
                         }
+                        //这里
                         if(TradeTime){
-                            item.CloseTime.push(TradeTime);
+                            
+                            item.CloseTime.push(`${TradeTime}-${_volume}`);
                         }
                        
                      }else{
                          
                         
-                         if(TradeTime){
+                         if(TradeTime && item.OrderSysID !== OrderSysID){
                              
                             arr.unshift({
                                 InstrumentID,
@@ -418,7 +437,10 @@
                             }) 
                          }else {
                               item.open += open ;
-                             item.Volume = item.Volume + _volume; 
+                              const total = item.Volume + _volume; 
+                              item.Price = (item.Volume * item.Price +  Price * _volume)/ total;
+                              item.Volume = total; 
+                              this.$forceUpdate()
                          }
                         
                          

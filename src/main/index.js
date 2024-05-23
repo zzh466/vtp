@@ -554,7 +554,7 @@ ipcMain.on('trade-login', (event, args) => {
   // })
   
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
-    console.log(field, 'index.js', mainWindow)
+    // console.log(field, 'index.js', mainWindow)
     if(mainWindow){
       event.sender.send('receive-account', field);
     }
@@ -838,7 +838,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
           
       
         let combOffsetFlag = ( specialExchangeId.includes(ExchangeID)  && combOffsetFlagMap[id]!=='1')? '3': '1';
-        console.log(info, 111111111111)
+       
         if(ExchangeID === 'CFFEX' && !CFFEXLACK){
           combOffsetFlag = '0';
           for(let key in orderMap){
@@ -860,7 +860,9 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
       
     })
     infoLog(JSON.stringify(tradeList))
-    if(!tradeList.length){
+    //防止刚好卡主时间点 第一次进来没有需要强平的需要二次确认
+    console.log(count, '数字')
+    if(!tradeList.length && count){
         event.sender.send('force-close-finish');
         clearInterval(interval);
         console.log('结束')

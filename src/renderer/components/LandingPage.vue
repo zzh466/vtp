@@ -99,6 +99,7 @@
           this.forceClose()
         }
         if(!val){
+       
           this.forceCloseCount = 0
         }
       }

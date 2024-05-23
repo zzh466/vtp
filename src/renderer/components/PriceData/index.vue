@@ -290,7 +290,7 @@ export default {
               arr.push(orders[key])
             }
           }
-          
+          console.log(arr)
           if(arr.length &&this.chart.data.length ){
             let cancel = 0;
             let open = 0;

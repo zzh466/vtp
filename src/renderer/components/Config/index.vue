@@ -58,7 +58,7 @@
               <el-radio :label='false'>否</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item  label='默认置顶' prop='topQuot'  :rules='[{ required: true}]'>
+          <el-form-item  label='默认置顶' prop='topQuot'   :rules='[{ required: true}]'>
             <el-radio-group  v-model='config.topQuot' >
               <el-radio :label='true'>是</el-radio>
               <el-radio :label='false'>否</el-radio>
