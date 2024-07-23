@@ -18,7 +18,7 @@ ipcMain.on('info-log', function(_, msg){
     infoLog(msg)
 })
 ipcMain.on('data-log', function(_, msg){
-    console.log(msg)
+    console.log(msg, 123456)
     log.info(msg)
 })
 export function errorLog(err){

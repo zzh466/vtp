@@ -32,8 +32,8 @@ class Chart {
         this.ctx = dom.getContext('2d');
         
         this.barToBorder = barToBorder;
-        this.stepwidth =barWidth;
-        this.stepHeight = volumeScaleHeight;
+        this.barWidth =barWidth;
+        this.volumeScaleHeight = volumeScaleHeight;
         this.volumeScaleType = volumeScaleType;
         this.volumeScaleCount =volumeScaleCount;
         this.volumeScaleTick = volumeScaleTick;
@@ -53,18 +53,18 @@ class Chart {
         this.init();
     }
 
-    static getHeight(range, value, stepHeight){
+    static getHeight(range, value, volumeScaleHeight){
         let start = 0;
         let before = 0;
         if(value >  range[range.length - 1]){
-            return stepHeight * range.length + 30
+            return volumeScaleHeight * range.length + 30
         }
         for(let i= 0; i < range.length; i++ ){
             if(value <= range[i]){
-                start = start + ((value-before) / (range[i]-before)) * stepHeight; 
+                start = start + ((value-before) / (range[i]-before)) * volumeScaleHeight; 
                 break
             }else {
-                start = start + stepHeight;
+                start = start + volumeScaleHeight;
                 before = range[i];
             }
         }
@@ -76,8 +76,8 @@ class Chart {
     }
      init(){
         const ctx= this.ctx;
-      
-        this.count = Math.floor((this.width - 150) / (this.stepwidth * 2) ) * 2;
+        
+        this.count = Math.floor((this.width - 150) / (this.barWidth * 2) ) * 2;
         
         
         let range = this.range;
@@ -93,15 +93,15 @@ class Chart {
     initRange(){
 
         
-        let {stepHeight, volumeScaleType, volumeScaleCount, volumeScaleTick, height} = this;
+        let {volumeScaleHeight, volumeScaleType, volumeScaleCount, volumeScaleTick, height} = this;
         let baseRange = null;
         
         switch(volumeScaleType){
             case 0:
-                volumeScaleCount = Math.floor((height - 100)/stepHeight)
+                volumeScaleCount = Math.floor((height - 100)/volumeScaleHeight)
                 break;
             case 2:
-                volumeScaleCount = Math.floor((height - 100)/stepHeight)
+                volumeScaleCount = Math.floor((height - 100)/volumeScaleHeight)
                 baseRange = [10, 20, 30, 50, 100, 200, 400, 500, 1000, 2000, 3000, 4000, 5000].slice(0, volumeScaleCount);
                 break;
             case 3:
@@ -123,9 +123,9 @@ class Chart {
         ctx.fillStyle= FONTCOLOR;
        
        
-        let {stepHeight, width} = this;
+        let {volumeScaleHeight, width} = this;
         let start = 30
-        const _Y = Y + stepHeight;
+        const _Y = Y + volumeScaleHeight;
         ctx.save();
       
      
@@ -140,11 +140,12 @@ class Chart {
             ctx.moveTo(width - 30, _Y + start);
             ctx.lineTo(width - 5 , _Y + start);
             ctx.stroke();
-            start = start + stepHeight;
+            start = start + volumeScaleHeight;
         });
         ctx.restore()
     }
     resize( width, height){
+        
         const ctx= this.ctx;
         this.width = width;
         this.height = height;
@@ -190,7 +191,7 @@ class Chart {
         const _x = X + 50.5;
         const start = this.start;
         ctx.clearRect(_x-2 , y - 5 ,this.width - 30 - _x, this.height);
-        const stepwidth = this.stepwidth;
+        const barWidth = this.barWidth;
        
         let buyIndex = this.buyIndex - start;
        
@@ -217,16 +218,16 @@ class Chart {
             ipcRenderer.send('error-log', JSON.stringify(this.data));
         }
         ctx.fillStyle = BUYBACKGROUND;
-        ctx.fillRect(_x, y, buyIndex *stepwidth + stepwidth,this.height);
+        ctx.fillRect(_x, y, buyIndex *barWidth + barWidth,this.height);
         ctx.fillStyle = ASKBACKGROUND;
-        ctx.fillRect(_x + askIndex *stepwidth, y, this.width- _x - askIndex *stepwidth - 30 , this.height);
+        ctx.fillRect(_x + askIndex *barWidth, y, this.width- _x - askIndex *barWidth - 30 , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
             if(!this.data[i]){
                 console.log(i, JSON.parse(JSON.stringify(this.data)))
                 continue;
             }
             const { price } = this.data[i];
-            const  x = X + 50 + (i - start) * stepwidth;
+            const  x = X + 50 + (i - start) * barWidth;
             const y = Y + 10;
             if((price * Math.pow(10, this.decimal)).toFixed()% (this.step * Math.pow(10, this.decimal + 1)) ===0){
                 ctx.save();
@@ -249,14 +250,14 @@ class Chart {
         ctx.textAlign = 'left'
         ctx.clearRect(100 , 0 ,this.width ,Y);
         ctx.clearRect(100 , Y+10 ,this.width ,Y+6);
-        const stepwidth = this.stepwidth;
+        const barWidth = this.barWidth;
         for(let i = start; (i-start) <= this.count; i ++ ){
             if(!this.data[i]){
                 console.log(i, JSON.parse(JSON.stringify(this.data)))
                 continue;
             }
             const { price } = this.data[i];
-            const  x = X + 50 + (i - start) * stepwidth;
+            const  x = X + 50 + (i - start) * barWidth;
             const y = Y + 10;
             if((price * Math.pow(10, this.decimal)).toFixed() % (this.step * Math.pow(10, this.decimal + 1)) ===0){
                 ctx.save();
@@ -282,7 +283,7 @@ class Chart {
         const _x = X + 50.5;
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
-        const stepwidth = this.stepwidth;
+        const barWidth = this.barWidth;
         
         for(let i = this.start; (i-this.start)  <= this.count; i ++ ){
             if(!this.data[i]){
@@ -306,9 +307,9 @@ class Chart {
                     ctx.fillStyle= VALUECOLOR[type]; 
                 }
                
-                const  x = _x + (i-this.start) * stepwidth;
-                const height = Chart.getHeight(this.range, volum, this.stepHeight); 
-                ctx.fillRect(x,y,stepwidth -1,height);
+                const  x = _x + (i-this.start) * barWidth;
+                const height = Chart.getHeight(this.range, volum, this.volumeScaleHeight); 
+                ctx.fillRect(x,y,barWidth -1,height);
                 if(i === buyIndex || i === this.askIndex){
                     ctx.font= '12px 宋体';
                     ctx.fillStyle= FONTCOLOR;
@@ -432,8 +433,8 @@ class Chart {
         if(this.volume < volume){
             ctx.strokeStyle = '#ffff00';
         };
-        const stepwidth = this.stepwidth;
-        const x = X + 50 + (this.getindex(price, true) - this.start) * stepwidth;
+        const barWidth = this.barWidth;
+        const x = X + 50 + (this.getindex(price, true) - this.start) * barWidth;
         if(x < x+50){
             ipcRenderer.send('error-log', JSON.stringify(this.args));
             ipcRenderer.send('error-log', JSON.stringify(this.data));
@@ -441,8 +442,8 @@ class Chart {
         ctx.clearRect(0,20,this.width,10)
         ctx.beginPath();
         ctx.moveTo(x, 21);
-        ctx.lineTo(x+stepwidth, 21);
-        ctx.lineTo(x+stepwidth, 29);
+        ctx.lineTo(x+barWidth, 21);
+        ctx.lineTo(x+barWidth, 29);
         ctx.lineTo(x, 29);
         ctx.lineTo(x, 21);
         ctx.stroke()
@@ -477,18 +478,18 @@ class Chart {
         
         const y = Y + 30 ;
         const _x = X + 50.5;
-        const {stepwidth, stepHeight, range} = this;
+        const {barWidth, volumeScaleHeight, range} = this;
         let _volume = [0, 0];
         pricearray.forEach(({price, volume, direction, OrderSysID = ''}) => {
             const index = this.getindex(price, true);
             console.log(this.start, this.start + this.count)
             if(index < this.start || index > this.start + this.count)return;
-            const  x = _x + (index-this.start) * stepwidth;
-            const height = Chart.getHeight(range, volume, stepHeight); 
+            const  x = _x + (index-this.start) * barWidth;
+            const height = Chart.getHeight(range, volume, volumeScaleHeight); 
            
             ctx.fillStyle = OrderSysID.startsWith('TJBD_')?'blue':'red';
             _volume[direction] = _volume[direction] + volume;
-            ctx.fillRect(x,y,stepwidth -1,height);
+            ctx.fillRect(x,y,barWidth -1,height);
 
         })
         this.holdVolume = _volume;
@@ -499,7 +500,7 @@ class Chart {
         const _x = X + 50;
         const _y = Y + 17;
         const {price, direction} = this.traded;
-        const {ctx , width, start, stepwidth} = this;
+        const {ctx , width, start, barWidth} = this;
         if(!this.data.length)return;
         ctx.clearRect(0, _y - 1 , width, 10)
         if(direction && price.length){
@@ -535,9 +536,9 @@ class Chart {
                 color = VALUECOLOR.hold;
             }
             ctx.fillStyle = color;
-            ctx.fillRect(_x + begin * stepwidth, _y , (end - begin + 1) * stepwidth, 7);
+            ctx.fillRect(_x + begin * barWidth, _y , (end - begin + 1) * barWidth, 7);
             ctx.fillStyle = '#fff';
-            ctx.fillText(price.length, _x+cindex * stepwidth + 5, _y + 8)
+            ctx.fillText(price.length, _x+cindex * barWidth + 5, _y + 8)
             ctx.restore()
         }
     }
@@ -545,9 +546,9 @@ class Chart {
         if(this.data.length === 0) return;
         const lowindex = this.getindex(this.LowestPrice, true);
         const highindex = this.getindex(this.HighestPrice, true);
-        const {start, ctx, count, stepwidth, height} = this;
-        let lowX = (lowindex - start) * stepwidth;
-        let HighX = (highindex - start) * stepwidth
+        const {start, ctx, count, barWidth, height} = this;
+        let lowX = (lowindex - start) * barWidth;
+        let HighX = (highindex - start) * barWidth
         if(lowindex < start){
             lowX =  - 50;
         }
@@ -579,13 +580,13 @@ class Chart {
         const highindex =  this.UpperLimitindex;
    
         const offset= X + 49.5;
-        const {start, ctx, count, stepwidth, height} = this;
+        const {start, ctx, count, barWidth, height} = this;
         ctx.save()
         ctx.strokeStyle = VALUECOLOR.limit;
         ctx.lineWidth = 2
         function render(index){
             if(start<=index  && index <=start+count){
-                const _X = (index - start) * stepwidth;
+                const _X = (index - start) * barWidth;
                 ctx.beginPath();
                 ctx.moveTo(_X+offset, Y + 30);
                 ctx.lineTo(_X+offset,height - 10);

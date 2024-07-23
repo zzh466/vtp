@@ -867,8 +867,9 @@
            return;
         };
 
-        const {PriceTick, ExchangeID} = info;
+        const {PriceTick, ExchangeID, VolumeMultiple:volumeMultiple} = info;
         let checked  = true;
+        
         const config = this.userData.instrumentConfigVOList.find(e => e.id === id );
         if(config.topQuot !== undefined){
           checked = config.topQuot
@@ -882,7 +883,7 @@
         
         const accountIndex = this.currentAccount.futureUserName;
         const accountStatus = this.currentAccount.accountStatus
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex, accountStatus});
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex, accountStatus, volumeMultiple});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
@@ -1013,13 +1014,23 @@
          if(this.started)return;
         this.started = true;
         const {quotVOList } = this.userData;
-        // const quotAddr = '101.132.114.246:19189'.split(':');
-        // ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['jm2209', 'j2301'],   iCmdID: 101});
+//         const quotAddr = '192.168.0.19:18899'.split(':');
+//         ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['ag2408','ag2412','au2408',
+
+// 'au2410',
+// 'OI409',
+// 'ni2408',
+// 'OI501',
+// 'ni2409',
+// 'sc2408',
+// 'sc2409',
+// 'zn2408',
+// 'zn2409',],   iCmdID: 101});
         
         quotVOList.forEach((e) => {
           // if(this.userData.id === 18 ){
             
-          //     e.quotAddr = '127.0.0.1:18301'
+              // e.quotAddr = '192.168.0.19:18899'
           // }
            const _quotAddr = e.quotAddr.split(':');
             const instruments = e.subInstruments.split(',')

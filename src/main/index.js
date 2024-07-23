@@ -101,7 +101,7 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = '', accountStatus}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = '', accountStatus, volumeMultiple}) => {
   console.log('open-window')
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
@@ -121,7 +121,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
         webSecurity: false
       }
     })
-    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}&showController=${showController}&accountStatus=${accountStatus}`)
+    childwin.loadURL(`${winURL}#price?id=${insId}&account=${account}&exchangeId=${exchangeId}&tick=${tick}&configId=${configId}&accountIndex=${accountIndex}&showController=${showController}&accountStatus=${accountStatus}&volumeMultiple=${volumeMultiple}`)
     childwin.on('close', function(){
       if(COLOSEALL) return;
      
@@ -936,14 +936,14 @@ const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
 function sendParseData(parseData){
 
      //开盘会有错误数据进入 todo判断正无穷
-    //  console.log(parseData.InstrumentID)
+    //  console.log(parseData)
   if(parseData.OpenPrice >  Number.MAX_SAFE_INTEGER  ||  parseData.LastPrice> Number.MAX_SAFE_INTEGER){
       console.log(parseData.InstrumentID, 'data')
       return
   }
   
   let {InstrumentID} = parseData; 
-                                                  
+  //  console.log( InstrumentID, parseData.UpdateTime, new Date())                                               
   // if(InstrumentID.startsWith('LC')){
   //   console.log(InstrumentID)
   //   InstrumentID = 'lc' + InstrumentID.substring(2)
@@ -1063,7 +1063,7 @@ class TcpClient{
         } 
         const _head = headMsg.decodeMsg(data.slice(0, 8));
         const {size, CmdID } = _head;
-    
+        // console.log(1111, size, CmdID)
         if(data.length < size + 8){
       
           cacheArr.push(data)

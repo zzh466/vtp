@@ -108,8 +108,8 @@ export default {
       deep: true,
       handler({volume, type, closeType}) {
         
-        const {id,accountIndex} = this.$route.query;
-        const title =getWinName(id, accountIndex, volume, type, closeType) + getHoldCondition(this.instrumet);
+        const {id,accountIndex, volumeMultiple, tick} = this.$route.query;
+        const title =getWinName(id + '-' + volumeMultiple * tick, accountIndex, volume, type, closeType) + getHoldCondition(this.instrumet);
         ipcRenderer.send('change-title', {id, title});
       }
     }
@@ -119,7 +119,7 @@ export default {
       this.instrumet = {};
      this.tasks = [];
      const {id, tick, exchangeId, showController,accountStatus} = this.$route.query;
-    
+   
      this.accountStatus =accountStatus;
       const config = this.setConfig()
       ipcRenderer.send('register-event', id);
@@ -210,12 +210,13 @@ export default {
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
             
-            // console.log(arg)
+         
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
               const time = +Date.now()
               
-              // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
+              console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
+                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${time - this.time}, ${arg.UpdateTime}, ${new Date().toTimeString()}`);
               // if(this.time && id.startsWith('I')){
               //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
               //   console.log(log)
@@ -248,8 +249,8 @@ export default {
         
           
           this.chart.barToBorder = barToBorder;
-          this.chart.stepwidth =barWidth;
-          this.chart.stepHeight = volumeScaleHeight;
+          this.chart.barWidth =barWidth;
+          this.chart.volumeScaleHeight = parseInt(volumeScaleHeight);
           this.chart.volumeScaleType = volumeScaleType;
           this.chart.volumeScaleCount =volumeScaleCount;
           this.chart.volumeScaleTick = volumeScaleTick;
@@ -290,7 +291,7 @@ export default {
               arr.push(orders[key])
             }
           }
-          console.log(arr)
+          // console.log(arr)
           if(arr.length &&this.chart.data.length ){
             let cancel = 0;
             let open = 0;
@@ -605,9 +606,9 @@ export default {
     },
     update(){
         const instrumet =  this.instrumet;
-        const {id, accountIndex} = this.$route.query;
+        const {id, accountIndex, volumeMultiple, tick} = this.$route.query;
         const {volume, type, closeType} = this.config;
-        const title =getWinName(id, accountIndex, volume, type, closeType) + getHoldCondition(instrumet);
+        const title =getWinName(id + '-' + volumeMultiple * tick, accountIndex, volume, type, closeType) + getHoldCondition(instrumet);
         ipcRenderer.send('change-title', {id, title});
     },
     conditionTrade(){
