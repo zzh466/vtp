@@ -7,6 +7,7 @@
 <script>
   import { Direction} from '../../utils/utils'
  import Vue from 'vue';
+ import { ipcRenderer } from 'electron';
   Vue.component('Tag', {
         template: `<div class='trade-tag'>
             <div class='finish' :style='{width: width + "%"}'></div>
@@ -312,7 +313,11 @@
             
             
             this.traderData = arr.filter(a=> {
-                
+                //订阅未完成回合 或者 已完成但是是隔节合约的行情
+                if(a.CloseVolume < a.Volume || (a.CloseTime.length && !a.OpenTime)){
+                    
+                    ipcRenderer.send('subscribe-instrument', a.InstrumentID);
+                }
                 return a.CloseTime.length || a.Volume !== a.CloseVolume 
             })
             console.log(this.traderData, '1111111111111111')

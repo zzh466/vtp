@@ -8,7 +8,7 @@ false
 import { errorLog, infoLog} from './log';
 import axios from './request';
 // simnow hanzhe
-
+const eventType = new Set();
 function recordAction(url, data, time){
     let _data = {}
     for(let key in data){
@@ -39,14 +39,15 @@ class Trade {
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
         this.login()
-     
+        this.confirmTime = false;
         this.next();
         this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
             console.log(isLast,field, '3333333333333333333333333' );
+            this.confirmTime = field.ConfirmTime;
             if(!field.ConfirmTime)    
                 this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
                     this.emitter.emit('settlement-info', _,info)
-                });
+                }, '');
             
         });
     }
@@ -203,12 +204,16 @@ class Trade {
         })
     }
     send(event, ...args){
-        console.log(event,...args, 'send')
+        // console.log(event,...args, 'send')
         this._trader[event](...args)
     }
     on(event, fn){
         // console.log(`${event} ---- register`);
         const _trader = this._trader;
+        if(eventType.has(event)){
+            return
+        }
+        eventType.add(event)
         _trader.on(event, (...args) => {
             // console.log(`${event} ---- receive`);
             if(this.needrecord && this.startTrader){
@@ -228,14 +233,18 @@ class Trade {
            
             const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
             console.log(`${event} ---- register`, ...extend);
-            _trader.on(event, (requestId, isLast, field, info) =>{
-                if(isLast){
-                    this.next()
-                }
-                
-                // console.log(`${event} ---- receive`, field);
-                fn.call(this,isLast,field)
-            })
+            if(!eventType.has(event)){
+                eventType.add(event)
+                _trader.on(event, (requestId, isLast, field, info) =>{
+                    if(isLast){
+                        this.next()
+                    }
+                    
+                    // console.log(`${event} ---- receive`, field);
+                    fn.call(this,isLast,field)
+                })
+            }
+           
          
             if(extend.length){
                 this.chainSend(func, m_BrokerId, m_InvestorId,...extend, function (field) {
@@ -273,10 +282,10 @@ class Trade {
        }
     }
     chainSend(event, ...args){
-        console.log('chainsend', event, this.haslogin)
+        // console.log('chainsend', event, this.haslogin)
         if(!this.haslogin)return;
         const { tasks} = this;
-        console.log('task', tasks.length)
+        // console.log('task', tasks.length)
         const task =()=>{
             this.send(event,  ...args)
         }

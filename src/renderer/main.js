@@ -47,8 +47,9 @@ Vue.use(Table).use( Header).use(Column);
 Vue.use(ElementUI);
 
 Vue.component('Table', {
-  props: ['columns', 'height', 'tableData', "rowKey"],
-  template: ` <vxe-table :data='tableData' :column-config="{useKey: rowKey, isCurrent: true}"  :height="height" size='mini' @row-click='cell-click' @cell-dblclick='dbclick' border='full'>
+  props: ['columns', 'height', 'tableData', "rowKey", 'loading'],
+  template: ` <vxe-table :data='tableData' :column-config="{useKey: rowKey, isCurrent: true}"  :height="height" size='mini' @row-click='cell-click' @cell-dblclick='dbclick' border='full' :loading = 'loading'
+             empty-text="没有更多数据了！">
           <vxe-column
             v-for="column in columns"
             :key='column.prop'
@@ -56,6 +57,7 @@ Vue.component('Table', {
             :field="column.prop"
             :width="column.width|| 60"
             :fixed="column.fixed"
+            
             >
             <template v-if="column.render || column.component" scope="scope">
               <div v-if='column.render' :class='column.class? typeof column.class === "function"?column.class(scope.row): column.class: ""'>{{column.render(scope.row, scope.$rowIndex )}}</div>

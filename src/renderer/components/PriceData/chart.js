@@ -3,18 +3,22 @@ import { ipcRenderer } from 'electron';
 const X = 50.5;
 const Y = 20.5;
 
-const VALUECOLOR = {
-    buy: '#ffc8e6',
-    ask: '#b4dcc8',
-    buy1: '#ffafc8',
-    ask1: '#a0dcb4',
-    deficit: '#0000ff',
-    profit: '#ff0000',
-    hold: '#00ff00',
-    limit: '#EF2E2E'
-}
+
+let  VALUECOLOR ;
+
+// const VALUECOLOR = {
+//     buy: '#ffc8e6',
+//     ask: '#b4dcc8',
+//     buy1: '#ffafc8',
+//     ask1: '#a0dcb4',
+//     deficit: '#0000ff',
+//     profit: '#ff0000',
+//     hold: '#00ff00',
+//     limit: '#EF2E2E'
+// }
 
 const BUYBACKGROUND = '#322810'
+// const ASKBACKGROUND = '#103210'
 const ASKBACKGROUND = '#103210'
 const FONTCOLOR = '#7f7f7f'
 class Chart {
@@ -45,7 +49,7 @@ class Chart {
         
         this.range = this.initRange();
 
-        
+        this.setColor();
         const decimal = (this.step.toString().split('.')[1] || []).length;
         this.decimal = decimal;
         this.placeOrder=[];  
@@ -89,6 +93,39 @@ class Chart {
         
         this.renderRange(range);
        
+    }
+    setColor(type){
+        if(type){
+            VALUECOLOR = {
+                buy: '#ef302d',
+                ask: '#0f65a1',
+                buy1: '#b31529',
+                ask1: '#10559a',
+                deficit: '#0000ff',
+                profit: '#ff0000',
+                hold: '#00ff00',
+                limit: '#EF2E2E',
+                low: '#00ff00',
+                high: "#ffff00"
+            }
+        }else{
+              
+        
+             VALUECOLOR = {
+                buy: '#ffc8e6',
+                ask: '#b4dcc8',
+                buy1: '#ffafc8',
+                ask1: '#a0dcb4',
+                deficit: '#0000ff',
+                profit: '#ff0000',
+                hold: '#00ff00',
+                limit: '#EF2E2E',
+                low: '#00ff00',
+                high: "#ffff00"
+            }
+        }
+       
+        
     }
     initRange(){
 
@@ -561,13 +598,13 @@ class Chart {
         ctx.save()
         ctx.setLineDash([]);
         ctx.beginPath();
-        ctx.strokeStyle = '#00ff00'
+        ctx.strokeStyle = VALUECOLOR.low
         ctx.moveTo(lowX+offset, Y + 30);
         ctx.lineTo(lowX+offset,height - 10);
         ctx.stroke();
         ctx.beginPath();
         
-        ctx.strokeStyle = '#ffff00'
+        ctx.strokeStyle = VALUECOLOR.high
         ctx.moveTo(HighX+offset, Y + 30);
         ctx.lineTo(HighX+offset,height - 10);
         ctx.stroke();

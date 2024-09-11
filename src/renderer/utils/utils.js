@@ -44,9 +44,12 @@ export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
 export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '条件单尚未触发', key: 'b'},{msg: '条件单已触发', key: 'c'}]
 
 
-export const version = '240605a';
-export function getyyyyMMdd(){
-    var d = new Date();
+export const version = '240906a';
+export function getyyyyMMdd(d){
+    if(!d){
+        d = new Date();
+    }
+   
     var curr_date = d.getDate();
     var curr_month = d.getMonth() + 1; 
     var curr_year = d.getFullYear();
@@ -81,6 +84,7 @@ export function setClientSize(width, height){
         ipcRenderer.send('set-config', 'window_height', height);
     }
 }
+export const tagTime = ['08:59:00', '09:29:00', '10:14:00', '10:29:00', '11:29:00', '12:59:00', '13:29:00', '14:59:00', '15:14:00','20:59:00', '22:59:00', '00:59:00', '02:29:00']
 export function speak(text){
     const u = new SpeechSynthesisUtterance();
     u.text = text

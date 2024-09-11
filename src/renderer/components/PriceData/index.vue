@@ -1,5 +1,8 @@
 <template>
   <div class="price-body "  @dblclick="mouseTrade" v-loading='loading' @contextmenu="conditionTrade"> 
+    <div class="progress-bar">
+      <div  ref="progress"></div>
+    </div>
     <div class="breath-alert" v-show="showalert"></div>
     <Controller  v-if="showController"/>
     <div class="hold-order">
@@ -59,9 +62,12 @@ import Gen from './hotkey';
 import {getWinName, getHoldCondition, setClientSize, specialExchangeId} from '../../utils/utils'
 import {Notification} from 'element-ui'
 import Controller from './controller.vue'
+import { closeSync } from 'original-fs';
+
 
 const delayList = []
 let timestamp = 0
+
 export default {
   components: {
     Controller
@@ -166,7 +172,10 @@ export default {
         this.chart = new Chart(chartDom, this.width, this.height,tick, config);
         console.log(config)
         //   a();
-         
+        ipcRenderer.invoke('get-config', 'color_blindness').then(e => {
+          
+          this.chart.setColor(e)
+         })
         // })
       // })
         ipcRenderer.on('receive-history', (event, historyData) => {
@@ -203,6 +212,7 @@ export default {
               }
             }
             // console.log(this.chart.data)
+            
             this.chart.render(last)
 
           }
@@ -213,10 +223,30 @@ export default {
          
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
-              const time = +Date.now()
-              
-              console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
-                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${time - this.time}, ${arg.UpdateTime}, ${new Date().toTimeString()}`);
+              // const time = +Date.now()
+              // let {UpdateTime, InstrumentID} = arg;
+              // if(UpdateTime.length < 8){
+              //   UpdateTime='0' + UpdateTime
+              // }
+              // if(UpdateTime === '08:59:00' || (UpdateTime > '20:58:00' && UpdateTime <= '20:59:00') || (InstrumentID.startsWith('I') && UpdateTime === '09:29:00')){
+                
+              //     // var now = new Date();
+              //     // var currentSecond = now.getSeconds();
+              //     // if(currentSecond > 2 && currentSecond < 59){
+              //     //   progress.style.animationDuration = 60 -currentSecond;
+              //     // }
+              //     // console.log(currentSecond, 21321231)
+              //    const progress = this.$refs.progress
+              //    progress.className ='progress'
+                 
+              //    setTimeout(()=>{
+              //       this.$refs.progress.className =''
+              //    }, 70* 1000)
+              // }
+             
+              // console.log(this.$refs.progress, 123)
+              // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
+                // ipcRenderer.send('data-log', `${arg.InstrumentID}, ${time - this.time}, ${arg.UpdateTime}, ${new Date().toISOString()}`);
               // if(this.time && id.startsWith('I')){
               //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
               //   console.log(log)
@@ -226,7 +256,7 @@ export default {
               //   arg[`BidPrice${i}`] = Number.MAX_VALUE
               //   arg[`BidVolume${i}`] = 0;
               // }
-              this.time = time;
+              // this.time = time;
               this.arg = arg;
               this.chart.render(arg)
               // this.calc(arg)
@@ -263,7 +293,62 @@ export default {
           }
         })
       
-      
+        ipcRenderer.on('time-progress', (_, time) =>{
+          const className = '';
+          const {exchangeId, id} = this.$route.query;
+          const instrumentID = id.match(/[a-zA-Z]+/)[0];
+          switch(time){
+            case '08:59:00':
+            case '10:29:00':
+            case '13:29:00': 
+            case '20:59:00':
+              if(exchangeId !=='CFFEX'){
+                className = 'progress start'
+              }
+              break;
+            case '09:29:00':
+            case '12:59:00':
+            if(exchangeId ==='CFFEX'){
+                className = 'progress start'
+              }
+              break;
+            case '10:14:00':
+              if(exchangeId !=='CFFEX'){
+                className = 'progress end'
+              }
+              break;
+            case '11:29:00':
+           
+               className = 'progress end'
+              break
+            case '14:59:00':
+              if(exchangeId !=='CFFEX' || !instrumentID.startsWith('T')){
+                className = 'progress end'
+              }
+              break;
+            case '15:14:00':
+              if(exchangeId ==='CFFEX' && instrumentID.startsWith('T')){
+                className = 'progress end'
+              }
+              break;
+            case '22:59:00':
+              if(['rb', 'hc', 'bu', 'ru', 'fu', 'sp', 'a', 'b', 'y', 'm', 'jm', 'j', 'p', 'i', 'l', 'v', 'pp', 'eg', 'c', 'cs', 'rr', 'eb', 'SA', 'SH', 'SR', 'CF', 'CY', 'RM', 'PR', 'PX', 'MA', 'TA', 'OI', 'FG', 'ZC', 'nr', 'lu'].includes(instrumentID)){
+                className = 'progress end'
+              }
+              break;
+            case '00:59:00':
+              if(['cu', 'bc', 'al', 'ao', 'pb', 'zn', 'ni', 'sn', 'ss'].includes(instrumentID)){
+                 className = 'progress end'
+              }
+              break;
+            case '02:29:00':
+              if(['au', 'ag', 'sc'].includes(instrumentID)){
+                 className = 'progress end'
+              }
+              break;
+          }
+          this.$refs.progress = className;
+        })
       // ipcRenderer.on('place-order', (_, field) => {
        
       //   p.then(()=>{
@@ -281,6 +366,11 @@ export default {
       //     this.chart.renderHighandLow()
       //   })
       // })
+      ipcRenderer.on('change-blindness', (_, checked)=>{
+        
+          this.chart.setColor(checked)
+          this.chart.render(this.arg)
+      })
       ipcRenderer.on('total-order', (_, orders, current = {}) => { 
         // p.then(()=>{
           // console.log(orders, current, 111)
@@ -291,8 +381,8 @@ export default {
               arr.push(orders[key])
             }
           }
-          // console.log(arr)
-          if(arr.length &&this.chart.data.length ){
+          console.log(arr)
+          if(this.chart.data.length ){
             let cancel = 0;
             let open = 0;
             let big_todayCancel = 0;
@@ -527,7 +617,7 @@ export default {
         '1': 0
       },
       showCondition: false,
-     
+      showCountDown: true,
       editcondition: {
         price: '',
         overprice: 1,
@@ -998,5 +1088,37 @@ export default {
 	border:1px solid #cf2a40;
 	box-shadow:0 1px 30px #920505;
 }
+
+}
+.progress-bar {
+  width: 100%;
+ 
+  
+
+  overflow: hidden;
+}
+ 
+.progress {
+ 
+  height: 6px;
+  width: 90%;
+  animation: countdown 60s linear forwards;
+  border-radius: 4px;
+  position: absolute;
+  z-index: 1000;
+}
+.progress .start{
+  background-color: #a60606;
+}
+.progress .end{
+  background-color: #0c37c5;
+}
+@keyframes countdown {
+  0% {
+    width: 90%;
+  }
+  100% {
+    width: 0;
+  }
 }
 </style>

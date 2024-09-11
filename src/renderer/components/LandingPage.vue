@@ -23,7 +23,7 @@
         
          <div>
          
-           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>  <el-button v-if="currentAccount.puppet" type="primary" style="margin-left: 20px" size="small" @click="puppetReconnect">傀儡机重连</el-button></div>
+           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>  <el-button  type="primary" style="margin-left: 20px" size="small" @click="puppetReconnect">重连</el-button></div>
            
           <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions" @history-trade="historyTraders = $event"></Round>
         </div>
@@ -40,6 +40,9 @@
       </div>
      
     </main>
+   
+    <el-button type="primary" @click=" timedialogVisible = true;confirmLoading= false">结算单查询</el-button>
+    <el-button type="primary" v-if="userData.userAccount.toLowerCase() === 'xqlh'" @click=" historydialogVisible = true">历史成交查询 </el-button>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
         <p >账户昨仓合约：{{positionsList }}</p>
        <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button></div>
@@ -53,6 +56,40 @@
               <el-button @click="open2">股指</el-button>  -->
               <!-- <el-button @click="forceClose">强平</el-button> -->
       </div>
+      <el-dialog
+      title="结算单查询"
+      :visible.sync="timedialogVisible"
+      >
+        <el-date-picker
+         value-format='yyyyMMdd'
+          v-model="confimInfoDate"
+          placeholder="请选择查询日期"
+        ></el-date-picker>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="timedialogVisible=false">取 消</el-button>
+        <el-button type="primary" @click="confirmTimeqry" :loading="confirmLoading">确 定</el-button>
+      </span>
+      </el-dialog>
+      <el-dialog
+      title="历史成交查询"
+      :visible.sync="historydialogVisible"
+       width="1000px"
+      >
+        <div style="margin-bottom: 5px;">
+        <el-date-picker
+       
+          v-model="historyDate"
+           type="daterange"
+           start-placeholder="开始日期"
+           end-placeholder="结束日期">
+        ></el-date-picker>
+        
+        <el-button type="primary" @click="historyQry" :loading="historyLoading">查询</el-button>
+        <el-button type="primary" @click="exporthistroy" >导出</el-button>
+        <span>共：{{ historyData.length }} 条</span>
+      </div>
+        <Table height='400' :tableData="historyData" :loading="historyLoading" :columns="historyColumns" ></Table>
+      </el-dialog>
     <el-dialog
       title="结算单确认"
       :visible.sync="dialogVisible"
@@ -61,11 +98,11 @@
       :close-on-press-escape='false'
       :show-close='false'
       center>
-      <div class="confirm-info" v-html="confirmInfo.join('')">
+      <div class="confirm-info" v-html="confirmInfo">
       </div>
       <span slot="footer" class="dialog-footer">
         <el-button @click="cancel">取 消</el-button>
-        <el-button type="primary" @click="confirm">确 定</el-button>
+        <el-button type="primary" @click="confirm" >确 定</el-button>
       </span>
     </el-dialog>
     <el-dialog :close-on-press-escape='false' :show-close='false' :visible="loginVisible" :close-on-click-modal='false' title="重新登陆"> 
@@ -79,6 +116,7 @@
 
   import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId, subscribeIndicatorKey, speak} from '../utils/utils';
   import request, {TraderSocket}  from '../utils/request';
+  import {parseComfirm, columns as historyColumns} from '../utils/parse'
   import Round from './LandingPage/round.vue';
    import Order from './LandingPage/Order.vue';
 
@@ -190,7 +228,14 @@
     data(){
       const _this = this;
       return {
+
         dialogVisible: false,
+        timedialogVisible: false,
+        historydialogVisible: false,
+        historyLoading: false,
+        historyDate: [],
+        confirmLoading: true,
+        confimInfoDate: '',
         orders: {},
         loading: ['order', 'trade', 'config'],
         orderData: [],
@@ -199,7 +244,7 @@
         // loading: [],
         traders: [],
         positions:[],
-        confirmInfo: [],
+        confirmInfo: '',
         rates: [],
         price: {},
         instrumentInfo: [],
@@ -283,12 +328,15 @@
         totalProfit: 0,
         deviation: 0,
          loginVisible: false,
-         accountStatus: false
+         accountStatus: false,
+         historyData: []
       }
     },
     created(){
       this.forceCloseCount = 0;
+      this.confirmquerycount=0;
       this.historyTraders = [];
+      this.historyColumns = historyColumns;
       let audio = new Audio()
       audio.src = __static+ "/trade.wav";
       this.updateConfig().then(()=>{
@@ -504,13 +552,44 @@
         }
       });
       ipcRenderer.on('receive-info', (event, arg)=>{
-        
-        this.confirmInfo =  arg.map(({Content}) => Content)
+    
+       
+        const info = arg.map(({Content}) => Content).join('')
+        if(this.historyLoading && this.historydialogVisible){
+          if(!info && info.length < 100){
+            return
+          }
+          
+          console.log(this.historyLoadingTimeout, 'sssss')
+          clearTimeout(this.historyLoadingTimeout )
+          const {createDate, data} = parseComfirm(info)
+          console.log(createDate, data)
+          if(createDate === getyyyyMMdd(this.historyDate[1])){
+            this.historyLoading =false
+          }else{
+            //万一选的最后一天周末 会没有 所有要加保底定时器
+            console.log(this.historyLoadingTimeout, 'bbbbb')
+            this.historyLoadingTimeout = setTimeout(()=>{
+              
+              this.historyLoading =false
+            },30000)
+          }
+          if(data.length){
+            this.historyData = this.historyData.concat(data);
+          }
+          
+          //不太好判断是不是最后一天
+          
+      
+          return;
+        }
+        this.confirmInfo =  info
         this.dialogVisible = true;
+        this.timedialogVisible = false;
       })
        ipcRenderer.on('receive-price', (event, arg)=>{    
         //计算隔节误差;
-        console.log(this.historyTraders)
+        // console.log(this.historyTraders)
         if(this.historyTraders.length){
           
           for(let i = this.historyTraders.length - 1 ; i >= 0; i--){
@@ -554,9 +633,9 @@
        
       })
        ipcRenderer.on('receive-account', (event, arg)=>{
-        console.log(  this.loading, arg)
+        // console.log(  this.loading, arg)
          if(!arg || this.loginVisible || this.loading.length)return;
-         console.log(arg)
+        //  console.log(arg)
          this.account=arg
         
 
@@ -622,6 +701,7 @@
           this.init()
         })
       })
+    
       this.timoutquery = setTimeout(()=>{
         console.log(this.loading)
         if(this.loading.length !== 0){
@@ -644,6 +724,11 @@
       exportorder(){
          const {orderColumns} =  this.$refs.order
         this.exportExcel('下单信息', this.orderData, orderColumns)
+      },
+      exporthistroy(){
+        if(this.historyData.length){
+          this.exportExcel(`${getyyyyMMdd(this.historyDate[0])}-${getyyyyMMdd(this.historyDate[1])}成交记录`,  this.historyData, historyColumns);
+        }
       },
       init(){
         
@@ -845,7 +930,7 @@
           return result
         })
         
-        title = this.userData.userAccount + title;
+        title = this.userData.userAccount + ' ' + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
       async start({row},id) {
@@ -1039,12 +1124,50 @@
     },
       cancel(){
         this.dialogVisible = false;
-        ipcRenderer.send('close-main');
+        //不是主动查询的关闭要直接关闭窗口
+        
+        if(!this.confirmquerycount){
+          ipcRenderer.send('close-main');
+        }
+       
       },
       confirm(){
         this.dialogVisible = false;
          ipcRenderer.send('confirm-settlement');
         
+      },
+      confirmTimeqry(){
+        if(!this.confimInfoDate)return
+        this.confirmLoading = true;
+        this.confirmquerycount ++
+        ipcRenderer.send('query-SettlementInfo', this.confimInfoDate)
+      },
+      historyQry(){
+       
+        if(!this.historyDate || this.historyDate.length === 0){
+          this.$message('请选择查询时间');
+          return
+        }
+        clearTimeout(this.historyLoadingTimeout)
+        this.historyData = []
+        this.historyLoading = true;
+        let startDate = this.historyDate[0].getTime();
+        const endDate= this.historyDate[1].getTime();
+        while(startDate <= endDate){
+          let date = new Date(startDate);
+          let weekday = date.getDay();
+          //周六周日不开盘不用查询
+          if(weekday === 0 || weekday === 6){
+            startDate = startDate + 24*60*60*1000;
+            continue
+          }
+          ipcRenderer.send('query-SettlementInfo', getyyyyMMdd(date))
+          startDate = startDate + 24*60*60*1000;
+        }
+      
+      
+        
+      
       },
       findLimit(limits, instrumentId){
         let limit = limits.find(({instrumentID}) => instrumentID === instrumentId)
@@ -1090,7 +1213,10 @@
       },
       puppetReconnect(){
         console.log('puppet reconnect')
-        ipcRenderer.send('puppet-reconnect')
+        if(this.currentAccount.puppet){
+          ipcRenderer.send('puppet-reconnect')
+        }
+       
       },
       login(){
         

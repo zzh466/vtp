@@ -2,12 +2,12 @@ import net from 'net';
 import Trade from './trade';
 import axios from './request';
 import cppmsg, { msg } from 'cppmsg';
-import { errorLog, infoLog} from './log';
+import { errorLog, infoLog ,devLog} from './log';
 import { Buffer } from 'buffer';
 import events from 'events'
 import {BrowserWindow } from 'electron'
 import {baseIP as PuppetUrl} from '../renderer/utils/utils'
-
+// const PuppetUrl = '124.71.194.12'
 import  {  
     orderData, tradeData, inderOrderData, tradingAccountData, cancelOrder, 
     acctounRsqData, respInfoVOData, commissionRateData, commissionRateRsqData,
@@ -52,7 +52,7 @@ class pupTrade {
         while(data.length > 8){
           
             const {head, length} = headMsg.decodeMsg(data.slice(0,8))
-            console.log('receive =---head', head, length,data.length)
+            // console.log('receive =---head', head, length,data.length)
             if(data.length < length){
                        
                 return data
@@ -81,7 +81,7 @@ class pupTrade {
              
                     console.log(data.length)
                     const orderData = orderMsg.decodeMsg(data.slice(8))
-                    // console.log(orderData)
+                    console.log(orderData)
                     this.emitter.emit('rtnOrder', orderData)
 
                     break
@@ -205,7 +205,7 @@ class pupTrade {
     sendmsg(message, headcode){
        
         const length = headMsg2.dsLen+ message.length;
-        console.log('send =---head', headcode, length, message.length)
+        // console.log('send =---head', headcode, length, message.length)
         const head = headMsg2.encodeMsg2({
             length,
             encrygyKey: this.encrygyKey,
@@ -231,7 +231,7 @@ class pupTrade {
         callback()
     }
     reqQryTradingAccount(BrokerID, InvestorID){
-        console.log('account', BrokerID, InvestorID)
+        // console.log('account', BrokerID, InvestorID)
         const message = accountRspmsg.encodeMsg2({
             BrokerID,
             InvestorID,
@@ -275,23 +275,24 @@ class pupTrade {
         const data = {
             BrokerID,
             InvestorID,
+            InstrumentID: ''
         };
         const message = commissionRateMsg.encodeMsg2(data)
-      
+        // devLog(message)
         this.sendmsg(message, 57 )
     }
-    reqQrySettlementInfo(BrokerID, InvestorID){
+    reqQrySettlementInfo(BrokerID, InvestorID, TradingDay){
         const msg = new cppmsg.msg(settlementInfo)
         const data = {
             BrokerID,
             InvestorID,
-        
+            TradingDay
         };
         const message = msg.encodeMsg2(data)
 
         this.sendmsg(message, 43 )
     }
-    reqSettlementInfoConfirm(BrokerID, InvestorID){
+    reqSettlementInfoConfirm(BrokerID, InvestorID, TradingDay){
        
         const data = {
             BrokerID,

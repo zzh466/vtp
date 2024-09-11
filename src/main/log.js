@@ -4,12 +4,12 @@ import {ipcMain, app} from 'electron';
  
 const needLog =process.env.NODE_ENV !== 'development';
 // const needLog =true;
-let homeDir =  path.dirname(app.getPath('exe'))
+let homeDir =  path.dirname(app.getPath('logs'))
 console.log('1111111111111111111', homeDir)
 const logName = `${new Date().toLocaleDateString().replace(/\//g, '')}.log`;
 log.transports.console.level = 'silly';
 
-log.transports.file.resolvePath  = ()=> path.join(homeDir,'/log',logName);
+log.transports.file.resolvePath  = ()=> path.join(homeDir,'/logs',logName);
 log.transports.file.maxSize = 1024*1024 *10;
 ipcMain.on('err-log', function(_, msg){
     errorLog(msg)
@@ -31,4 +31,7 @@ export function infoLog(info){
     log.info(info)
 }
 
-export const logPath = path.join(homeDir,'/log')
+export function devLog(info){
+    log.info(info)
+}
+export const logPath = path.join(homeDir,'/logs/')

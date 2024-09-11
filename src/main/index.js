@@ -13,7 +13,7 @@ import  './export';
 import  './config';
 import  request  from './request';
 import '../renderer/store';
-import {version, winURL, specialExchangeId } from '../renderer/utils/utils'
+import {version, winURL, specialExchangeId, tagTime } from '../renderer/utils/utils'
 import console, { time } from 'console';
 import  events  from 'events';
 import { mas } from 'process';
@@ -61,6 +61,7 @@ function createWindow () {
     console.log('main-closed')
     mainWindow = null
   })
+ 
   mainWindow.on('close', () => {
    console.log('main-close')
     if(trade){
@@ -88,7 +89,7 @@ function createWindow () {
 
 ipcMain.on('resize-main', (evnt, {width, height}) => {
   mainWindow.setSize(width, height)
-  mainWindow.setMenu(meun(false));
+  mainWindow.setMenu(meun(false, true));
 })
 ipcMain.on('close-main', (event, arg) => {
   if(arg){
@@ -101,6 +102,23 @@ function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
+function subscribeInstrument(id){
+  
+  for(let i =0; i< tcp_client_list.length; i++){
+    const _tcp = tcp_client_list[i];
+    const {instrumentIDs} = _tcp;
+    if(instrumentIDs.includes(id)){
+      _tcp.addinstrument(id)
+      break;
+    }
+  }
+}
+ipcMain.on('subscribe-instrument', (event, id) => {
+  console.log('2313132312132', id)
+  STARTTRADE = true
+  
+  subscribeInstrument(id);
+})
 ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = '', accountStatus, volumeMultiple}) => {
   console.log('open-window')
   COLOSEALL = false;
@@ -109,6 +127,7 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
   if(hasInsId){
     hasInsId.win.show()
   }else {
+    subscribeInstrument(insId)
     const childwin = new BrowserWindow({
       height,
       useContentSize: true,
@@ -229,7 +248,16 @@ ipcMain.on('change-title', (event, {id, title})=>{
   win.win.setTitle(title);
 })
 
-
+// app.on('web-contents-created', (event, contents) => {
+//   console.log('web-contents-created', 11111111111111)
+//   contents.on('will-navigate', (event, navigationUrl) => {
+//     const parsedUrl = new URL(navigationUrl)
+//     console.log(parsedUrl.origin, 11111111111111)
+//     // if (parsedUrl.origin !== 'https://example.com') {
+//     //   event.preventDefault()
+//     // }
+//   })
+// })
 app.on('ready', createWindow)
 
 app.on('window-all-closed', () => {
@@ -341,6 +369,7 @@ ipcMain.on('trade-login', (event, args) => {
   positionMap = [];
   rateMap =[];
   let TRADETIME = setTimeout(() => {
+    
     event.sender.send('receive-trade', tradeMap);
     event.sender.send('finish-loading', 'trade')
     TRADETIME= null;
@@ -421,7 +450,7 @@ ipcMain.on('trade-login', (event, args) => {
             }
           })
         })
-        if(connectcount > 1 ){
+        if(connectcount > 1 && !ORDERTIME){
           STARTTRADE = true;
         }
         TRADETIME= null;
@@ -445,12 +474,12 @@ ipcMain.on('trade-login', (event, args) => {
       // infoLog(JSON.stringify(field));
     // }
     //保证强平撤单
-    if(LOCK && field.OrderStatus === '5'){
+    if(LOCK && field.OrderStatus === '5' ){
       infoLog(`强平撤单${JSON.stringify(field)}`);
       Mainemitter.emit('closeall')
     }
     //返回可能不按时序 先返回已完成的后返回中间状态，所以一旦订单已经完成就要将中间状态舍弃
-    if(old.OrderStatus){
+    if(old.OrderStatus && !field.OrderSysID.startsWith('TJBD_')){
       const status = old.OrderStatus;
       if(['5', '0', '2'].includes(status)){
         return
@@ -515,7 +544,10 @@ ipcMain.on('trade-login', (event, args) => {
       ORDERTIME = setTimeout(() => {
         event.sender.send('receive-order', orderMap);
         opedwindow.forEach(({sender}) => sender.send('total-order',orderMap))
-        
+        if(connectcount > 1 && !TRADETIME){
+          STARTTRADE = true;
+        }
+        ORDERTIME = null;
       }, 5000)
       return
     }
@@ -526,7 +558,7 @@ ipcMain.on('trade-login', (event, args) => {
   let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    // console.log(isLast, field, 'ssssssssssssssssss')
+    console.log(isLast, field,send, 'ssssssssssssssssss')
     if( !isLast && !send){
       event.sender.send('add-loading', 'position')
       send = true;
@@ -540,6 +572,16 @@ ipcMain.on('trade-login', (event, args) => {
     }
     if(isLast){
       // console.log(positionMap.map(e => e.InstrumentID) , '111111111111111111111111111111111111111')
+      if(connectcount > 1 && positionMap.length){
+        opedwindow.forEach(({sender, id}) => {
+          sender.send('clear-trader')
+          positionMap.forEach(field=>{
+            if(field.InstrumentID === id){
+              sender.send('trade-order',field, true);
+            }
+          })
+        })
+      }
       send = false;
       console.log('position', positionMap.length)
       event.sender.send('receive-position', positionMap);
@@ -564,28 +606,39 @@ ipcMain.on('trade-login', (event, args) => {
     infoLog(`${trade.m_UserId}第${connectcount + 1}次链接`)
     console.log('ctp已连接')
     tradeMap = [];
+    orderMap = {};
     trade.tasks = [];
     event.sender.send('account-connect', true)
     if(connectcount){
-   
+      clearTimeout(TRADETIME);
+      clearTimeout(ORDERTIME);
       trade.tasks.push(setTimeout(()=>{
         trade.next()
       }, 1500))
       TRADETIME = setTimeout(() => {
+        //隔交易日重连
+        positionMap.length = 0
+        trade.chainSend('reqQryInvestorPositionDetail', trade.m_BrokerId, trade.m_InvestorId, function(){})
+        opedwindow.forEach(({sender}) => sender.send('clear-trader'))
         event.sender.send('finish-loading', 'trade')
         TRADETIME= null;
       }, 5000)
       ORDERTIME = setTimeout(() => {
-
-        event.sender.send('finish-loading', 'order')
+        opedwindow.forEach(({sender}) => sender.send('total-order',orderMap))
+        event.sender.send('receive-order', orderMap);
+        trade.confirmTime = false;
+        trade.chainSend('reqQrySettlementInfoConfirm',  trade.m_BrokerId, trade.m_InvestorId, function(){})
+        ORDERTIME = null
       }, 5000)
     }
    
     STARTTRADE =false;
+   
     // opedwindow.forEach(({sender}) => sender.send('clear-trader'))
     event.sender.send('add-loading', 'trade')
     event.sender.send('add-loading', 'order')
     event.sender.send('receive-trade', tradeMap);
+  
     connectcount++
   })
   trade.on('disconnected', (...rest) => {
@@ -642,7 +695,7 @@ ipcMain.on('trade-login', (event, args) => {
   })
   const settlementInfo = []
   trade.emitterOn('settlement-info', (islast, info) =>{
-    // console.log(info, islast, '22222222222222222222222222222')
+   
     if(info){
       settlementInfo.push(info)
     }
@@ -652,8 +705,7 @@ ipcMain.on('trade-login', (event, args) => {
       // console.log('111111111111111111111111', settlementInfo)
       if(settlementInfo.length){
         event.sender.send('receive-info', settlementInfo);
-      }else{
-        trade.chainOn('rSettlementInfoConfirm', 'reqSettlementInfoConfirm', function(){})
+        settlementInfo.length = 0;
       }
       
     }
@@ -668,11 +720,19 @@ ipcMain.on('puppet-reconnect', ()=>{
   console.log(trade, 'relogin')
   trade.relogin()
 })
-ipcMain.on('confirm-settlement', (event)=>{
+ipcMain.on('query-SettlementInfo', (event, tradingDay)=>{
+  trade.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
+      this.emitter.emit('settlement-info', _,info)
+  }, tradingDay);
+})
+ipcMain.on('confirm-settlement', (event, tradingDay)=>{
+  if(trade.confirmTime) return;
   trade.chainOn('rSettlementInfoConfirm', 'reqSettlementInfoConfirm', function(){
-    
+    trade.confirmTime = true;
   })
 })
+
+
 ipcMain.on('trade', (event, args) => {
   STARTTRADE= true;
   if(LOCK) return;
@@ -743,17 +803,19 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
       const {LimitPrice, InstrumentID, Direction, VolumeTotal, VolumeTraded} = e;
       const priceData = PriceData[InstrumentID] || {};
       const {LowerLimitPrice, UpperLimitPrice} = priceData;
-      if(LimitPrice >LowerLimitPrice && LimitPrice < UpperLimitPrice){
+      if(Direction ==='0' && LimitPrice >= UpperLimitPrice || (Direction === '1' && LimitPrice <=LowerLimitPrice )){
+        const volume = VolumeTotal - VolumeTraded;
+        if(!lowAndUPerOrderMap[InstrumentID]){
+          lowAndUPerOrderMap[InstrumentID] = [0,0]
+        }
+       
+        lowAndUPerOrderMap[InstrumentID][Direction] += volume
+        infoLog(`强平涨跌停挂单 ${JSON.stringify(e)}`)
+        return false
+      }else {
         return true
       }
-      const volume = VolumeTotal - VolumeTraded;
-      if(!lowAndUPerOrderMap[InstrumentID]){
-        lowAndUPerOrderMap[InstrumentID] = [0,0]
-      }
      
-      lowAndUPerOrderMap[InstrumentID][Direction] += volume
-      infoLog(`强平涨跌停挂单 ${JSON.stringify(e)}`)
-      return false
     });
     
     if(arr.length){
@@ -838,8 +900,8 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
           
       
         let combOffsetFlag = ( specialExchangeId.includes(ExchangeID)  && combOffsetFlagMap[id]!=='1')? '3': '1';
-       
-        if(ExchangeID === 'CFFEX' && !CFFEXLACK){
+       //股指合约要锁仓
+        if(ExchangeID === 'CFFEX'&& instrumentID.startsWith('I') && !CFFEXLACK){
           combOffsetFlag = '0';
           for(let key in orderMap){
          
@@ -1001,43 +1063,48 @@ function parseEncodeData(data){
   sendParseData(parseData)
 }
 
+const ReqSubscribeMsg = new cppmsg.msg([
+  ['size', 'int32'],
+  ['iCmdID', 'int32'],
+  ['Stru_ReqSubscribe', 'object', [['RequestID', 'int32'], ['InstrumentID', 'string', '32']]]
+])
 class TcpClient{
   constructor(args){
     this.args = args;
     this.index = 1;
-    const subscribe = [['RequestID', 'int32'], ['InstrumentID', 'string', '32']];
-    this.msg = new cppmsg.msg([
-      ['size', 'int32'],
-      ['iCmdID', 'int32'],
-      ['Stru_ReqSubscribe', 'object', subscribe]
-    ])
+    this.openInstruments = [];
+  
+  }
+  addinstrument(instrument){
+    if(!this.openInstruments.includes(instrument)){
+      this.openInstruments.push(instrument);
+      this.writeinstrument(instrument)
+    }
+  }
+  writeinstrument(instrument){
+    this.index ++; 
+    const size = this.size;
+    const iCmdID = this.iCmdID;
+    this.tcp_client.write(ReqSubscribeMsg.encodeMsg2({
+      size,
+      iCmdID,
+      Stru_ReqSubscribe: {
+        RequestID: this.index,
+        InstrumentID: instrument
+      }
+    }))
   }
   connect(){
     const {host, port, instrumentIDs,  iCmdID, size = 36, } = this.args
     let tcp_client = new net.Socket();
     this.tcp_client = tcp_client;
+    this.instrumentIDs = instrumentIDs;
+    this.iCmdID = iCmdID;
+    this.size = size;
     tcp_client.setKeepAlive(true, 5*1000);
     tcp_client.connect({host, port},()=>{
-   
-    instrumentIDs.forEach((InstrumentID) => {
-      
-      // if(InstrumentID.startsWith('lc')){
-      //   InstrumentID = 'LC' + InstrumentID.substring(2)
-      //   console.log(InstrumentID);
-      // }
      
-      this.index ++; 
-      tcp_client.write(this.msg.encodeMsg2({
-        size,
-        iCmdID,
-        Stru_ReqSubscribe: {
-          RequestID: this.index,
-          InstrumentID: InstrumentID
-        }
-      }))
-    })
-  
-
+      this.openInstruments.forEach(this.writeinstrument.bind(this))
     })
   
    
@@ -1117,18 +1184,21 @@ class TcpClient{
   changeIns(instruments){
    
     this.args.instrumentIDs = instruments;
-    this.destroy()
+    // this.destroy()
   }
 }
 ipcMain.on('start-receive', (event, args) =>{
-  STARTTRADE = true;
+  // STARTTRADE = true;
   let tcp_client = new TcpClient(args);
 
   if(!Maincycle){
     let taskcount =0
     Maincycle=setInterval(()=>{
      
-     
+      const time = new Date().toTimeString().substring(0,8)
+      if(tagTime.includes(time)){
+        opedwindow.forEach(e => e.sender.send('time-progress', time));
+      }
       if(Object.getOwnPropertyNames(PriceData).length!==0){
         const data = {};
         for(let key in PriceData){

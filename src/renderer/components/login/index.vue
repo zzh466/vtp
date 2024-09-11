@@ -70,7 +70,7 @@
             this.changeActive(futureAccountVOList[0].id);
           if(this.checked){
              ipcRenderer.send('resize-main',  {width: 1600, height: 770});
-              this.$router.push('trade');
+              this.$router.replace('trade');
               return;
           }
         
@@ -96,7 +96,7 @@
               return
             }
             ipcRenderer.send('resize-main',  {width: 1600, height: 770});
-            this.$router.push('main');
+            this.$router.replace('main');
           }
           
         })

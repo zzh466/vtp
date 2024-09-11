@@ -31,6 +31,32 @@
                 ]
               }
             ]
+    },
+    {
+      "target_name": "qdp",
+      "sources": [
+        ".\\src\\qdp\\cpp\\qdp.cc",
+        ".\\src\\qdp\\cpp\\wrap_trader_qdp.cpp",
+        ".\\src\\qdp\\cpp\\uv_trader_qdp.cpp"
+      ],
+      "libraries": [
+        "<(module_root_dir)/qdp5.0.1_api_win_20230817/qdptraderapi.lib"
+      ],
+      "include_dirs": ["qdp5.0.1_api_win_20230817/","<!(node -e \"require('nan')\")"],
+      "copies": [
+              {
+                "destination": "<(module_root_dir)/build/Release/",
+                "files": [
+                  "<(module_root_dir)/qdp5.0.1_api_win_20230817/qdptraderapi.dll"
+                ]
+              },
+              {
+                "destination": "<(module_root_dir)/build/Debug/",
+                "files": [
+                  "<(module_root_dir)/qdp5.0.1_api_win_20230817/qdptraderapi.dll"
+                ]
+              }
+            ]
     }
   ]
 }

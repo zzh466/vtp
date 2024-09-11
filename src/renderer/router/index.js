@@ -13,7 +13,8 @@ export default new Router({
     {
       path: '/main',
       name: 'landing-page',
-      component: require('@/components/LandingPage').default
+      component: require('@/components/LandingPage').default,
+     
     },
     {
       path: '/price',
