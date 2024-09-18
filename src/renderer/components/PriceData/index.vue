@@ -1,7 +1,7 @@
 <template>
   <div class="price-body "  @dblclick="mouseTrade" v-loading='loading' @contextmenu="conditionTrade"> 
     <div class="progress-bar">
-      <div  ref="progress"></div>
+      <div  ref="progress" ></div>
     </div>
     <div class="breath-alert" v-show="showalert"></div>
     <Controller  v-if="showController"/>
@@ -294,60 +294,77 @@ export default {
         })
       
         ipcRenderer.on('time-progress', (_, time) =>{
-          const className = '';
+          console.log(time)
+          let className = '';
+          const startClass = this.showStartNotice ? "progress start": '';
+          const endClasee = this.showEndNotice ? 'progress end' : '';
           const {exchangeId, id} = this.$route.query;
+          // time = '09:29:00'
+          // ipcRenderer.send('info-log', time+ ' ' + id)
           const instrumentID = id.match(/[a-zA-Z]+/)[0];
+          console.log(instrumentID, exchangeId)
           switch(time){
             case '08:59:00':
             case '10:29:00':
             case '13:29:00': 
             case '20:59:00':
               if(exchangeId !=='CFFEX'){
-                className = 'progress start'
+                className = startClass
               }
               break;
             case '09:29:00':
             case '12:59:00':
             if(exchangeId ==='CFFEX'){
-                className = 'progress start'
+                className = startClass
               }
               break;
             case '10:14:00':
               if(exchangeId !=='CFFEX'){
-                className = 'progress end'
+                className = endClasee
               }
               break;
             case '11:29:00':
            
-               className = 'progress end'
+               className = endClasee
               break
             case '14:59:00':
               if(exchangeId !=='CFFEX' || !instrumentID.startsWith('T')){
-                className = 'progress end'
+                className = endClasee
               }
               break;
             case '15:14:00':
               if(exchangeId ==='CFFEX' && instrumentID.startsWith('T')){
-                className = 'progress end'
+                className = endClasee
               }
               break;
             case '22:59:00':
               if(['rb', 'hc', 'bu', 'ru', 'fu', 'sp', 'a', 'b', 'y', 'm', 'jm', 'j', 'p', 'i', 'l', 'v', 'pp', 'eg', 'c', 'cs', 'rr', 'eb', 'SA', 'SH', 'SR', 'CF', 'CY', 'RM', 'PR', 'PX', 'MA', 'TA', 'OI', 'FG', 'ZC', 'nr', 'lu'].includes(instrumentID)){
-                className = 'progress end'
+                className = endClasee
               }
               break;
             case '00:59:00':
               if(['cu', 'bc', 'al', 'ao', 'pb', 'zn', 'ni', 'sn', 'ss'].includes(instrumentID)){
-                 className = 'progress end'
+                 className = endClasee
               }
               break;
             case '02:29:00':
               if(['au', 'ag', 'sc'].includes(instrumentID)){
-                 className = 'progress end'
+                 className = endClasee
               }
               break;
           }
-          this.$refs.progress = className;
+          if(className){
+            const currentSecond = new Date().getTime() %1000 / 1000;
+            const duration = 60 -currentSecond
+            this.$refs.progress.style.animationDuration = duration + 's';
+            this.$refs.progress.className = className;
+            setTimeout(()=>{
+              
+              this.$refs.progress.className = '';
+            }, 60*1000)
+            console.log(this.$refs.progress.style)
+          }
+        
         })
       // ipcRenderer.on('place-order', (_, field) => {
        
@@ -677,7 +694,8 @@ export default {
       
       this.broadcastOpenInterest = config.broadcastOpenInterest;
       this.stepwidth = config.barWidth ;
-    
+      this.showStartNotice = config.windowsOpenCd;
+      this.showEndNotice = config.windowsCloseCd;
 
        this.func = Gen(config.hotKey)
        return config;
@@ -1101,17 +1119,20 @@ export default {
 .progress {
  
   height: 6px;
-  width: 90%;
-  animation: countdown 60s linear forwards;
+  
   border-radius: 4px;
   position: absolute;
   z-index: 1000;
 }
-.progress .start{
+.progress.start{
   background-color: #a60606;
+  width: 90%;
+  animation: countdown 60s linear forwards;
 }
-.progress .end{
+.progress.end{
   background-color: #0c37c5;
+  width: 90%;
+  animation: disappear 60s linear forwards;
 }
 @keyframes countdown {
   0% {
@@ -1119,6 +1140,14 @@ export default {
   }
   100% {
     width: 0;
+  }
+}
+@keyframes disappear {
+  0% {
+    clip-path: inset(0 0 0 0); /* 初始状态，不裁剪 */
+  }
+  100% {
+    clip-path: inset(0 0 0 100%); /* 动画结束状态，裁剪左边 */
   }
 }
 </style>

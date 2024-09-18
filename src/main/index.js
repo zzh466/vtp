@@ -1196,8 +1196,15 @@ ipcMain.on('start-receive', (event, args) =>{
     Maincycle=setInterval(()=>{
      
       const time = new Date().toTimeString().substring(0,8)
+      console.log(time)
       if(tagTime.includes(time)){
-        opedwindow.forEach(e => e.sender.send('time-progress', time));
+        opedwindow.forEach(e => {
+          // infoLog(`主进程 ${e.id} ${time}`)
+          if(e.sender){
+            
+            e.sender.send('time-progress', time);
+          }
+        })
       }
       if(Object.getOwnPropertyNames(PriceData).length!==0){
         const data = {};

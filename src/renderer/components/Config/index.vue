@@ -71,6 +71,18 @@
               <el-radio :label='false'>否</el-radio>
             </el-radio-group>
           </el-form-item>
+          <el-form-item  label='开盘前一分钟提醒' prop='windowsOpenCd'   :rules='[{ required: true}]'>
+            <el-radio-group  v-model='config.windowsOpenCd' >
+              <el-radio :label='true'>是</el-radio>
+              <el-radio :label='false'>否</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item  label='收盘盘前一分钟提醒' prop='windowsCloseCd'   :rules='[{ required: true}]'>
+            <el-radio-group  v-model='config.windowsCloseCd' >
+              <el-radio :label='true'>是</el-radio>
+              <el-radio :label='false'>否</el-radio>
+            </el-radio-group>
+          </el-form-item>
        </el-form>
       
     </div>
