@@ -3,6 +3,7 @@ import  { receiveData }  from '../ctp/dataStruct';
 import { errorLog, infoLog} from './log';
 
 import net from 'net';
+import udpClient from './udp';
 import cppmsg, { msg } from 'cppmsg';
 import { Buffer } from 'buffer';
 import Trade from './trade';
@@ -14,9 +15,9 @@ import  './config';
 import  request  from './request';
 import '../renderer/store';
 import {version, winURL, specialExchangeId, tagTime } from '../renderer/utils/utils'
-import console, { time } from 'console';
+
 import  events  from 'events';
-import { mas } from 'process';
+
 
 const Mainemitter = new  events.EventEmitter();
 let COLOSEALL = false;
@@ -1096,7 +1097,13 @@ class TcpClient{
   }
   connect(){
     const {host, port, instrumentIDs,  iCmdID, size = 36, } = this.args
-    let tcp_client = new net.Socket();
+    let tcp_client;
+    if(host === '192.168.0.19' ){
+      tcp_client = new udpClient();
+    }else {
+      tcp_client = new net.Socket()
+    }
+  
     this.tcp_client = tcp_client;
     this.instrumentIDs = instrumentIDs;
     this.iCmdID = iCmdID;
@@ -1118,11 +1125,14 @@ class TcpClient{
     tcp_client.on('data',function(data){
       // console.log(111111111111111)
       // console.log(data.length)
-      cacheArr.push(data);
-      const length = cacheArr.reduce((a,b)=> a + b.length, 0);
-      // console.log(length)
-      data = Buffer.concat(cacheArr, length);
-      cacheArr = [];
+      if(cacheArr.length){
+        cacheArr.push(data);
+        const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+        // console.log(length)
+        data = Buffer.concat(cacheArr, length);
+        cacheArr = [];
+      }
+    
       while(data.length){
         if(data.length < 8){
           cacheArr.push(data)
@@ -1130,7 +1140,7 @@ class TcpClient{
         } 
         const _head = headMsg.decodeMsg(data.slice(0, 8));
         const {size, CmdID } = _head;
-        // console.log(1111, size, CmdID)
+        console.log(1111, size, CmdID, data.length)
         if(data.length < size + 8){
       
           cacheArr.push(data)
@@ -1187,6 +1197,8 @@ class TcpClient{
     // this.destroy()
   }
 }
+
+
 ipcMain.on('start-receive', (event, args) =>{
   // STARTTRADE = true;
   let tcp_client = new TcpClient(args);
@@ -1196,7 +1208,7 @@ ipcMain.on('start-receive', (event, args) =>{
     Maincycle=setInterval(()=>{
      
       const time = new Date().toTimeString().substring(0,8)
-      console.log(time)
+      // console.log(time)
       if(tagTime.includes(time)){
         opedwindow.forEach(e => {
           // infoLog(`主进程 ${e.id} ${time}`)
