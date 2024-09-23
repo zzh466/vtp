@@ -1184,6 +1184,7 @@ class TcpClient{
   changeIns(instruments){
    
     this.args.instrumentIDs = instruments;
+    this.instrumentIDs = instruments;
     // this.destroy()
   }
 }
