@@ -1,7 +1,7 @@
 <template>
   <div class="price-body "  @dblclick="mouseTrade" v-loading='loading' @contextmenu="conditionTrade"> 
     <div class="progress-bar">
-      <div  ref="progress" ></div>
+      <div  ref="progress"  ></div>
     </div>
     <div class="breath-alert" v-show="showalert"></div>
     <Controller  v-if="showController"/>
@@ -59,7 +59,7 @@
 import { ipcRenderer } from 'electron';
 import Chart from './chart'
 import Gen from './hotkey';
-import {getWinName, getHoldCondition, setClientSize, specialExchangeId} from '../../utils/utils'
+import {getWinName, getHoldCondition, setClientSize, specialExchangeId, tagTime} from '../../utils/utils'
 import {Notification} from 'element-ui'
 import Controller from './controller.vue'
 import { closeSync } from 'original-fs';
@@ -129,6 +129,16 @@ export default {
      this.accountStatus =accountStatus;
       const config = this.setConfig()
       ipcRenderer.send('register-event', id);
+      
+      const createTime = new Date();
+      const _time =createTime.toTimeString().substring(0,6) + '00';
+      const _second = createTime.getSeconds()
+      console.log(_time,_second, 1111112222222)
+      
+      if(_second>1 && tagTime.includes(_time)){
+        this.showPregeress(_time, 60-_second);
+      }
+
      this.showController = !!showController;
       window.onkeydown =(e)=>{
         
@@ -170,7 +180,7 @@ export default {
         this.exchangeId = exchangeId;
           
         this.chart = new Chart(chartDom, this.width, this.height,tick, config);
-        console.log(config)
+        console.log(config, 554646)
         //   a();
         ipcRenderer.invoke('get-config', 'color_blindness').then(e => {
           
@@ -223,7 +233,7 @@ export default {
          
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
-              // const time = +Date.now()
+              const time = +Date.now()
               // let {UpdateTime, InstrumentID} = arg;
               // if(UpdateTime.length < 8){
               //   UpdateTime='0' + UpdateTime
@@ -246,7 +256,7 @@ export default {
              
               // console.log(this.$refs.progress, 123)
               // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
-                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime}, ${new Date().toISOString()}`);
+                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime}, ${new Date().toISOString()}, ${time - this.time}`);
               // if(this.time && id.startsWith('I')){
               //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
               //   console.log(log)
@@ -256,7 +266,7 @@ export default {
               //   arg[`BidPrice${i}`] = Number.MAX_VALUE
               //   arg[`BidVolume${i}`] = 0;
               // }
-              // this.time = time;
+              this.time = time;
               this.arg = arg;
               this.chart.render(arg)
               // this.calc(arg)
@@ -295,76 +305,8 @@ export default {
       
         ipcRenderer.on('time-progress', (_, time) =>{
           console.log(time)
-          let className = '';
-          const startClass = this.showStartNotice ? "progress start": '';
-          const endClasee = this.showEndNotice ? 'progress end' : '';
-          const {exchangeId, id} = this.$route.query;
-          // time = '09:29:00'
-          // ipcRenderer.send('info-log', time+ ' ' + id)
-          const instrumentID = id.match(/[a-zA-Z]+/)[0];
-          console.log(instrumentID, exchangeId)
-          switch(time){
-            case '08:59:00':
-            case '10:29:00':
-            case '13:29:00': 
-            case '20:59:00':
-              if(exchangeId !=='CFFEX'){
-                className = startClass
-              }
-              break;
-            case '09:29:00':
-            case '12:59:00':
-            if(exchangeId ==='CFFEX'){
-                className = startClass
-              }
-              break;
-            case '10:14:00':
-              if(exchangeId !=='CFFEX'){
-                className = endClasee
-              }
-              break;
-            case '11:29:00':
-           
-               className = endClasee
-              break
-            case '14:59:00':
-              if(exchangeId !=='CFFEX' || !instrumentID.startsWith('T')){
-                className = endClasee
-              }
-              break;
-            case '15:14:00':
-              if(exchangeId ==='CFFEX' && instrumentID.startsWith('T')){
-                className = endClasee
-              }
-              break;
-            case '22:59:00':
-              if(['rb', 'hc', 'bu', 'ru', 'fu', 'sp', 'a', 'b', 'y', 'm', 'jm', 'j', 'p', 'i', 'l', 'v', 'pp', 'eg', 'c', 'cs', 'rr', 'eb', 'SA', 'SH', 'SR', 'CF', 'CY', 'RM', 'PR', 'PX', 'MA', 'TA', 'OI', 'FG', 'ZC', 'nr', 'lu'].includes(instrumentID)){
-                className = endClasee
-              }
-              break;
-            case '00:59:00':
-              if(['cu', 'bc', 'al', 'ao', 'pb', 'zn', 'ni', 'sn', 'ss'].includes(instrumentID)){
-                 className = endClasee
-              }
-              break;
-            case '02:29:00':
-              if(['au', 'ag', 'sc'].includes(instrumentID)){
-                 className = endClasee
-              }
-              break;
-          }
-          if(className){
-            const currentSecond = new Date().getTime() %1000 / 1000;
-            const duration = 60 -currentSecond
-            this.$refs.progress.style.animationDuration = duration + 's';
-            this.$refs.progress.className = className;
-            setTimeout(()=>{
-              
-              this.$refs.progress.className = '';
-            }, 60*1000)
-            console.log(this.$refs.progress.style)
-          }
-        
+          this.showPregeress(time, 60)
+         
         })
       // ipcRenderer.on('place-order', (_, field) => {
        
@@ -668,6 +610,89 @@ export default {
     }
   },
   methods: {
+    showPregeress(time, percent){
+      let className = '';
+          const startClass = this.showStartNotice ? "progress start": '';
+          const endClasee = this.showEndNotice ? 'progress end' : '';
+          const {exchangeId, id} = this.$route.query;
+          // time = '09:29:00'
+          // ipcRenderer.send('info-log', time+ ' ' + id)
+          const instrumentID = id.match(/[a-zA-Z]+/)[0];
+          console.log(instrumentID, exchangeId)
+          switch(time){
+            case '08:59:00':
+            case '10:29:00':
+            case '13:29:00': 
+            case '20:59:00':
+              if(exchangeId !=='CFFEX'){
+                className = startClass
+              }
+              break;
+            case '09:29:00':
+            case '12:59:00':
+            if(exchangeId ==='CFFEX'){
+                className = startClass
+              }
+              break;
+            case '10:14:00':
+              if(exchangeId !=='CFFEX'){
+                className = endClasee
+              }
+              break;
+            case '11:29:00':
+           
+               className = endClasee
+              break
+            case '14:59:00':
+              if(exchangeId !=='CFFEX' || !instrumentID.startsWith('T')){
+                className = endClasee
+              }
+              break;
+            case '15:14:00':
+              if(exchangeId ==='CFFEX' && instrumentID.startsWith('T')){
+                className = endClasee
+              }
+              break;
+            case '22:59:00':
+              if(['rb', 'hc', 'bu', 'ru', 'fu', 'sp', 'a', 'b', 'y', 'm', 'jm', 'j', 'p', 'i', 'l', 'v', 'pp', 'eg', 'c', 'cs', 'rr', 'eb', 'SA', 'SH', 'SR', 'CF', 'CY', 'RM', 'PR', 'PX', 'MA', 'TA', 'OI', 'FG', 'ZC', 'nr', 'lu'].includes(instrumentID)){
+                className = endClasee
+              }
+              break;
+            case '00:59:00':
+              if(['cu', 'bc', 'al', 'ao', 'pb', 'zn', 'ni', 'sn', 'ss'].includes(instrumentID)){
+                 className = endClasee
+              }
+              break;
+            case '02:29:00':
+              if(['au', 'ag', 'sc'].includes(instrumentID)){
+                 className = endClasee
+              }
+              break;
+          }
+          if(className){
+            // const currentSecond = new Date().getTime() %1000 / 1000;
+          
+            let width = 100 * percent/60
+            this.$refs.progress.style.width = width + '%';
+            this.$refs.progress.className = className;
+           
+            const timer = setInterval(()=>{
+              width = width- 0.2
+              if(width < 0){
+                this.$refs.progress.className = '';
+                width = 0
+                clearInterval(timer)
+                
+              }
+              this.$refs.progress.style.width = width + '%';
+            }, 120)
+            setTimeout(()=>{
+                width = 0
+            },percent *1000)
+            // console.log(this.$refs.progress.style)
+          }
+        
+    },
     setConfig(update, arg){
       const {account,configId} = this.$route.query;
        let configs 
@@ -1109,8 +1134,9 @@ export default {
 
 }
 .progress-bar {
-  width: 100%;
- 
+  width: 90%;
+  position: absolute;
+  z-index: 1000;
   
 
   overflow: hidden;
@@ -1119,35 +1145,19 @@ export default {
 .progress {
  
   height: 6px;
-  
+  width: 100%;
   border-radius: 4px;
-  position: absolute;
-  z-index: 1000;
+  
 }
 .progress.start{
   background-color: #a60606;
-  width: 90%;
-  animation: countdown 60s linear forwards;
+  
+  
 }
 .progress.end{
   background-color: #0c37c5;
-  width: 90%;
-  animation: disappear 60s linear forwards;
+  float: right;
+  
 }
-@keyframes countdown {
-  0% {
-    width: 90%;
-  }
-  100% {
-    width: 0;
-  }
-}
-@keyframes disappear {
-  0% {
-    clip-path: inset(0 0 0 0); /* 初始状态，不裁剪 */
-  }
-  100% {
-    clip-path: inset(0 0 0 100%); /* 动画结束状态，裁剪左边 */
-  }
-}
+
 </style>

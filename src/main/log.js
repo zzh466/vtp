@@ -10,7 +10,7 @@ const logName = `${new Date().toLocaleDateString().replace(/\//g, '')}.log`;
 log.transports.console.level = 'silly';
 
 log.transports.file.resolvePath  = ()=> path.join(homeDir,'/logs',logName);
-log.transports.file.maxSize = 1024*1024 *10;
+log.transports.file.maxSize = 1024*1024 *40;
 ipcMain.on('err-log', function(_, msg){
     errorLog(msg)
 })

@@ -34,6 +34,7 @@ let trade;
 let STARTTRADE = false;
 let Maincycle;
 let LOCK = false;
+let LOCKed = false;
 let CFFEXLACK = false;
 let DicatorMap = {};
 function createWindow () {
@@ -109,6 +110,7 @@ function subscribeInstrument(id){
     const _tcp = tcp_client_list[i];
     const {instrumentIDs} = _tcp;
     if(instrumentIDs.includes(id)){
+      console.log(_tcp.args.port)
       _tcp.addinstrument(id)
       break;
     }
@@ -613,6 +615,13 @@ ipcMain.on('trade-login', (event, args) => {
     if(connectcount){
       clearTimeout(TRADETIME);
       clearTimeout(ORDERTIME);
+      
+        tcp_client_list.forEach(e => {
+          if(e.type==='udp'){
+            e.destroy()
+          }
+        });
+      
       trade.tasks.push(setTimeout(()=>{
         trade.next()
       }, 1500))
@@ -737,6 +746,10 @@ ipcMain.on('confirm-settlement', (event, tradingDay)=>{
 ipcMain.on('trade', (event, args) => {
   STARTTRADE= true;
   if(LOCK) return;
+  if(LOCKed){
+    event.sender.send('error-msg', {msg:'当前账户已经锁定，无法报单'})
+    return
+  }
   infoLog(JSON.stringify(args));
   const time = PriceData[args.instrumentID].UpdateTime + `.${PriceData[args.instrumentID].UpdateMillisec}`
   trade.trade(args, time);
@@ -760,6 +773,10 @@ function findCancelorder(args, title){
 }
 ipcMain.on('cancel-order', (event, args) => {
   if(LOCK) return;
+  if(LOCKed){
+    event.sender.send('error-msg', {msg:'当前账户已经锁定，无法撤单'})
+    return
+  }
  const arr = findCancelorder(args, '撤单');
  if(arr.length){
     arr.forEach(e => {
@@ -773,7 +790,10 @@ ipcMain.on('cancel-order', (event, args) => {
 })
 ipcMain.handle('async-cancel-order', (event, args)=>{
   if(LOCK) return;
- 
+  if(LOCKed){
+    event.sender.send('error-msg', {msg:'当前账户已经锁定，无法撤单'})
+    return
+  }
   const arr = findCancelorder(args, '先撤后下');
   if(arr.length){
     arr.forEach(e => {
@@ -781,6 +801,9 @@ ipcMain.handle('async-cancel-order', (event, args)=>{
     })
  }
   return trade.cancel(arr);
+})
+ipcMain.on('change-lock', (event, locked)=>{
+  LOCKed = locked;
 })
 ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
   console.log('触发强平1111111111111111')
@@ -900,7 +923,7 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
          }
           
       
-        let combOffsetFlag = ( specialExchangeId.includes(ExchangeID)  && combOffsetFlagMap[id]!=='1')? '3': '1';
+        let combOffsetFlag = ( specialExchangeId.includes(ExchangeID)  && count)? '3': '1';
        //股指合约要锁仓
         if(ExchangeID === 'CFFEX'&& instrumentID.startsWith('I') && !CFFEXLACK){
           combOffsetFlag = '0';
@@ -1096,19 +1119,26 @@ class TcpClient{
     }))
   }
   connect(){
-    const {host, port, instrumentIDs,  iCmdID, size = 36, } = this.args
+    let {host, port, instrumentIDs,  iCmdID, size = 36, } = this.args
     let tcp_client;
-    if(host === '192.168.0.19' ){
+  
+   
+  
+    if(['19301', '19299'].includes(port)){
+      this.type = 'udp'
+      
       tcp_client = new udpClient();
     }else {
+      this.type = 'tcp'
       tcp_client = new net.Socket()
     }
-  
+    console.log(this.type)
     this.tcp_client = tcp_client;
     this.instrumentIDs = instrumentIDs;
     this.iCmdID = iCmdID;
     this.size = size;
     tcp_client.setKeepAlive(true, 5*1000);
+
     tcp_client.connect({host, port},()=>{
      
       this.openInstruments.forEach(this.writeinstrument.bind(this))
@@ -1121,10 +1151,14 @@ class TcpClient{
       ['CmdID', 'int32'],
     ])
     let cacheArr = [];
-  
+    // let time = +new Date();
     tcp_client.on('data',function(data){
       // console.log(111111111111111)
       // console.log(data.length)
+      // let _time = +new Date();
+      // console.log(`${_time - time}`);
+      // console.log(data.length)
+      // time = _time;
       if(cacheArr.length){
         cacheArr.push(data);
         const length = cacheArr.reduce((a,b)=> a + b.length, 0);
@@ -1139,8 +1173,8 @@ class TcpClient{
           return
         } 
         const _head = headMsg.decodeMsg(data.slice(0, 8));
-        const {size, CmdID } = _head;
-        console.log(1111, size, CmdID, data.length)
+        const {size, CmdID } = _head; 
+        // console.log(1111, size, CmdID, data.length)
         if(data.length < size + 8){
       
           cacheArr.push(data)
@@ -1173,8 +1207,9 @@ class TcpClient{
     })
     tcp_client.on('close',(hadError ) =>{
       console.log('1231231')
+      this.tcp_client = null;
       if( mainWindow && !COLOSEALL){
-        
+       
         setTimeout(()=> this.connect(), 1000)
       
       }
@@ -1189,7 +1224,10 @@ class TcpClient{
     })
   }
   destroy(){
-    this.tcp_client.destroy()
+    if(this.tcp_client){
+      this.tcp_client.destroy()
+    }
+   
   }
   changeIns(instruments){
    

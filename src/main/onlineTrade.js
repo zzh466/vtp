@@ -159,7 +159,7 @@ class pupTrade {
             host:PuppetUrl,
             port: this.port
         })
-     
+        tcp_client.setKeepAlive(true, 5*1000);
         tcp_client.on('close',(hadError ) =>{
             
             console.log('tcp-close', hadError)
