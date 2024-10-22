@@ -5,8 +5,8 @@
       <el-descriptions-item label="账户状态"><span :style="{color:locked?'red': 'green'}">{{locked?'锁定': '正常'}}</span></el-descriptions-item>
      
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
-      <el-descriptions-item label="当前账户">{{currentAccount.m_AccountId}}</el-descriptions-item>
-      <el-descriptions-item label="appId">{{currentAccount.m_AppId}}</el-descriptions-item>
+      <el-descriptions-item label="当前账户">{{currentAccount.futureUserId}}</el-descriptions-item>
+      <el-descriptions-item label="appId">{{currentAccount.appId}}</el-descriptions-item>
       <el-descriptions-item label="期货账户状态"><span :style="{color:accountStatus?'green': 'red'}">{{accountStatus?'在线': '离线'}}</span></el-descriptions-item>
       <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="当前账户盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
@@ -1238,7 +1238,6 @@
         const account = userData.futureAccountVOList.find(e => e.id === active);
         
         this.currentAccount = account;
-      
         const {
           tradeAddr:ctp1_TradeAddress,
           id,
