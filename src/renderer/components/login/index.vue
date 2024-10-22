@@ -15,8 +15,8 @@
         <el-button type="primary" @click="cofirm">确认</el-button>
       </el-form-item>
    </el-form>
-    <el-checkbox v-if='step === 1' v-model='datachecked'> 行情监测</el-checkbox>
-      <el-checkbox v-if='step === 1' v-model='checked'> 历史行情交易</el-checkbox>
+    <!-- <el-checkbox v-if='step === 1' v-model='datachecked'> 行情监测</el-checkbox> -->
+      <!-- <el-checkbox v-if='step === 1' v-model='checked'> 历史行情交易</el-checkbox> -->
   </div>
 </template>
 
@@ -40,7 +40,7 @@
        
         step: this.$store.state.user.activeCtpaccount? 2: 1,
         checked: false,
-        datachecked: true
+        datachecked: false
         
        
       }

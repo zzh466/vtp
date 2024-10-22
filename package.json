@@ -22,8 +22,8 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "vtp2024",
-    "appId": "xinqi",
+    "productName": "穿透测试",
+    "appId": "xinqi_test",
     "nsis": {
       "allowToChangeInstallationDirectory": true,
       "oneClick": false

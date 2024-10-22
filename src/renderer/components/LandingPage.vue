@@ -5,14 +5,15 @@
       <el-descriptions-item label="账户状态"><span :style="{color:locked?'red': 'green'}">{{locked?'锁定': '正常'}}</span></el-descriptions-item>
      
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
-      <el-descriptions-item label="当前账户">{{currentAccount.futureUserName}}</el-descriptions-item>
+      <el-descriptions-item label="当前账户">{{currentAccount.m_AccountId}}</el-descriptions-item>
+      <el-descriptions-item label="appId">{{currentAccount.m_AppId}}</el-descriptions-item>
       <el-descriptions-item label="期货账户状态"><span :style="{color:accountStatus?'green': 'red'}">{{accountStatus?'在线': '离线'}}</span></el-descriptions-item>
       <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="当前账户盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="隔节误差">{{deviation.toFixed(2)}}</el-descriptions-item>
        <el-descriptions-item label="实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission + deviation).toFixed(2)}}</el-descriptions-item>
-      <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
-      <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
+      <!-- <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
+      <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item> -->
        <el-descriptions-item label="总实际盈亏">{{totalProfit}}</el-descriptions-item>
         <!-- <el-descriptions-item v-if="userData.futureAccountVOList.length > 1"><el-button type="primary" size="small" @click="changeAccount">切换账号</el-button></el-descriptions-item> -->
     </el-descriptions>
