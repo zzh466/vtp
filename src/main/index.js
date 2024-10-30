@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog , Notification} from 'electron'
 import  { receiveData }  from '../ctp/dataStruct';
-import { errorLog, infoLog} from './log';
+import { errorLog, infoLog, devLog} from './log';
 
 import net from 'net';
 import udpClient from './udp';
@@ -1121,7 +1121,8 @@ class TcpClient{
   connect(){
     let {host, port, instrumentIDs,  iCmdID, size = 36, } = this.args
     let tcp_client;
-  
+    // host = '127.0.0.1';
+    // port = '18899'
    
   
     if(['19301', '19299'].includes(port)){
@@ -1159,6 +1160,7 @@ class TcpClient{
       // console.log(`${_time - time}`);
       // console.log(data.length)
       // time = _time;
+      // devLog(data)
       if(cacheArr.length){
         cacheArr.push(data);
         const length = cacheArr.reduce((a,b)=> a + b.length, 0);
