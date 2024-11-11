@@ -37,6 +37,7 @@ let LOCK = false;
 let LOCKed = false;
 let CFFEXLACK = false;
 let DicatorMap = {};
+let flagTime = +new Date()
 function createWindow () {
   /**
    * Initial window options
@@ -553,6 +554,8 @@ ipcMain.on('trade-login', (event, args) => {
         ORDERTIME = null;
       }, 5000)
       return
+    }else{
+      infoLog(`${field.OrderStatus} ${field.StatusMsg} ${+new Date() - flagTime}`)
     }
    
     event.sender.send('receive-order', orderMap[key], key, needUpdate);
@@ -750,6 +753,7 @@ ipcMain.on('trade', (event, args) => {
     event.sender.send('error-msg', {msg:'当前账户已经锁定，无法报单'})
     return
   }
+  flagTime = +new Date();
   infoLog(JSON.stringify(args));
   const time = PriceData[args.instrumentID].UpdateTime + `.${PriceData[args.instrumentID].UpdateMillisec}`
   trade.trade(args, time);
@@ -767,6 +771,7 @@ function findCancelorder(args, title){
    }
  }
  if(arr.length){
+  flagTime = +new Date();
   infoLog(`${title}: ${JSON.stringify(arr.map(({InstrumentID, LimitPrice, VolumeTotalOrigina}) => ({InstrumentID, LimitPrice, VolumeTotalOrigina})))}`)
  }
  return arr;
