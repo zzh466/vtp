@@ -1128,7 +1128,10 @@ class TcpClient{
     let tcp_client;
     // host = '127.0.0.1';
     // port = '18899'
-   
+    // if(port === '18899'){
+    //   host = '111.229.232.221'
+    //   port = '18999'
+    // }
   
     if(['19301', '19299'].includes(port)){
       this.type = 'udp'

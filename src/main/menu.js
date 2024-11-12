@@ -2,6 +2,7 @@ import {Menu,BrowserWindow, shell, ipcMain } from 'electron'
 import {baseURL, winURL} from '../renderer/utils/utils'
 import { logPath } from './log';
 import {getConfig, setconfig} from './config'
+import {getyyyyMMdd} from '../renderer/utils/utils'
 console.log(logPath)
 let childwin = null;
 let subscribeIndicatorWin = null;
