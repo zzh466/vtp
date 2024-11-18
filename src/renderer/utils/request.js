@@ -5,7 +5,7 @@ import { baseURL, speak } from './utils';
 export default function request(config){
     
     return ipcRenderer.invoke('request', config).then(res=>{
-        console.log(res, config);
+    console.log(res, config);
         return res;
     })
 } 
@@ -83,7 +83,7 @@ export class TraderSocket{
                
                 if(checkExpire(all_arr, msg[1]))return
                 
-                ipcRenderer.send('info-log', `收到大行情信息 ${msg[1]}`)
+                // ipcRenderer.send('info-log', `收到大行情信息 ${msg[1]}`)
                 if(this.onActiveInstrumentFn){
                     this.onActiveInstrumentFn(msg[1])
                 }
@@ -106,7 +106,7 @@ export class TraderSocket{
                         notifi = '有大盘口'
                         break
                 }
-                ipcRenderer.send('info-log', `收到异动信息 ${msg[1]}`)
+                // ipcRenderer.send('info-log', `收到异动信息 ${msg[1]}`)
                 if(this.onActiveInstrumentFn){
                     this.onActiveInstrumentFn(instrument, true, notifi)
                 }
@@ -155,7 +155,7 @@ export class TraderSocket{
                 timerId = setTimeout(keepAlive, timeout);
             }
             keepAlive()
-            ipcRenderer.send('info-log', `${this.acountId}socket第${count}次链接`)
+            // ipcRenderer.send('info-log', `${this.acountId}socket第${count}次链接`)
             console.log(`客户端（client）：与服务器连接 ${count}`)
             if(this.task.length){
                 this.task.forEach(e => {
@@ -165,7 +165,7 @@ export class TraderSocket{
             }
         }
         ws.onerror=(e) =>{
-            ipcRenderer.send('err-log', `${this.acountId}socket已断开${JSON.stringify(e)}`)
+            // ipcRenderer.send('err-log', `${this.acountId}socket已断开${JSON.stringify(e)}`)
             console.log('客户端（client）：与服务器的连接已断开'+ e);
             this.ws.close();
         }

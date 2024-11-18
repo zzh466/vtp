@@ -30,7 +30,7 @@ if (process.env.NODE_ENV !== 'development') {
 }
 
 let mainWindow;
-let trade;
+let trade = {};
 let STARTTRADE = false;
 let Maincycle;
 let LOCK = false;
@@ -72,7 +72,10 @@ function createWindow () {
         url: 'access/logoutClient', 
       })
       trade.shouldReconnect = false
-      trade.logout();
+      if(trade.logout){
+        trade.logout();
+      }
+     
       infoLog(`${trade.m_UserId} 登出`)
 
     }
@@ -381,19 +384,19 @@ ipcMain.on('trade-login', (event, args) => {
   let ORDERTIME =  setTimeout(() => {
     event.sender.send('finish-loading', 'order')
   }, 5000);
-  if(trade){
-    rateMap = [];
-    catchRate = new Set();
-    trade.init(args);
+  // if(trade){
+  //   rateMap = [];
+  //   catchRate = new Set();
+  //   trade.init(args);
   
-    connectcount = 0;
-    STARTTRADE= false;
-    trade.logout();
-    trade.shouldReconnect = true;
-    opedwindow.forEach(({sender}) => sender.send('clear-trader'))
-    return
+  //   connectcount = 0;
+  //   STARTTRADE= false;
+  //   trade.logout();
+  //   trade.shouldReconnect = true;
+  //   opedwindow.forEach(({sender}) => sender.send('clear-trader'))
+  //   return
 
-  }
+  // }
   if(args.puppet){
     trade = new OnlineTrade(args);
   }else{

@@ -78,38 +78,7 @@ export default {
   //   }
   // },
   watch:{
-    traded(val) {
-      const buy = [], ask =[];
-      val.forEach(({Direction, Volume, Price}) => {
-        let same = buy, other=ask;
-        if(Direction === '1'){
-            same = ask;
-            other = buy;
-        }
-        while(Volume){
-          if(other.length){
-            other.shift();
-          }else{
-            same.push(Price)
-          }
-          Volume--
-        }
-      })
-      let direction = '0', price = buy;
-      if(ask.length){
-        direction = '1'
-        price=ask;
-      }
-      const results =  {
-        direction,
-        price
-      }
-      this.chart.traded = results;
-      this.chart.renderTradeOrder();
-      // console.log(results)
-      return results;
-
-    },
+  
     config: {
       deep: true,
       handler({volume, type, closeType}) {
@@ -256,7 +225,7 @@ export default {
              
               // console.log(this.$refs.progress, 123)
               // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
-                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime}, ${new Date().toISOString()}, ${time - this.time}`);
+                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime} ${arg.UpdateMillisec}, ${new Date().toISOString()}, ${time - this.time}`);
               // if(this.time && id.startsWith('I')){
               //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
               //   console.log(log)
@@ -414,8 +383,10 @@ export default {
       })
    
       ipcRenderer.on('clear-trader', ()=>{
+        this.startTrade = false;
         this.traded = [];
       })
+      let tarderTimeout 
       ipcRenderer.on('trade-order', (_, field, flag) => {
        
         let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag, TradeID, TradeType} = field;
@@ -469,11 +440,20 @@ export default {
               ipcRenderer.send('info-log', `${field.InstrumentID} 报单比成交晚返回`);
 
            }
-           
+            this.updateTrade(field)
+          }else{
+            this.traded.push(field);
+            if(tarderTimeout){
+              clearTimeout(tarderTimeout)
+            }
+            tarderTimeout = setTimeout(()=> {
+              tarderTimeout = null;
+              this.initTrade()
+            },100)
           }
           //有成交单进来就把先撤后下的队列给清除 防止出现撤单后成交依然挂着
           this.tasks =[]; 
-          this.traded.push(field);
+        
           
           //  console.log(this.traded.map(({Direction, Volume, Price}) => ({Direction, Volume, Price})))
           
@@ -556,6 +536,7 @@ export default {
         height = 280;
     }
     this.args = [];
+    
     return {
       showalert: false,
       showController:false,
@@ -610,6 +591,61 @@ export default {
     }
   },
   methods: {
+    initTrade(){
+      const val = this.traded;
+      const buy = [], ask =[];
+      val.forEach(({Direction, Volume, Price}) => {
+        let same = buy, other=ask;
+        if(Direction === '1'){
+            same = ask;
+            other = buy;
+        }
+        while(Volume){
+          if(other.length){
+            other.shift();
+          }else{
+            same.push(Price)
+          }
+          Volume--
+        }
+      })
+      let direction = '0', price = buy;
+      if(ask.length){
+        direction = '1'
+        price=ask;
+      }
+      const results =  {
+        direction,
+        price
+      }
+      this.chart.traded = results;
+      this.chart.renderTradeOrder();
+      // console.log(results)
+    },
+    updateTrade(field){
+      this.traded.push(field)
+      const result =  this.chart.traded;
+      let {direction = '0', price = []} = result;
+      let {Direction, Volume, Price} = field;
+      while(Volume){
+        if(Direction === direction){
+          price.push(Price)
+        }else{
+          if(price.length){
+            price.shift();
+          }else{
+            direction = Direction;
+            price.push(Price)
+          }
+        }
+        Volume--
+      }
+      this.chart.traded ={
+        direction,
+        price
+      }
+      this.chart.renderTradeOrder();
+    },
     showPregeress(time, percent){
       let className = '';
           const startClass = this.showStartNotice ? "progress start": '';

@@ -106,7 +106,8 @@ class Chart {
                 hold: '#00ff00',
                 limit: '#EF2E2E',
                 low: '#00ff00',
-                high: "#ffff00"
+                high: "#ffff00",
+                order: '#fffbf0'
             }
         }else{
               
@@ -121,7 +122,8 @@ class Chart {
                 hold: '#00ff00',
                 limit: '#EF2E2E',
                 low: '#00ff00',
-                high: "#ffff00"
+                high: "#ffff00",
+                 order: 'red'
             }
         }
        
@@ -524,7 +526,7 @@ class Chart {
             const  x = _x + (index-this.start) * barWidth;
             const height = Chart.getHeight(range, volume, volumeScaleHeight); 
            
-            ctx.fillStyle = OrderSysID.startsWith('TJBD_')?'blue':'red';
+            ctx.fillStyle = OrderSysID.startsWith('TJBD_')?'blue': VALUECOLOR.order;
             _volume[direction] = _volume[direction] + volume;
             ctx.fillRect(x,y,barWidth -1,height);
 
