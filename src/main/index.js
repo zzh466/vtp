@@ -30,7 +30,7 @@ if (process.env.NODE_ENV !== 'development') {
 }
 
 let mainWindow;
-let trade = {};
+let trade ;
 let STARTTRADE = false;
 let Maincycle;
 let LOCK = false;
@@ -116,7 +116,7 @@ function subscribeInstrument(id){
     if(instrumentIDs.includes(id)){
       console.log(_tcp.args.port)
       _tcp.addinstrument(id)
-      break;
+      // break;
     }
   }
 }
@@ -1060,7 +1060,7 @@ function sendParseData(parseData){
     
       win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
   }
-  if(trade.priceData){
+  if(trade && trade.priceData){
     trade.priceData[InstrumentID]  = [
         parseData.BidPrice1,
         parseData.AskPrice1,
@@ -1078,9 +1078,10 @@ function parseReceiveData(data){
   let parseData;
   
   parseData = decodeMsg.decodeMsg(data);
-  // console.log(parseData)
+  console.log(parseData, 'parseReceiveData')
   sendParseData(parseData)
   // console.log(parseData)
+  return parseData
   
 }
 function parseEncodeData(data){
@@ -1091,8 +1092,10 @@ function parseEncodeData(data){
   }
   
   const parseData = endecodeMsg.decodeMsg(data.slice(1));
+  console.log(parseData, 'parseEncodeData')
   // console.log(parseData)
   sendParseData(parseData)
+  return parseData
 }
 
 const ReqSubscribeMsg = new cppmsg.msg([
@@ -1100,12 +1103,15 @@ const ReqSubscribeMsg = new cppmsg.msg([
   ['iCmdID', 'int32'],
   ['Stru_ReqSubscribe', 'object', [['RequestID', 'int32'], ['InstrumentID', 'string', '32']]]
 ])
+let tcpIndex = 1
 class TcpClient{
   constructor(args){
     this.args = args;
     this.index = 1;
     this.openInstruments = [];
-  
+    this.tcpIndex = tcpIndex;
+    tcpIndex++
+    this.Timemap = {}
   }
   addinstrument(instrument){
     if(!this.openInstruments.includes(instrument)){
@@ -1136,7 +1142,7 @@ class TcpClient{
     //   port = '18999'
     // }
   
-    if(['19301', '19299'].includes(port)){
+    if(['19301', '19299', '18899'].includes(port)){
       this.type = 'udp'
       
       tcp_client = new udpClient();
@@ -1144,7 +1150,7 @@ class TcpClient{
       this.type = 'tcp'
       tcp_client = new net.Socket()
     }
-    console.log(this.type)
+    console.log(tcp_client.bufferSize, '12122')
     this.tcp_client = tcp_client;
     this.instrumentIDs = instrumentIDs;
     this.iCmdID = iCmdID;
@@ -1164,7 +1170,7 @@ class TcpClient{
     ])
     let cacheArr = [];
     // let time = +new Date();
-    tcp_client.on('data',function(data){
+    tcp_client.on('data', (data) =>{
       // console.log(111111111111111)
       // console.log(data.length)
       // let _time = +new Date();
@@ -1195,11 +1201,24 @@ class TcpClient{
         }
     
         const parseData = data.slice(8, size+8);
+        console.log(parseData, 1232156465)
+        let _data;
         if(CmdID === 11){
-          parseReceiveData(parseData)
+          _data = parseReceiveData(parseData)
         }else if(CmdID === 12){
-          parseEncodeData(parseData)
+          _data = parseEncodeData(parseData)
         }
+        console.log(_data, 1232156465)
+        if(_data){
+          const {InstrumentID } = _data;
+          const time = +new Date()
+          if(this.Timemap[InstrumentID]){
+                
+            devLog(`链接${this.tcpIndex}  ${InstrumentID} ${time - this.Timemap[InstrumentID]}`)
+          }
+          this.Timemap[InstrumentID] = time
+        }
+        
         data = data.slice(size + 8)
         
       }
@@ -1279,18 +1298,18 @@ ipcMain.on('start-receive', (event, args) =>{
       }
       //防止网络波动导致一些请求没有返回堵塞请求队列
      
-      if(trade && trade.tasks.length < 2){
-        taskcount = 0
-        trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
+      // if(trade && trade.tasks.length < 2){
+      //   taskcount = 0
+      //   trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {
           
-        })
-      }else{
-        taskcount ++;
-        if(taskcount > 1.5*60 && trade.tasks.length ){
-          trade.tasks = []
-          taskcount = 0
-        }
-      }
+      //   })
+      // }else{
+      //   taskcount ++;
+      //   if(taskcount > 1.5*60 && trade.tasks.length ){
+      //     trade.tasks = []
+      //     taskcount = 0
+      //   }
+      // }
     }, 1000)
   }
   tcp_client.connect();

@@ -43,7 +43,8 @@
    
     <el-button type="primary" @click=" timedialogVisible = true;confirmLoading= false">结算单查询</el-button>
     <el-button type="primary" v-if="userData.userAccount.toLowerCase() === 'xqlh'" @click=" historydialogVisible = true">历史成交查询 </el-button>
-    <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
+    <input ref='input' /> <p>数量：{{ count}}</p> 
+    <el-button type="primary" @click="startVolume2">链接服务器</el-button>
         <p >账户昨仓合约：{{positionsList }}</p>
        <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button></div>
       <div style="display: flex;">
@@ -229,7 +230,7 @@
     data(){
       const _this = this;
       return {
-
+        count: 0,
         dialogVisible: false,
         timedialogVisible: false,
         historydialogVisible: false,
@@ -238,7 +239,7 @@
         confirmLoading: true,
         confimInfoDate: '',
         orders: {},
-        loading: ['order', 'trade', 'config'],
+        loading: [ 'config'],
         orderData: [],
         instrumentsData: [],
         traderData: [],
@@ -437,7 +438,7 @@
           }
        
         })
-        this.login()
+        // this.login()
          
       })
       this.getCtpInfo();
@@ -1099,12 +1100,23 @@
           
           if(!this.loading.length){
             
-            this.startVolume();
+            // this.startVolume();
             
             this.init()
           }
         }
        
+      },
+      startVolume2(){
+        const value =  this.$refs.input.value;
+        const _quotAddr = value.split(':');
+        const code = ['2412', '2503', '2506']
+        const type = ['IC' , 'IH' , 'IM',  'IF'];
+
+        const instruments = type.reduce((a, b) => a.concat(code.map(e => `${b}${e}`)), []);
+        
+        this.count ++ ;
+        ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs:instruments,   iCmdID: 101, instruments});
       },
       startVolume(){
          if(this.started)return;

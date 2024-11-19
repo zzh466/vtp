@@ -1,5 +1,5 @@
 {
-  "name": "vtp",
+  "name": "vtp11",
   "version": "1.12.4",
   "author": "",
   "description": "trade",
@@ -22,8 +22,8 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "vtp2024",
-    "appId": "xinqi",
+    "productName": "vtptest",
+    "appId": "xinqitest",
     "nsis": {
       "allowToChangeInstallationDirectory": true,
       "oneClick": false
