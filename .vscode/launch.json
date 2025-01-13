@@ -7,7 +7,7 @@
             "request": "launch",
             "preLaunchTask": "npm: rebuildCTP:dev",
             "program": "node",
-            "args": ["${workspaceFolder}/test/ctp/try.js"],
+            // "args": ["${workspaceFolder}/test/ctp/try.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInstrument.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInsertOrder.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js"],
@@ -16,6 +16,7 @@
             // "args": ["${workspaceFolder}/test/ctp/reqSettlementInfoConfirm.js"],
             // "args": ["${workspaceFolder}/test/ctp/tradingAccount.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqTwoTraderAccount2.js"],
+            "args": ["${workspaceFolder}/test/qtp/tradingAccount.js"],
             "cwd": "${workspaceFolder}"
         },
         {
@@ -25,7 +26,8 @@
             "console": "integratedTerminal",
             // "program": "${workspaceFolder}/test/ctp/try.js",
             // "program": "${workspaceFolder}/test/ctp/reqInsertOrder.js",
-            "program": "${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js",
+            // "program": "${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js",
+            "program": "${workspaceFolder}/test/qtp/tradingAccount.js",
             "preLaunchTask": "npm: rebuildCTP:dev"
         }
     ]
