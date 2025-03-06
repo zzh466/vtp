@@ -15,8 +15,9 @@ import  './config';
 import  request  from './request';
 import '../renderer/store';
 import {version, winURL, specialExchangeId, tagTime } from '../renderer/utils/utils'
-
+import  { exec } from 'child_process';
 import  events  from 'events';
+import { error } from 'console';
 
 
 const Mainemitter = new  events.EventEmitter();
@@ -567,7 +568,7 @@ ipcMain.on('trade-login', (event, args) => {
   let send = false;
   trade.chainOn('rqInvestorPositionDetail', 'reqQryInvestorPositionDetail',function (isLast,field) {
     const { LastSettlementPrice, OpenDate, TradingDay} = field;
-    console.log(isLast, field,send, 'ssssssssssssssssss')
+    // console.log(isLast, field,send, 'ssssssssssssssssss')
     if( !isLast && !send){
       event.sender.send('add-loading', 'position')
       send = true;
@@ -1105,6 +1106,7 @@ class TcpClient{
     this.args = args;
     this.index = 1;
     this.openInstruments = [];
+    this.connectcount = 0
   
   }
   addinstrument(instrument){
@@ -1117,17 +1119,68 @@ class TcpClient{
     this.index ++; 
     const size = this.size;
     const iCmdID = this.iCmdID;
-    this.tcp_client.write(ReqSubscribeMsg.encodeMsg2({
-      size,
-      iCmdID,
-      Stru_ReqSubscribe: {
-        RequestID: this.index,
-        InstrumentID: instrument
-      }
-    }))
+    if(this.tcp_client){
+      this.tcp_client.write(ReqSubscribeMsg.encodeMsg2({
+        size,
+        iCmdID,
+        Stru_ReqSubscribe: {
+          RequestID: this.index,
+          InstrumentID: instrument
+        }
+      }))
+    }
+    
+  }
+  checktype(){
+    const {url} = this.args; 
+    const _url = url[0].split(':');
+    let host= _url[0];
+    let port= _url[1];
+    let cmd;
+    if(['19301', '19299'].includes(port)){
+      this.type = 'udp'
+    
+     
+    }else {
+      
+      this.type = 'tcp'
+    }
+    console.log(url)
+    if(url.length >1 && this.type === 'tcp'){
+      return new Promise(resolve => {
+        console.log('check start')
+        const tcp_client = new net.Socket();
+        // tcp_client.setTimeout(2000)
+        tcp_client.connect({host, port},()=>{
+          console.log(host, 'check')
+          this.port = port;
+          this.host = host;
+          resolve()
+          tcp_client.destroy()
+        })
+        tcp_client.on('error',  (e) => {
+          console.log(e, 'error')
+          const _url = url[1].split(':');
+          this.host= _url[0];
+          this.port= _url[1];
+          resolve()
+        })
+
+      })
+    }else{
+      this.port = port;
+      this.host = host;
+      return Promise.resolve()
+    }
   }
   connect(){
-    let {host, port, instrumentIDs,  iCmdID, size = 36, } = this.args
+    let { instrumentIDs,  iCmdID, size = 36, } = this.args
+    if(this.connectcount > 5){
+      mainWindow.webContents.send('error-msg', {msg:`行情服务${host}:${port} 链接次数过多，请点击强制重连`});
+      return;
+    }
+    this.connectcount ++ 
+    
     let tcp_client;
     // host = '127.0.0.1';
     // port = '18899'
@@ -1135,16 +1188,17 @@ class TcpClient{
     //   host = '111.229.232.221'
     //   port = '18999'
     // }
-  
-    if(['19301', '19299'].includes(port)){
-      this.type = 'udp'
+    
+    if(this.type === 'udp'){
+      
       
       tcp_client = new udpClient();
     }else {
-      this.type = 'tcp'
+     
       tcp_client = new net.Socket()
     }
-    console.log(this.type)
+    const { host , port} = this;
+    console.log(tcp_client.bufferSize, '12122')
     this.tcp_client = tcp_client;
     this.instrumentIDs = instrumentIDs;
     this.iCmdID = iCmdID;
@@ -1166,7 +1220,7 @@ class TcpClient{
     // let time = +new Date();
     tcp_client.on('data',function(data){
       // console.log(111111111111111)
-      // console.log(data.length)
+      // console.log(host, port)
       // let _time = +new Date();
       // console.log(`${_time - time}`);
       // console.log(data.length)
@@ -1293,7 +1347,12 @@ ipcMain.on('start-receive', (event, args) =>{
       }
     }, 1000)
   }
-  tcp_client.connect();
+  tcp_client.checktype().then(()=>{
+    console.log('check-client finish')
+    event.sender.send('check-client')
+    tcp_client.connect();
+  })
+ 
   tcp_client_list.push(tcp_client)
   // function connect(){
   //   infoLog('data open');
@@ -1476,7 +1535,13 @@ ipcMain.on('tcp-reconnect', function(){
   infoLog(`强制重连 重连${tcp_reconnct_count}个链接`)
 
   tcp_client_list.forEach(e=>{
-    setTimeout(()=> e.destroy(), 1);
+    if(e.connectcount > 5){
+      e.connectcount = 0;
+      e.connect()
+    }else{
+      setTimeout(()=> e.destroy(), 1);
+    }
+    
   })
 
 })

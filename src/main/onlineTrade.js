@@ -183,6 +183,7 @@ class pupTrade {
                 callback()
                 callback= null
             }
+            console.log(data.length)
             const cacheArr= this.cacheArr;
             cacheArr.push(data)
             const length = cacheArr.reduce((a,b)=> a + b.length, 0);
@@ -192,7 +193,7 @@ class pupTrade {
             data = Buffer.concat(cacheArr, length)
             this.cacheArr = []
             data = this.parseData(data)
-         
+            
             if(data.length){
                 this.cacheArr.push(data);
             }

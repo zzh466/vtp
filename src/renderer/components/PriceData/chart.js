@@ -637,7 +637,7 @@ class Chart {
         ctx.restore();
     }
     render(arg){
-       
+        
         if(!arg.LastPrice){
             arg.LastPrice = arg.AskPrice1 || arg.BidPrice1
         }
@@ -658,12 +658,12 @@ class Chart {
         if(arg.AskPrice5  &&  arg.AskPrice5 <= Number.MAX_SAFE_INTEGER){
             this.clearData(arg.AskPrice1 , arg.AskPrice5 );
         }
-        
+        let pauseAsk, pasuseBuy;
         for(let i=1; i<= 5; i++){
             let buyPirce = arg[`BidPrice${i}`];
             let buyIndex ;
             const flag = i > 1;
-            if(buyPirce){
+            if(buyPirce && !pasuseBuy){
                 buyIndex = this.getindex(buyPirce, flag)
                 const buyData = this.data[buyIndex];
                 if(buyData){
@@ -675,7 +675,7 @@ class Chart {
             
             const askPirce = arg[`AskPrice${i}`] ;
             let askIndex;
-            if(askPirce){
+            if(askPirce && !pauseAsk){
                 askIndex = this.getindex(askPirce, flag)
                 const askData = this.data[askIndex];
                 if(askData){
@@ -685,11 +685,14 @@ class Chart {
             }
             
             if(i === 1) {
-                if(buyIndex === undefined){
+                if(!buyPirce ){
                     buyIndex = askIndex 
+                    pasuseBuy = true;
                 }
-                if(askIndex === undefined){
-                    askIndex = buyIndex 
+                if(!askPirce ){
+                    askIndex = buyIndex;
+                    pauseAsk = true; 
+                    
                 }
                 this.buyIndex = buyIndex;
                 this.askIndex = askIndex;

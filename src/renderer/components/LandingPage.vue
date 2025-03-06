@@ -128,6 +128,7 @@
     // if(num < 0) return 0;
     return num
   }
+  let datacount = 0;
   export default {
     name: 'landing-page',
     components: {  Round , loginform, Order},
@@ -238,7 +239,7 @@
         confirmLoading: true,
         confimInfoDate: '',
         orders: {},
-        loading: ['order', 'trade', 'config'],
+        loading: ['order', 'trade', 'config', 'data'],
         orderData: [],
         instrumentsData: [],
         traderData: [],
@@ -607,7 +608,7 @@
               
               let { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay, UpdateTime} = priceData[4];
               
-              if(ExchangeID === 'CFFEX'){
+              if(ExchangeID === 'CFFEX' && !ClosePrice){
                 const _priceData = this.$store.state.user.instrument_info_pre_tradday[InstrumentID];
                 PreSettlementPrice = _priceData.SettlementPrice;
                 SettlementPrice = _priceData.SettlementPrice;
@@ -712,7 +713,14 @@
           this.init()
         })
       })
-    
+      ipcRenderer.on('check-client', (event, arg)=>{
+        console.log('check-client', datacount )
+        
+        datacount--
+        if(datacount===0){
+          this.finishLoading('data')
+        }
+      })
       this.timoutquery = setTimeout(()=>{
         console.log(this.loading)
         if(this.loading.length !== 0){
@@ -1097,7 +1105,7 @@
         if(index > -1) {
           this.loading.splice(index, 1)
           
-          if(!this.loading.length){
+          if(this.loading.length===1){
             
             this.startVolume();
             
@@ -1109,7 +1117,7 @@
       startVolume(){
          if(this.started)return;
         this.started = true;
-        const {quotVOList } = this.userData;
+        let {quotVOList } = this.userData;
 //         const quotAddr = '192.168.0.19:18899'.split(':');
 //         ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['ag2408','ag2412','au2408',
 
@@ -1122,16 +1130,40 @@
 // 'sc2409',
 // 'zn2408',
 // 'zn2409',],   iCmdID: 101});
+        const _quotVOList = [];
+        quotVOList.forEach(e =>{
+          let quotAddr = e.quotAddr;
+          // if(e.exchangeNo === 3){
+          //   quotAddr = '101.230.82.177:18899;101.230.82.177:18898'
+          // }else 
+          // if(e.exchangeNo === 4){
+          //   quotAddr = '101.132.114.246:18889'
+          // }
         
-        quotVOList.forEach((e) => {
+          const q = _quotVOList.find(v=> v.quotAddr===e.quotAddr)
+          if(q){
+            if(q.subInstruments.endsWith(',')){
+              q.subInstruments = q.subInstruments + e.subInstruments;
+            }else{
+              q.subInstruments = q.subInstruments+ ',' + e.subInstruments;
+            }
+          }else{
+            _quotVOList.push({...e, quotAddr})
+          }
+        })
+          
+        _quotVOList.forEach((e) => {
           // if(this.userData.id === 18 ){
             
-          //     e.quotAddr = '192.168.0.19:18899'
+              
           // }
           // let  e= quotVOList [2]
-           const _quotAddr = e.quotAddr.split(':');
+          let url = e.quotAddr.split(';') 
+            
+            console.log('start data')
+            datacount ++
             const instruments = e.subInstruments.split(',')
-            ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
+            ipcRenderer.send('start-receive', {url, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
         })
     },
       cancel(){

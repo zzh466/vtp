@@ -225,7 +225,9 @@ export default {
              
               // console.log(this.$refs.progress, 123)
               // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
-                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime} ${arg.UpdateMillisec}, ${new Date().toISOString()}, ${time - this.time}`);
+                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime} ${arg.Volume}, ${new Date().toISOString()}, ${time - this.time}`);
+                
+                console.log(arg)
               // if(this.time && id.startsWith('I')){
               //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
               //   console.log(log)
