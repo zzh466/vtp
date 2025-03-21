@@ -494,12 +494,21 @@ class Chart {
         if(this.data.length===0) return;
         
         const pricearray = this.placeOrder.reduce((a, b) => {
-            const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus, OrderSysID} =b;
+            const {LimitPrice, VolumeTotalOriginal, Direction, VolumeTraded, OrderStatus, OrderSysID,StopPrice} =b;
             
             if(OrderStatus !== '3' && OrderStatus!=='1' && OrderStatus!=='b'){
                 return a;
             }
-            const item = a.find(({price})=> price===LimitPrice)
+            const item = a.find(e=> {
+                
+                if(e.StopPrice){
+                    return e.StopPrice === StopPrice
+                }else{
+                    return e.price===LimitPrice;  
+                }
+                 
+                          
+            })
             if(item){
                 item.volume = item.volume + VolumeTotalOriginal -VolumeTraded
             }else{
@@ -507,7 +516,8 @@ class Chart {
                     price: LimitPrice,
                     volume: VolumeTotalOriginal -VolumeTraded,
                     direction: Direction,
-                    OrderSysID
+                    OrderSysID,
+                    StopPrice
                 })
             }
             return a;
@@ -519,15 +529,25 @@ class Chart {
         const _x = X + 50.5;
         const {barWidth, volumeScaleHeight, range} = this;
         let _volume = [0, 0];
-        pricearray.forEach(({price, volume, direction, OrderSysID = ''}) => {
-            const index = this.getindex(price, true);
+        
+        pricearray.forEach(({price, volume, direction, OrderSysID = '', StopPrice}) => {
+            let index 
             console.log(this.start, this.start + this.count)
+            const iscondition = OrderSysID.startsWith('TJBD_');
+            let color;
+            if(iscondition){
+                color = 'blue';
+                index = this.getindex(StopPrice, true);
+            }else{
+                index =this.getindex(price, true);
+                color= VALUECOLOR.order;
+                _volume[direction] = _volume[direction] + volume;
+            }
             if(index < this.start || index > this.start + this.count)return;
             const  x = _x + (index-this.start) * barWidth;
             const height = Chart.getHeight(range, volume, volumeScaleHeight); 
-           
-            ctx.fillStyle = OrderSysID.startsWith('TJBD_')?'blue': VALUECOLOR.order;
-            _volume[direction] = _volume[direction] + volume;
+            
+            ctx.fillStyle = color
             ctx.fillRect(x,y,barWidth -1,height);
 
         })
@@ -685,11 +705,11 @@ class Chart {
             }
             
             if(i === 1) {
-                if(!buyPirce ){
+                if(!buyPirce || buyPirce>= Number.MAX_SAFE_INTEGER || buyPirce <= Number.MIN_SAFE_INTEGER){
                     buyIndex = askIndex 
                     pasuseBuy = true;
                 }
-                if(!askPirce ){
+                if(!askPirce  || askPirce>= Number.MAX_SAFE_INTEGER || askPirce <= Number.MIN_SAFE_INTEGER){
                     askIndex = buyIndex;
                     pauseAsk = true; 
                     

@@ -1109,6 +1109,9 @@
             
             this.startVolume();
             
+          
+          }
+          if(this.loading.length === 0){
             this.init()
           }
         }
@@ -1135,8 +1138,9 @@
           let quotAddr = e.quotAddr;
           // if(e.exchangeNo === 3){
           //   quotAddr = '101.230.82.177:18899;101.230.82.177:18898'
-          // }else 
-          // if(e.exchangeNo === 4){
+          // }
+          
+          // else  if(e.exchangeNo === 4){
           //   quotAddr = '101.132.114.246:18889'
           // }
         

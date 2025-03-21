@@ -27,16 +27,21 @@
                 </el-select>
             </el-form-item>
              <el-form-item label='超价' prop='overprice' required>
-                  <el-input v-model='editcondition.overprice' type="number"></el-input>
-                    
+                  <el-input v-model='editcondition.overprice' type="number" v-show="!upperLowPrice"></el-input>
+                  <el-checkbox v-model="upperLowPrice">以涨跌停价挂单</el-checkbox>
               </el-form-item>
             <el-form-item label='方向' prop='direction' required>
                 <el-select v-model="editcondition.direction">
-                    <el-option value='0' label='买'></el-option>
-                    <el-option value='1' label='卖'></el-option>
+                    <el-option value='0' label='多'></el-option>
+                    <el-option value='1' label='空'></el-option>
                 </el-select>
             </el-form-item>
-            
+            <el-form-item label='开仓方式' prop='combOffsetFlag' required>
+                <el-select v-model="editcondition.combOffsetFlag">
+                    <el-option value='0' label='开仓'></el-option>
+                    <el-option value='1' label='平仓 '></el-option>
+                </el-select>
+            </el-form-item>
               <el-form-item label='手数' prop='volume' required>
                   <el-input v-model='editcondition.volume'  type="number"></el-input>
                     
@@ -67,7 +72,7 @@ import { closeSync } from 'original-fs';
 
 const delayList = []
 let timestamp = 0
-
+let conditionStatus = false;     
 export default {
   components: {
     Controller
@@ -225,9 +230,9 @@ export default {
              
               // console.log(this.$refs.progress, 123)
               // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
-                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime} ${arg.Volume}, ${new Date().toISOString()}, ${time - this.time}`);
+                // ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime} ${arg.Volume}, ${new Date().toISOString()}, ${time - this.time}`);
                 
-                console.log(arg)
+                // console.log(arg)
               // if(this.time && id.startsWith('I')){
               //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
               //   console.log(log)
@@ -316,6 +321,7 @@ export default {
             let cancel = 0;
             let open = 0;
             let big_todayCancel = 0;
+            let condition = false;
             arr.forEach(e => {
               const {OrderStatus, CombOffsetFlag, VolumeTraded, VolumeTotal} = e;
               if(CombOffsetFlag === '0'){
@@ -328,9 +334,11 @@ export default {
                   big_todayCancel+= 1
                 }
               }
-             
+              if(OrderStatus === 'b'){
+                condition = true;
+              }
             })
-
+            conditionStatus = condition;
             this.instrumet.todayVolume = open;
             this.instrumet.todayCancel = cancel;
             this.instrumet.big_todayCancel = big_todayCancel;
@@ -401,6 +409,9 @@ export default {
           if(!flag){
             
             const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
+            if(conditionStatus){
+              ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: this.$route.query.id});
+            }
            //以为网络等原因拍单情况下 成交信息会比报单信息先返回，所以这里一单出现这种情况将成交信息放到延迟队列中等报单信息返回在做操作
            const delay = function(CombOffsetFlag){
             if(CombOffsetFlag === '0'){
@@ -565,8 +576,10 @@ export default {
         overprice: 1,
         direction: '0',
         volume: 1,
-        contingentCondition: '6'
+        contingentCondition: '6',
+        combOffsetFlag: '0'
       },
+      upperLowPrice: false,
       arg: {},
       limitcondition: [{
         label: '最新价大于等于条件价',
@@ -784,12 +797,33 @@ export default {
     },
     conditionTrade(){
       if(!this.showbar || !this.chart.data.length|| this.showCondition )return;
+      const orders  = this.chart.holdVolume.reduce((a,b) => a+b,0);
+      if(orders ){
+        Notification({
+          message: '当前合约有未成交报单，请撤单或等待报单成交后再申报条件单',
+          duration: 4000
+        })
+        return
+      }
       const index = (this.left - 105) / this.stepwidth;
       let {start} = this.chart;
       const  limitPrice = +this.chart.data[index + start].price;
       const traded = this.chart.traded;
+      console.log(traded)
+      let combOffsetFlag = '0';
+      let volume = 1;
+      const  { yesterdayAsk, yesterdayBuy} = this.instrumet;
       if(traded.direction && traded.price.length){
         this.editcondition.direction = traded.direction === '0'? '1': '0';
+     
+        if(this.config.type !== '0' || yesterdayAsk|| yesterdayBuy){
+          combOffsetFlag = '1'
+        }
+        volume=  traded.price.length;
+      }else{
+        if(this.config.type !== '2' && (yesterdayAsk|| yesterdayBuy)){
+          combOffsetFlag = '1'
+        }
       }
       const {LastPrice} = this.arg;
       
@@ -797,9 +831,11 @@ export default {
         this.editcondition.contingentCondition = '8'
       }else{
         this.editcondition.contingentCondition = '6'
-      }
+      } 
       this.showCondition = true;
+      this.editcondition.combOffsetFlag = combOffsetFlag;
       this.editcondition.price = limitPrice;
+      this.editcondition.volume = volume;
     },
     mouseTrade(){
       if(!this.showbar || !this.chart.data.length || this.showCondition) return;
@@ -833,7 +869,13 @@ export default {
       
     },
     putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume, configs){
-       const instrumentID = this.$route.query.id;
+      if(conditionStatus ){
+        Notification({
+            message: '当前合约存在未触发条件单，请撤单后再交易',
+            duration: 5000
+        })
+        return
+      }
       let combOffsetFlag = '0'
       let {traded, holdVolume} = this.chart;
       holdVolume = holdVolume[direction];
@@ -854,8 +896,13 @@ export default {
       }
       const traderData= this.checkLock(direction, volumeTotalOriginal,combOffsetFlag);
       if(!traderData) return
-      console.log({limitPrice, instrumentID, ...traderData})
+      console.log({limitPrice, ...traderData})
       this.startTrade = true;
+      this.takeOrder({...traderData,limitPrice}, configs);
+    
+      
+    },
+    takeOrder(traderData,configs){
       const _combOffsetFlag = traderData.combOffsetFlag;
       const _volumeTotalOriginal = traderData.volumeTotalOriginal;
       console.log(this.accountStatus, _combOffsetFlag, this.instrumet.openvolume_limit)
@@ -875,6 +922,10 @@ export default {
        
        
       }
+      
+      const instrumentID = this.$route.query.id;
+      let { limitPrice} = traderData;
+      
       if(limitPrice < this.chart.lowerLimitPrice){
         limitPrice = this.chart.lowerLimitPrice;
       }
@@ -882,6 +933,7 @@ export default {
         limitPrice = this.chart.UpperLimitPrice; 
       }
       timestamp = +Date.now()
+      console.log(limitPrice, traderData)
       if(Array.isArray(traderData.volumeTotalOriginal)){
         if(traderData.volumeTotalOriginal[0]){
           ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId, ...configs})
@@ -890,11 +942,9 @@ export default {
         ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal: traderData.volumeTotalOriginal[1],combOffsetFlag: '3', ExchangeID: this.exchangeId, ...configs})
 
       }else{
-        ipcRenderer.send('trade', {limitPrice, instrumentID, ...traderData, ExchangeID: this.exchangeId, ...configs})
+        ipcRenderer.send('trade', { ...traderData,limitPrice, instrumentID, ExchangeID: this.exchangeId, ...configs})
       }
-      
     },
-    
     checkLock(direction, volumeTotalOriginal,combOffsetFlag){
       console.log(this.instrumet); 
       const {todayAsk, todayBuy, yesterdayAsk, yesterdayBuy} = this.instrumet;
@@ -1046,29 +1096,51 @@ export default {
       this.$refs.form.validate((valid)=>{
         if(valid){
           
-         let {price, overprice, contingentCondition, direction, volume} = this.editcondition;
+         let {price, overprice, contingentCondition, direction, volume, combOffsetFlag} = this.editcondition;
          price = parseFloat(price)
           const {tick} = this.$route.query;
          
-          if(direction === '1'){
-            overprice = -overprice
+          if(combOffsetFlag === '1' && specialExchangeId.includes(this.exchangeId)){
+            const { yesterdayAsk, yesterdayBuy} = this.instrumet;
+            if(!yesterdayAsk && !yesterdayBuy){
+               combOffsetFlag = '3'
+            }
+           
           }
           
-        const limitPrice = price+ tick * overprice;
-        this.putOrder(limitPrice, direction, parseInt(volume), {ContingentCondition: contingentCondition, StopPrice: price})
+          let limitPrice
+          console.log(this.chart)
+          if(this.upperLowPrice){
+            if(direction === '1'){
+              limitPrice = this.chart.lowerLimitPrice;
+            }else{
+              limitPrice = this.chart.UpperLimitPrice;
+            }
+          }else{
+            
+            if(direction === '1'){
+              
+              overprice = -overprice
+            }
+             limitPrice = price+ tick * overprice;
+          }
+      
+        this.takeOrder({limitPrice, direction, volumeTotalOriginal: parseInt(volume), combOffsetFlag}, {ContingentCondition: contingentCondition, StopPrice: price})
         this.showCondition = false;
         }
       })
     },
     validator(rules, value, callback) {
+      
         value = parseFloat(value);
         const {LowerLimitPrice, UpperLimitPrice, LastPrice} = this.arg;
         const {tick} = this.$route.query;
+        const {decimal} = this.chart
         if(value < LowerLimitPrice || value > UpperLimitPrice){
           return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice.toFixed(this.chart.decimal)}, 小于${this.arg.UpperLimitPrice.toFixed(this.chart.decimal)}`))
         }
-        
-        if(Math.abs((value -LastPrice).toFixed(2)*100) % (tick*100) !== 0) {
+      
+        if( ((value -LowerLimitPrice) * Math.pow(10, decimal)).toFixed()% (tick * Math.pow(10, decimal)) !==0) {
           return callback(new Error(`触发价格非最小单位的价格`))
         }
         callback();
