@@ -1151,21 +1151,26 @@ class TcpClient{
         console.log('check start')
         const tcp_client = new net.Socket();
         // tcp_client.setTimeout(2000)
+        let timeout =  setTimeout(()=>{
+          console.log(host, port, 'timeout')
+          const _url = url[1].split(':');
+          this.host= _url[0];
+          this.port= _url[1];
+          tcp_client.destroy()
+          resolve()
+        }, 3000)
+        tcp_client.on('error',  (e) => {
+          console.log(e, 'error')
+        })
         tcp_client.connect({host, port},()=>{
           console.log(host, 'check')
           this.port = port;
           this.host = host;
-          resolve()
           tcp_client.destroy()
-        })
-        tcp_client.on('error',  (e) => {
-          console.log(e, 'error')
-          const _url = url[1].split(':');
-          this.host= _url[0];
-          this.port= _url[1];
+          clearTimeout(timeout)
           resolve()
+          
         })
-
       })
     }else{
       this.port = port;
