@@ -1,5 +1,5 @@
-var ctp = require('../../build/Debug/ctp.node');
-ctp.settings({ log: true });
+var ctp = require('../../build/Debug/ctpmini.node');
+ctp.settings({ log: false });
 
 // simnow hanzhe
 // var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
@@ -14,20 +14,8 @@ ctp.settings({ log: true });
 // var m_AuthCode = "0000000000000000";
 
 
-// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
-// var m_BrokerId = "9999";
-// var m_UserId = "161517";
-// var m_InvestorId = "161517";
-// var m_PassWord = "xzqxzqa";
-// var m_TradingDay = "20210805";
-// var m_AccountId = "161517";
-// var m_CurrencyId = "CNY";
-// var m_AppId = "simnow_client_test";
-// var m_AuthCode = "0000000000000000";
-
-
 // CTP MINI
-var ctp1_TradeAddress = "tcp://36.152.217.98:31803";
+var ctp1_TradeAddress = "tcp://58.240.234.72:21803";
 var m_BrokerId = "9060";
 var m_UserId = "199803";
 var m_InvestorId = "199803";
@@ -35,7 +23,7 @@ var m_PassWord = "abc123";
 var m_TradingDay = "20210805";
 var m_AccountId = "199803";
 var m_CurrencyId = "CNY";
-var m_AppId = "simnow_client_test";
+var m_AppId = "client_lxz_2024083";
 var m_AuthCode = "0000000000000000";
 
 console.log("try.js starting");
@@ -63,7 +51,9 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     console.log("rspUserLogin: info", JSON.stringify(info));
     login = true;
 
-    trader.reqQryInvestorPositionDetail(m_BrokerId, m_InvestorId, function (field) {
+    // 为空时查询所有
+    var instrumentID = "j";
+    trader.reqQryInstrument(instrumentID, function (field) {
         console.log('reqQryInstrument is callback');
         console.log(field);
     })
@@ -73,12 +63,12 @@ trader.on('rspError', function (requestId, isLast, field) {
     console.log(JSON.stringify(field));
 });
 
-trader.on('rqInvestorPositionDetail', function (requestId, isLast, field, info) {
-    console.log('rqInvestorPositionDetail');
+trader.on('rqInstrument', function (requestId, isLast, field, info) {
+    console.log('rqInstrument');
     console.log(JSON.stringify(requestId));
     console.log(JSON.stringify(isLast));
-    console.log("rqInvestorPositionDetail: field", JSON.stringify(field));
-    console.log("rqInvestorPositionDetail: info", JSON.stringify(info));
+    console.log("rqInstrument: field", JSON.stringify(field));
+    console.log("rqInstrument: info", JSON.stringify(info));
 })
 
 trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {

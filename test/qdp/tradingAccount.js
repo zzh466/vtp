@@ -1,4 +1,4 @@
-var ctp = require('../../build/Debug/qtp.node');
+var ctp = require('../../build/Debug/qdp.node');
 ctp.settings({ log: true });
 
 // simnow hanzhe
@@ -17,10 +17,20 @@ var m_TradeAddress = "tcp://140.207.230.90:20000"
 var m_BrokerId = "guofu";
 var m_UserId = "01020456";
 var m_InvestorId = m_BrokerId + "01020456";
-var m_PassWord = "xxx123456";
+var m_PassWord = "054596";
 var m_AccountId = "01020456";
-var m_AppId = "client_vtp_20200730";
-var m_AuthCode = "IAPGVB87LZ44MTVI";
+var m_AppId = "client_xxx_1.0";
+var m_AuthCode = "06565032d59486062528abef3ede2154";
+
+// 测试账号
+// var m_TradeAddress = "tcp://101.230.178.183:20039"
+// var m_BrokerId = "guofu";
+// var m_UserId = "80010274";
+// var m_InvestorId = m_BrokerId + m_UserId;
+// var m_PassWord = "123456";
+// var m_AccountId = m_UserId;
+// var m_AppId = "client_test_v1";
+// var m_AuthCode = "8ef130b369be55a63f1940eeeb931223";
 
 console.log("try.js starting");
 
@@ -65,7 +75,7 @@ trader.on('rqTradingAccount', function (requestId, isLast, field, info) {
     console.log("rqTradingAccount: info", JSON.stringify(info));
 })
 
-trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
+trader.connect(m_TradeAddress, undefined, 2, 0, function (result) {
     console.log("in js code:", 'connect return val is ' + result);
 });
 
