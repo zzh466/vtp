@@ -45,12 +45,15 @@
     <el-button type="primary" v-if="userData.userAccount.toLowerCase() === 'xqlh'" @click=" historydialogVisible = true">历史成交查询 </el-button>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
         <p >账户昨仓合约：{{positionsList }}</p>
-       <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button></div>
+       <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button>     
+                  <!-- <el-button @click="testDev">测试</el-button> -->
+      </div>
       <div style="display: flex;">
          
         <div v-for='instrument in subscribelInstruments' :key ='instrument.id' :style="{width: 100 / subscribelInstruments.length + '%', marginRight: '4px'}">
           <Table    height='300' @row-dblclick='start($event, instrument.id)' :tableData='instrumentsData | changeNo(instrument.id)' :columns= 'instrumentsColumns'/>
         </div>
+    
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
@@ -359,7 +362,7 @@
             instruments = instruments.split(',')
             info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
           }
-          ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info})
+          ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
         }
         
          
@@ -1327,6 +1330,16 @@
               data
           })
         this.loginVisible = false;
+      },
+      testDev(){
+        
+        let instruments = 'IC,IF'
+        let info = this.instrumentInfo;
+          if(instruments) {
+            instruments = instruments.split(',')
+            info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
+          }
+          ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
       }
     },
     beforeDestroy(){

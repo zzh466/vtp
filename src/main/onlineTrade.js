@@ -44,6 +44,7 @@ class pupTrade {
         this.port = ''
         this.emitter = new  events.EventEmitter();
         this.cacheArr = [];
+        this.relogining = false
     }
     parseData(data){
        
@@ -59,12 +60,17 @@ class pupTrade {
             }
             switch(head){
                 case 1:             
-               
+                    
                     this.emitter.emit('connect')
                    
                     break
                 case 2:
-                    this.emitter.emit('relogin')
+                    
+                    errorLog('傀儡机消息头错误')
+                    if(!this.relogining){
+                        this.relogining = true;
+                        this.emitter.emit('relogin')
+                    }
                     break;
                 case 33: 
                     
@@ -159,6 +165,7 @@ class pupTrade {
             host:PuppetUrl,
             port: this.port
         })
+        this.relogining = false;
         tcp_client.setKeepAlive(true, 5*1000);
         tcp_client.on('close',(hadError ) =>{
             
@@ -168,14 +175,14 @@ class pupTrade {
             this.tcp_client = null;
           })
         tcp_client.on('error',(error ) =>{
-            if(error.code= 'ECONNREFUSED'){
+         
                 const window=  BrowserWindow.getAllWindows();
                 if(window.length){
                     window[0].webContents.send('error-msg', {msg:'当前账户连接服务器异常请联系管理员'});
                     errorLog(`傀儡机链接异常 ${JSON.stringify(error)}`)
                 }
                
-            }
+            
             
         })
         tcp_client.on('data', (data) => {
@@ -313,6 +320,7 @@ class onlineTrade extends Trade{
     }
     init(args){
         this.tasks =[];
+        this.relogining = false;
         this.id = args.id
         this.m_BrokerId =args.m_BrokerId;
         this.m_UserId = args.m_UserId;

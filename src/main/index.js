@@ -39,6 +39,16 @@ let LOCKed = false;
 let CFFEXLACK = false;
 let DicatorMap = {};
 let flagTime = +new Date()
+let TMPCLOSE = false;
+let InstrumentIDINFO = []
+
+function checkLock(instrumentID){
+ 
+  if(LOCK && (!TMPCLOSE || !instrumentID || InstrumentIDINFO.find(e => e.InstrumentID === instrumentID))){
+      return true
+  }
+  return false
+}
 function createWindow () {
   /**
    * Initial window options
@@ -752,7 +762,7 @@ ipcMain.on('confirm-settlement', (event, tradingDay)=>{
 
 ipcMain.on('trade', (event, args) => {
   STARTTRADE= true;
-  if(LOCK) return;
+  if(checkLock(args.instrumentID)) return;
   if(LOCKed){
     event.sender.send('error-msg', {msg:'当前账户已经锁定，无法报单'})
     return
@@ -781,7 +791,11 @@ function findCancelorder(args, title){
  return arr;
 }
 ipcMain.on('cancel-order', (event, args) => {
-  if(LOCK) return;
+  let value = ''
+  if(args.key && args.key === 'InstrumentID'){
+    value = args.key;
+  }
+  if(checkLock(value)) return;
   if(LOCKed){
     event.sender.send('error-msg', {msg:'当前账户已经锁定，无法撤单'})
     return
@@ -798,7 +812,11 @@ ipcMain.on('cancel-order', (event, args) => {
  trade.cancel(arr);
 })
 ipcMain.handle('async-cancel-order', (event, args)=>{
-  if(LOCK) return;
+  let value = ''
+  if(args.key && args.key === 'InstrumentID'){
+    value = args.key;
+  }
+  if(checkLock(value)) return;
   if(LOCKed){
     event.sender.send('error-msg', {msg:'当前账户已经锁定，无法撤单'})
     return
@@ -814,10 +832,12 @@ ipcMain.handle('async-cancel-order', (event, args)=>{
 ipcMain.on('change-lock', (event, locked)=>{
   LOCKed = locked;
 })
-ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
+ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}, tmpClose) => {
   console.log('触发强平1111111111111111')
   if(LOCK === true) return;
   LOCK = true;
+  TMPCLOSE = tmpClose;
+  InstrumentIDINFO = instrumentInfo;
   const tarderarr = positionMap.concat(tradeMap);
   let length = tradeMap.length;
   let count = 0;
@@ -834,6 +854,9 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}) => {
     const arr = findCancelorder('', '撤单')
     .filter(e => {
       const {LimitPrice, InstrumentID, Direction, VolumeTotal, VolumeTraded} = e;
+      if(tmpClose && !instrumentInfo.find(e => e.InstrumentID === InstrumentID)){
+        return false
+      }
       const priceData = PriceData[InstrumentID] || {};
       const {LowerLimitPrice, UpperLimitPrice} = priceData;
       if(Direction ==='0' && LimitPrice >= UpperLimitPrice || (Direction === '1' && LimitPrice <=LowerLimitPrice )){
