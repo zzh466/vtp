@@ -1,4 +1,4 @@
-var ctp = require('../../build/Debug/ctp.node');
+var ctp = require('../../build/Debug/qdp.node');
 ctp.settings({ log: true });
 
 // simnow hanzhe
@@ -13,30 +13,24 @@ ctp.settings({ log: true });
 // var m_AppId = "simnow_client_test";
 // var m_AuthCode = "0000000000000000";
 
+var m_TradeAddress = "tcp://140.207.230.90:20000"
+var m_BrokerId = "guofu";
+var m_UserId = "01020456";
+var m_InvestorId = m_BrokerId + "01020456";
+var m_PassWord = "054596";
+var m_AccountId = "01020456";
+var m_AppId = "client_xxx_1.0";
+var m_AuthCode = "06565032d59486062528abef3ede2154";
 
-// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
-// var m_BrokerId = "9999";
-// var m_UserId = "161517";
-// var m_InvestorId = "161517";
-// var m_PassWord = "xzqxzqa";
-// var m_TradingDay = "20210805";
-// var m_AccountId = "161517";
-// var m_CurrencyId = "CNY";
-// var m_AppId = "simnow_client_test";
-// var m_AuthCode = "0000000000000000";
-
-
-// CTP MINI
-var ctp1_TradeAddress = "tcp://36.152.217.98:31803";
-var m_BrokerId = "9060";
-var m_UserId = "199803";
-var m_InvestorId = "199803";
-var m_PassWord = "abc123";
-var m_TradingDay = "20210805";
-var m_AccountId = "199803";
-var m_CurrencyId = "CNY";
-var m_AppId = "simnow_client_test";
-var m_AuthCode = "0000000000000000";
+// 测试账号
+// var m_TradeAddress = "tcp://101.230.178.183:20039"
+// var m_BrokerId = "guofu";
+// var m_UserId = "80010274";
+// var m_InvestorId = m_BrokerId + m_UserId;
+// var m_PassWord = "123456";
+// var m_AccountId = m_UserId;
+// var m_AppId = "client_test_v1";
+// var m_AuthCode = "8ef130b369be55a63f1940eeeb931223";
 
 console.log("try.js starting");
 
@@ -63,8 +57,8 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     console.log("rspUserLogin: info", JSON.stringify(info));
     login = true;
 
-    trader.reqQryInvestorPositionDetail(m_BrokerId, m_InvestorId, function (field) {
-        console.log('reqQryInstrument is callback');
+    trader.reqQryTradingAccount(m_BrokerId, m_InvestorId, function (field) {
+        console.log('reqQryTradingAccount is callback');
         console.log(field);
     })
 });
@@ -73,15 +67,15 @@ trader.on('rspError', function (requestId, isLast, field) {
     console.log(JSON.stringify(field));
 });
 
-trader.on('rqInvestorPositionDetail', function (requestId, isLast, field, info) {
-    console.log('rqInvestorPositionDetail');
+trader.on('rqTradingAccount', function (requestId, isLast, field, info) {
+    console.log('rqTradingAccount');
     console.log(JSON.stringify(requestId));
     console.log(JSON.stringify(isLast));
-    console.log("rqInvestorPositionDetail: field", JSON.stringify(field));
-    console.log("rqInvestorPositionDetail: info", JSON.stringify(info));
+    console.log("rqTradingAccount: field", JSON.stringify(field));
+    console.log("rqTradingAccount: info", JSON.stringify(info));
 })
 
-trader.connect(ctp1_TradeAddress, undefined, 2, 0, function (result) {
+trader.connect(m_TradeAddress, undefined, 2, 0, function (result) {
     console.log("in js code:", 'connect return val is ' + result);
 });
 
