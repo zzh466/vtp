@@ -7,8 +7,8 @@
 #include <map>
 #include <fstream>
 #include <node.h>
-#include "ThostFtdcTraderApi.h"
-#include "ThostFtdcUserApiDataType.h"
+#include "../ctpmini_20240923/ThostFtdcTraderApi.h"
+#include "../ctpmini_20240923/ThostFtdcUserApiDataType.h"
 #include <uv.h>
 #include <node_object_wrap.h>
 #include "uv_trader.h"

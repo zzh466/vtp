@@ -8,7 +8,7 @@
             "preLaunchTask": "npm: rebuildCTP:dev",
             "program": "node",
             // "args": ["${workspaceFolder}/test/ctp/try.js"],
-            "args": ["${workspaceFolder}/test/ctpmini/reqInstrumentCommissionRate.js"],
+            "args": ["${workspaceFolder}/test/ctpmini/reqInvestorPositionDetail.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInsertOrder.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
