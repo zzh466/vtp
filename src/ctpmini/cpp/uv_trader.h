@@ -5,8 +5,8 @@
 #include <string>
 #include <map>
 #include <fstream>
-#include "ThostFtdcTraderApi.h"
-#include "ThostFtdcUserApiDataType.h"
+#include "../ctpmini_20240923/ThostFtdcTraderApi.h"
+#include "../ctpmini_20240923/ThostFtdcUserApiDataType.h"
 #include <uv.h>
 #include <node.h>
 #include "wraper_struct.h"

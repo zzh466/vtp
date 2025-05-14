@@ -1,8 +1,8 @@
 #include <uv.h>
 #include "uv_trader.h"
-#include "ThostFtdcTraderApi.h"
-#include "ThostFtdcUserApiDataType.h"
-#include "ThostFtdcMdApi.h"
+#include "../ctpmini_20240923/ThostFtdcTraderApi.h"
+#include "../ctpmini_20240923/ThostFtdcUserApiDataType.h"
+#include "../ctpmini_20240923/ThostFtdcMdApi.h"
 #include <cstring>
 #include <sstream>
 #include "wraper_struct.h"
