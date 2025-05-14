@@ -159,9 +159,11 @@ void uv_trader::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommission
 }
 
 void uv_trader::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionDetailField *pQryInvestorPositionDetail, void(*callback)(int, void*), int uuid) {
+	logger_cout("trader ReqQryInvestorPositionDetail this -> invoke start");
 	CThostFtdcQryInvestorPositionDetailField *_pQryInvestorPositionDetail = new CThostFtdcQryInvestorPositionDetailField();
 	memcpy(_pQryInvestorPositionDetail, pQryInvestorPositionDetail, sizeof(CThostFtdcQryInvestorPositionDetailField));
 	this->invoke(_pQryInvestorPositionDetail, T_INVESTORPOSITIONDETAIL_RE, callback, uuid);
+	logger_cout("trader ReqQryInvestorPositionDetail this -> invoke end");
 }
 
 void uv_trader::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, void(*callback)(int, void*), int uuid)
@@ -408,6 +410,7 @@ void uv_trader::OnRspQryInstrumentCommissionRate(CThostFtdcInstrumentCommissionR
 
 void uv_trader::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailField *pInvestorPositionDetail, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
+	logger_cout("uv_trader OnRspQryInvestorPositionDetail this -> invoke start");
 	CThostFtdcInvestorPositionDetailField* _pInvestorPositionDetail = NULL;
 	if (pInvestorPositionDetail){
 		_pInvestorPositionDetail = new CThostFtdcInvestorPositionDetailField();
@@ -416,6 +419,7 @@ void uv_trader::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailF
 	std::string log = "uv_trader OnRspQryInvestorPositionDetail------>";
 	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
 	on_invoke(T_ON_RQINVESTORPOSITIONDETAIL, _pInvestorPositionDetail, pRspInfo, nRequestID, bIsLast);
+	logger_cout("uv_trader OnRspQryInvestorPositionDetail this -> invoke end");
 }
 
 void uv_trader::OnRspQrySettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
