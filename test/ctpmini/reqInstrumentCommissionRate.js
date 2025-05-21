@@ -38,7 +38,7 @@ trader.on("rspUserLogin", function (requestId, isLast, field, info) {
     login = true;
 
     // 空字符串 查询所有
-    var instrumentId = 'jm2201';
+    var instrumentId = 'jm2506';
     trader.reqQryInstrumentCommissionRate(m_BrokerId, m_InvestorId, instrumentId, function (field) {
         console.log('reqQryInstrumentCommissionRate is callback');
         console.log(field);
