@@ -1,4 +1,4 @@
-var ctp = require('../../build/Debug/ctpmini.node');
+var ctp = require('../../build/Release/CTPMINI/ctpmini.node');
 ctp.settings({ log: true });
 
 // simnow hanzhe

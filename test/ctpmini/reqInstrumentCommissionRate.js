@@ -1,4 +1,4 @@
-var ctp = require('../../build/Debug/ctpmini.node');
+var ctp = require('../../build/Release/CTPMINI/ctpmini.node');
 ctp.settings({ log: true });
 
 var ctp1_TradeAddress = "tcp://58.240.234.72:21803";
