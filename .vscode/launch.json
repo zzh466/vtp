@@ -8,10 +8,11 @@
             "preLaunchTask": "npm: rebuildCTP:dev",
             "program": "node",
             // "args": ["${workspaceFolder}/test/ctp/try.js"],
-            "args": ["${workspaceFolder}/test/ctpmini/reqInvestorPositionDetail.js"],
+            // "args": ["${workspaceFolder}/test/ctpmini/reqInstrumentCommissionRate.js"],
+            // "args": ["${workspaceFolder}/test/ctpmini/reqInvestorPositionDetail.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInsertOrder.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js"],
-            // "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
+            "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqQrySettlementInfoConfirm.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqSettlementInfoConfirm.js"],
             // "args": ["${workspaceFolder}/test/ctp/tradingAccount.js"],
@@ -28,7 +29,21 @@
             // "program": "${workspaceFolder}/test/ctp/reqInsertOrder.js",
             // "program": "${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js",
             // "program": "${workspaceFolder}/test/qdp/tradingAccount.js",
+            "program": "${workspaceFolder}/test/ctpmini/reqInstrumentCommissionRate.js",
             "preLaunchTask": "npm: rebuildCTP:dev"
+        },
+        {
+          "name": "Attach to CodeLLDB Adapter",
+          "type": "python",
+          "request": "attach",
+          "connect": { "host": "localhost", "port": 5678 },
+          // 将本地路径映射到扩展目录
+          "pathMappings": [
+            {
+              "localRoot": "${env:HOME}/.vscode/extensions/vadimcn.vscode-lldb-1.11.4/adapter/scripts",
+              "remoteRoot": "${env:HOME}/.vscode/extensions/vadimcn.vscode-lldb-1.11.4/adapter/scripts"
+            }
+          ]
         }
     ]
 }

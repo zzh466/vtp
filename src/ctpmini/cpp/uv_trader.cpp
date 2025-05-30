@@ -137,25 +137,27 @@ void uv_trader::ReqQryDepthMarketData(CThostFtdcQryDepthMarketDataField *pQryDep
 	this->invoke(_pQryDepthMarketData, T_DEPTHMARKETDATA_RE, callback, uuid);
 }
 
-void uv_trader::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettlementInfo, void(*callback)(int, void*), int uuid)
-{
-	CThostFtdcQrySettlementInfoField *_pQrySettlementInfo = new CThostFtdcQrySettlementInfoField();
-	memcpy(_pQrySettlementInfo, pQrySettlementInfo, sizeof(CThostFtdcQrySettlementInfoField));
-	this->invoke(_pQrySettlementInfo, T_SETTLEMENTINFO_RE, callback, uuid);
-}
+// void uv_trader::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettlementInfo, void(*callback)(int, void*), int uuid)
+// {
+// 	CThostFtdcQrySettlementInfoField *_pQrySettlementInfo = new CThostFtdcQrySettlementInfoField();
+// 	memcpy(_pQrySettlementInfo, pQrySettlementInfo, sizeof(CThostFtdcQrySettlementInfoField));
+// 	this->invoke(_pQrySettlementInfo, T_SETTLEMENTINFO_RE, callback, uuid);
+// }
 
-void uv_trader::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, void(*callback)(int, void*), int uuid)
-{
-	CThostFtdcSettlementInfoConfirmField* _pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
-	memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
-	this->invoke(_pSettlementInfoConfirm, T_CONFIRM_RE, callback, uuid);
-}
+// void uv_trader::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, void(*callback)(int, void*), int uuid)
+// {
+// 	CThostFtdcSettlementInfoConfirmField* _pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
+// 	memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
+// 	this->invoke(_pSettlementInfoConfirm, T_CONFIRM_RE, callback, uuid);
+// }
 
 void uv_trader::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, void(*callback)(int, void*),int uuid)
 {
+	logger_cout("trader ReqQryInstrumentCommissionRate this -> invoke start");
 	CThostFtdcQryInstrumentCommissionRateField* _pQryInstrumentCommissionRate = new CThostFtdcQryInstrumentCommissionRateField();
 	memcpy(_pQryInstrumentCommissionRate, pQryInstrumentCommissionRate, sizeof(CThostFtdcQryInstrumentCommissionRateField));
 	this->invoke(_pQryInstrumentCommissionRate, T_INSTRUMENTCOMMISSIONRATE_RE, callback, uuid);
+	logger_cout("trader ReqQryInstrumentCommissionRate this -> invoke end");
 }
 
 void uv_trader::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionDetailField *pQryInvestorPositionDetail, void(*callback)(int, void*), int uuid) {
@@ -164,12 +166,12 @@ void uv_trader::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionDetail
 	this->invoke(_pQryInvestorPositionDetail, T_INVESTORPOSITIONDETAIL_RE, callback, uuid);
 }
 
-void uv_trader::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, void(*callback)(int, void*), int uuid)
-{
-	CThostFtdcQrySettlementInfoConfirmField *_pQrySettlementInfoConfirm = new CThostFtdcQrySettlementInfoConfirmField();
-	memcpy(_pQrySettlementInfoConfirm, pQrySettlementInfoConfirm, sizeof(CThostFtdcQrySettlementInfoConfirmField));
-	this->invoke(_pQrySettlementInfoConfirm, T_QCONFIRM_RE, callback, uuid);
-}
+// void uv_trader::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, void(*callback)(int, void*), int uuid)
+// {
+// 	CThostFtdcQrySettlementInfoConfirmField *_pQrySettlementInfoConfirm = new CThostFtdcQrySettlementInfoConfirmField();
+// 	memcpy(_pQrySettlementInfoConfirm, pQrySettlementInfoConfirm, sizeof(CThostFtdcQrySettlementInfoConfirmField));
+// 	this->invoke(_pQrySettlementInfoConfirm, T_QCONFIRM_RE, callback, uuid);
+// }
 
 void uv_trader::OnFrontConnected()
 {
@@ -253,18 +255,18 @@ void uv_trader::OnErrRtnOrderInsert(CThostFtdcInputOrderField *pInputOrder, CTho
 	on_invoke(T_ON_ERRINSERT, _pInputOrder, pRspInfo, 0, 0);
 }
 
-void uv_trader::OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
-{
-	CThostFtdcSettlementInfoConfirmField *_pSettlementInfoConfirm;
-	if(pSettlementInfoConfirm)
-	{
-		_pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
-		memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
-	}
-	std::string log = "uv_trader OnRspSettlementInfoConfirm";
-	logger_cout(log.c_str());
-	on_invoke(T_ON_RSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
-}
+// void uv_trader::OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+// {
+// 	CThostFtdcSettlementInfoConfirmField *_pSettlementInfoConfirm;
+// 	if(pSettlementInfoConfirm)
+// 	{
+// 		_pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
+// 		memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
+// 	}
+// 	std::string log = "uv_trader OnRspSettlementInfoConfirm";
+// 	logger_cout(log.c_str());
+// 	on_invoke(T_ON_RSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
+// }
 
 void uv_trader::OnRspOrderAction(CThostFtdcInputOrderActionField *pInputOrderAction, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
@@ -382,28 +384,31 @@ void uv_trader::OnRspQryDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMa
 	on_invoke(T_ON_RQDEPTHMARKETDATA, _pDepthMarketData, pRspInfo, nRequestID, bIsLast);
 }
 
-void uv_trader::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *pSettlementInfo, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
-{
-	CThostFtdcSettlementInfoField* _pSettlementInfo = NULL;
-	if (pSettlementInfo) {
-		_pSettlementInfo = new CThostFtdcSettlementInfoField();
-		memcpy(_pSettlementInfo, pSettlementInfo, sizeof(CThostFtdcSettlementInfoField));
-	}
-	std::string log = "uv_trader OnRspQrySettlementInfo------>";
-	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
-	on_invoke(T_ON_RQSETTLEMENTINFO, _pSettlementInfo, pRspInfo, nRequestID, bIsLast);
-}
+// void uv_trader::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *pSettlementInfo, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+// {
+// 	CThostFtdcSettlementInfoField* _pSettlementInfo = NULL;
+// 	if (pSettlementInfo) {
+// 		_pSettlementInfo = new CThostFtdcSettlementInfoField();
+// 		memcpy(_pSettlementInfo, pSettlementInfo, sizeof(CThostFtdcSettlementInfoField));
+// 	}
+// 	std::string log = "uv_trader OnRspQrySettlementInfo------>";
+// 	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
+// 	on_invoke(T_ON_RQSETTLEMENTINFO, _pSettlementInfo, pRspInfo, nRequestID, bIsLast);
+// }
 
 void uv_trader::OnRspQryInstrumentCommissionRate(CThostFtdcInstrumentCommissionRateField *pInstrumentCommissionRate, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
+	logger_cout("uv_trader OnRspQryInstrumentCommissionRate this -> invoke start");
 	CThostFtdcInstrumentCommissionRateField* _pInstrumentCommissionRate = NULL;
 	if (pInstrumentCommissionRate) {
 		_pInstrumentCommissionRate = new CThostFtdcInstrumentCommissionRateField();
 		memcpy(_pInstrumentCommissionRate, pInstrumentCommissionRate, sizeof(CThostFtdcInstrumentCommissionRateField));
-	}
-	std::string log = "uv_trader OnRspQryInstrumentCommissionRate------>";
-	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
-	on_invoke(T_ON_RQINSTRUMENTCOMMISSIONRATE, _pInstrumentCommissionRate, pRspInfo, nRequestID, bIsLast);
+
+		std::string log = "uv_trader OnRspQryInstrumentCommissionRate------>";
+		logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
+		on_invoke(T_ON_RQINSTRUMENTCOMMISSIONRATE, _pInstrumentCommissionRate, pRspInfo, nRequestID, bIsLast);
+		logger_cout("uv_trader OnRspQryInstrumentCommissionRate this -> invoke end");
+	} 
 }
 
 void uv_trader::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailField *pInvestorPositionDetail, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
@@ -418,42 +423,56 @@ void uv_trader::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailF
 	on_invoke(T_ON_RQINVESTORPOSITIONDETAIL, _pInvestorPositionDetail, pRspInfo, nRequestID, bIsLast);
 }
 
-void uv_trader::OnRspQrySettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+void uv_trader::OnRspQryRCAMSInvestorProdMargin(CThostFtdcRCAMSInvestorProdMarginField *pRCAMSInvestorProdMargin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
-	CThostFtdcSettlementInfoConfirmField* _pSettlementInfoConfirm = NULL;
-	if (pSettlementInfoConfirm){
-		_pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
-		memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
-	}
-	std::string log = "uv_trader OnRspQrySettlementInfoConfirm------>";
-	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
-	on_invoke(T_ON_RQSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
+	
 }
 
-void uv_trader::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+void uv_trader::OnRspExecOrderAction(CThostFtdcInputExecOrderActionField *pInputExecOrderAction, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
-	CThostFtdcRspInfoField *_pRspInfo = NULL;
-	if (pRspInfo)
-	{
-		_pRspInfo = new CThostFtdcRspInfoField();
-		memcpy(_pRspInfo, pRspInfo, sizeof(CThostFtdcRspInfoField));
-	}
-	std::string log = "uv_trader OnRspError------>";
-	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
-	on_invoke(T_ON_RSPERROR, _pRspInfo, pRspInfo, nRequestID, bIsLast);
+	
 }
 
-void uv_trader::OnRtnErrorConditionalOrder(CThostFtdcErrorConditionalOrderField *pErrorConditionalOrder) {
-	CThostFtdcErrorConditionalOrderField *_pErrorConditionalOrder = NULL;
-	if (pErrorConditionalOrder)
-	{
-		_pErrorConditionalOrder = new CThostFtdcErrorConditionalOrderField();
-		memcpy(_pErrorConditionalOrder, pErrorConditionalOrder, sizeof(CThostFtdcErrorConditionalOrderField));
-	}
-	std::string log = "uv_trader OnRtnErrorConditionalOrder------>";
-	logger_cout(log.append("").c_str());
-	on_invoke(T_ON_RTNERRORCONDITIONALORDER, _pErrorConditionalOrder, new CThostFtdcRspInfoField(), 0, 0);
-};
+void uv_trader::OnRspQryCombAction(CThostFtdcCombActionField *pCombAction, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+	
+}
+
+// void uv_trader::OnRspQrySettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+// {
+// 	CThostFtdcSettlementInfoConfirmField* _pSettlementInfoConfirm = NULL;
+// 	if (pSettlementInfoConfirm){
+// 		_pSettlementInfoConfirm = new CThostFtdcSettlementInfoConfirmField();
+// 		memcpy(_pSettlementInfoConfirm, pSettlementInfoConfirm, sizeof(CThostFtdcSettlementInfoConfirmField));
+// 	}
+// 	std::string log = "uv_trader OnRspQrySettlementInfoConfirm------>";
+// 	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
+// 	on_invoke(T_ON_RQSETTLEMENTINFOCONFIRM, _pSettlementInfoConfirm, pRspInfo, nRequestID, bIsLast);
+// }
+
+// void uv_trader::OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+// {
+// 	CThostFtdcRspInfoField *_pRspInfo = NULL;
+// 	if (pRspInfo)
+// 	{
+// 		_pRspInfo = new CThostFtdcRspInfoField();
+// 		memcpy(_pRspInfo, pRspInfo, sizeof(CThostFtdcRspInfoField));
+// 	}
+// 	std::string log = "uv_trader OnRspError------>";
+// 	logger_cout(log.append("requestid:").append(to_string(nRequestID)).append(",islast:").append(to_string(bIsLast)).c_str());
+// 	on_invoke(T_ON_RSPERROR, _pRspInfo, pRspInfo, nRequestID, bIsLast);
+// }
+
+// void uv_trader::OnRtnErrorConditionalOrder(CThostFtdcErrorConditionalOrderField *pErrorConditionalOrder) {
+// 	CThostFtdcErrorConditionalOrderField *_pErrorConditionalOrder = NULL;
+// 	if (pErrorConditionalOrder)
+// 	{
+// 		_pErrorConditionalOrder = new CThostFtdcErrorConditionalOrderField();
+// 		memcpy(_pErrorConditionalOrder, pErrorConditionalOrder, sizeof(CThostFtdcErrorConditionalOrderField));
+// 	}
+// 	std::string log = "uv_trader OnRtnErrorConditionalOrder------>";
+// 	logger_cout(log.append("").c_str());
+// 	on_invoke(T_ON_RTNERRORCONDITIONALORDER, _pErrorConditionalOrder, new CThostFtdcRspInfoField(), 0, 0);
+// };
 
 void uv_trader::_async(uv_work_t *work)
 {
