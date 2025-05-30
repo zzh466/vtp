@@ -1360,7 +1360,7 @@ ipcMain.on('start-receive', (event, args) =>{
         event.sender.send('receive-price', data)
       }
       //防止网络波动导致一些请求没有返回堵塞请求队列
-     
+     console.log(trade.tasks)
       if(trade && trade.tasks.length < 2){
         taskcount = 0
         trade.chainSend('reqQryTradingAccount', trade.m_BrokerId, trade.m_InvestorId, function (params) {

@@ -1,9 +1,13 @@
 
 var ctp = require('../../build/Release/ctp.node');
+var ctpmini = require('../../build/Release/ctpmini.node');
 var events = require('events');
 ctp.settings({ log: 
 false
 });
+ctpmini.settings({ log: 
+    true
+    });
 
 import { errorLog, infoLog} from './log';
 import axios from './request';
@@ -40,16 +44,22 @@ class Trade {
         this.emitter = new  events.EventEmitter();
         this.login()
         this.confirmTime = false;
-        this.next();
-        this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
-            console.log(isLast,field, '3333333333333333333333333' );
-            this.confirmTime = field.ConfirmTime;
-            if(!field.ConfirmTime)    
-                this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
-                    this.emitter.emit('settlement-info', _,info)
-                }, '');
-            
-        });
+        // this.next();
+        if(options.tradeProxyCode === 1){
+            this.chainOn('rqSettlementInfoConfirm', 'reqQrySettlementInfoConfirm', function(isLast,field){
+                console.log(isLast,field, '3333333333333333333333333' );
+                this.confirmTime = field.ConfirmTime;
+                if(!field.ConfirmTime){
+                    // this.chainOn('rqSettlementInfo', 'reqQrySettlementInfo', function(_,info){
+                    //     this.emitter.emit('settlement-info', _,info)
+                    // }, '');
+                    this.chainOn('rSettlementInfoConfirm', 'reqSettlementInfoConfirm', function(){
+                        this.confirmTime = true;
+                      })
+                }    
+            });
+        }
+        
     }
     init({
         ctp1_TradeAddress = "tcp://180.168.146.187:10201",
@@ -64,7 +74,8 @@ class Trade {
         m_AuthCode = "0000000000000000",
         instruments,
         userId,
-        idol
+        idol,
+        tradeProxyCode
     }){
         console.log(arguments)
         this.m_BrokerId =m_BrokerId;
@@ -79,7 +90,19 @@ class Trade {
         this.tasks =[];
         this.userId = userId
         this.needrecord = idol;
-        const _trader = ctp.createTrader();
+        let _trader;
+        switch(tradeProxyCode){
+            case 1:
+             _trader  = ctp.createTrader();
+            break;
+            case 2:
+            _trader  = ctpmini.createTrader();  
+            break;
+            case 6:
+            break;
+        }
+        
+        
         this._trader = _trader;
     }
     // getInstrument(insId){
@@ -204,7 +227,7 @@ class Trade {
         })
     }
     send(event, ...args){
-        // console.log(event,...args, 'send')
+        console.log(event,...args, 'send')
         this._trader[event](...args)
     }
     on(event, fn){
@@ -215,7 +238,7 @@ class Trade {
         }
         eventType.add(event)
         _trader.on(event, (...args) => {
-            // console.log(`${event} ---- receive`);
+            console.log(`${event} ---- receive`);
             if(this.needrecord && this.startTrader){
                 if(event === 'rtnTrade'){
                     recordAction(`/order/rtn/trade/${this.userId}/`, args[0])
@@ -232,15 +255,16 @@ class Trade {
         this.login.then(()=>{
            
             const {_trader, tasks, m_BrokerId, m_InvestorId} = this;
-            console.log(`${event} ---- register`, ...extend);
+         
             if(!eventType.has(event)){
                 eventType.add(event)
+                console.log(`${event} ---- register`, ...extend, 123132);
                 _trader.on(event, (requestId, isLast, field, info) =>{
                     if(isLast){
                         this.next()
                     }
                     
-                    // console.log(`${event} ---- receive`, field);
+                    console.log(`${event} ---- receive`, field);
                     fn.call(this,isLast,field)
                 })
             }
@@ -267,7 +291,7 @@ class Trade {
        
         var last = tasks.shift();
         const timeout = 1000
-      
+        // console.log(tasks, last, 123132)
        if(tasks.length){
             let task = tasks[0];
             //ctp一秒只能发一个请求
@@ -282,10 +306,10 @@ class Trade {
        }
     }
     chainSend(event, ...args){
-        // console.log('chainsend', event, this.haslogin)
+        console.log('chainsend', event, this.haslogin)
         if(!this.haslogin)return;
         const { tasks} = this;
-        // console.log('task', tasks.length)
+        console.log('task', tasks.length)
         const task =()=>{
             this.send(event,  ...args)
         }

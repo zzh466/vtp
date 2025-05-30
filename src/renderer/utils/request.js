@@ -148,7 +148,7 @@ export class TraderSocket{
             this.task = this.initTask.concat(this.task)
             this.ready=true;
             const keepAlive =()=>  {
-                const timeout = 15 * 1000;
+                const timeout = 7 * 1000;
                 
                 this.ws.send('im keep alive');
                 console.log('客户端（client）：keep alive')

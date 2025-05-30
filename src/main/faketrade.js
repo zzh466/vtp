@@ -150,7 +150,7 @@ export default class FakeTrader{
         })
     }
     send(msg){
-        // console.log(msg, this)
+        console.log(msg, this)
         this.ws.send(msg);
     }
     getTime(instrumentID, time){

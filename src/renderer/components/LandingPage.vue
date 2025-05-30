@@ -1287,7 +1287,8 @@
           futureUserPwd:m_PassWord,
           appId: m_AppId,
           futureUserId:m_AccountId,
-          puppet
+          puppet,
+          tradeProxyCode
         } = account;;
         
          ipcRenderer.send('trade-login', {
@@ -1302,7 +1303,8 @@
             userId: userData.id,
             idol: userData.idol,
             puppet,
-            id
+            id,
+            tradeProxyCode
           //  instruments: this.subscribelInstruments
           });
       },
