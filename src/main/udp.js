@@ -18,7 +18,7 @@ export default class udpClient {
         func();
         const client = this.client;
         client.on("message",(msg,rinfo)=>{
-            // console.log('msg', msg)
+            console.log('msg', msg)
             this.emitter.emit('data', msg)
             
         });

@@ -441,10 +441,10 @@ export default {
         const {quotVOList, instrumentConfigVOList } = this.userData;
         const subscribelInstruments = instrumentConfigVOList.flatMap(e => e.instruments.split(','));
         quotVOList.forEach((e) => {
-           const _quotAddr = e.quotAddr.split(':');
+         
             const instruments = e.subInstruments.split(',')
-            
-             ipcRenderer.send('start-receive', {host: _quotAddr[0], port: _quotAddr[1], instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101});
+            let url = e.quotAddr.split(';') 
+             ipcRenderer.send('start-receive', {url, instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101});
         })
         this.subscribelInstruments = subscribelInstruments.map(e => ({ins: e}))
     },

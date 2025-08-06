@@ -1,13 +1,12 @@
-
+// var ctpmini = require('../../build/Release/ctpmini/ctpmini.node');
 var ctp = require('../../build/Release/ctp.node');
-var ctpmini = require('../../build/Release/ctpmini.node');
 var events = require('events');
 ctp.settings({ log: 
 false
 });
-ctpmini.settings({ log: 
-    true
-    });
+// ctpmini.settings({ log: 
+//     true
+//     });
 
 import { errorLog, infoLog} from './log';
 import axios from './request';
@@ -75,7 +74,7 @@ class Trade {
         instruments,
         userId,
         idol,
-        tradeProxyCode
+        tradeProxyCode = 1
     }){
         console.log(arguments)
         this.m_BrokerId =m_BrokerId;
@@ -96,7 +95,7 @@ class Trade {
              _trader  = ctp.createTrader();
             break;
             case 2:
-            _trader  = ctpmini.createTrader();  
+            // _trader  = ctpmini.createTrader() ;  
             break;
             case 6:
             break;
@@ -238,7 +237,7 @@ class Trade {
         }
         eventType.add(event)
         _trader.on(event, (...args) => {
-            console.log(`${event} ---- receive`);
+            // console.log(`${event} ---- receive`);
             if(this.needrecord && this.startTrader){
                 if(event === 'rtnTrade'){
                     recordAction(`/order/rtn/trade/${this.userId}/`, args[0])
@@ -264,7 +263,7 @@ class Trade {
                         this.next()
                     }
                     
-                    console.log(`${event} ---- receive`, field);
+                    console.log(`${event} ---- receive`, isLast);
                     fn.call(this,isLast,field)
                 })
             }

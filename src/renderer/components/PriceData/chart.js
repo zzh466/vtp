@@ -361,7 +361,7 @@ class Chart {
         }
     }
     clearData(startPrice, endPrice){
-      
+        if(!startPrice || !endPrice) return;
         let start = this.getindex(startPrice, true);
         if(start < 0) start = 0
         let end = this.getindex(endPrice, true);
@@ -672,6 +672,7 @@ class Chart {
         
         this.args= arg
         this.renderTime(arg.UpdateTime)
+        console.log(arg)
         if(arg.BidPrice5  &&  arg.BidPrice5 <= Number.MAX_SAFE_INTEGER){
             this.clearData(arg.BidPrice5 , arg.BidPrice1 );
         }
@@ -679,7 +680,7 @@ class Chart {
             this.clearData(arg.AskPrice1 , arg.AskPrice5 );
         }
         let pauseAsk, pasuseBuy;
-        for(let i=1; i<= 5; i++){
+        for(let i=5; i> 0; i--){
             let buyPirce = arg[`BidPrice${i}`];
             let buyIndex ;
             const flag = i > 1;

@@ -485,6 +485,7 @@ ipcMain.on('trade-login', (event, args) => {
   trade.on('rtnOrder', function(field){
     
     const key = getorderKey(field);
+    
     const needUpdate = !!orderMap[key];
     const old = orderMap[key] || {}
     // const orderStatus = old.OrderStatus;
@@ -1130,6 +1131,7 @@ class TcpClient{
     this.index = 1;
     this.openInstruments = [];
     this.connectcount = 0
+
   
   }
   addinstrument(instrument){
@@ -1219,7 +1221,7 @@ class TcpClient{
     
     if(this.type === 'udp'){
       
-      
+      console.log(1111)
       tcp_client = new udpClient();
     }else {
      
@@ -1558,17 +1560,27 @@ ipcMain.on('start-receive', (event, args) =>{
   //  }, 500)
 })
 //强制重连
-ipcMain.on('tcp-reconnect', function(){
+ipcMain.on('tcp-reconnect', function(_, tcpinfo){
   tcp_reconnct_count = tcp_client_list.length;
   infoLog(`强制重连 重连${tcp_reconnct_count}个链接`)
-
+  console.log(tcpinfo)
   tcp_client_list.forEach(e=>{
-    if(e.connectcount > 5){
-      e.connectcount = 0;
-      e.connect()
-    }else{
-      setTimeout(()=> e.destroy(), 1);
+    const tcpData = tcpinfo.find( d => d.exchangeNo === e.args.exchangeNo);
+    let p = Promise.resolve();
+    console.log(tcpData)
+    if(tcpData){
+      e.args.url = tcpData.quotAddr.split(';') ;
+      p = e.checktype();
     }
+    p.then(()=>{
+      if(e.connectcount > 5){
+        e.connectcount = 0;
+        e.connect()
+      }else{
+        e.destroy();
+      }
+    })
+    
     
   })
 

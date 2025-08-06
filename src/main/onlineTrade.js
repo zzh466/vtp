@@ -6,8 +6,8 @@ import { errorLog, infoLog ,devLog} from './log';
 import { Buffer } from 'buffer';
 import events from 'events'
 import {BrowserWindow } from 'electron'
-import {baseIP as PuppetUrl} from '../renderer/utils/utils'
-// const PuppetUrl = '124.71.194.12'
+// import {puppetIp} from '../renderer/utils/utils'
+ let puppetIp 
 import  {  
     orderData, tradeData, inderOrderData, tradingAccountData, cancelOrder, 
     acctounRsqData, respInfoVOData, commissionRateData, commissionRateRsqData,
@@ -107,7 +107,7 @@ class pupTrade {
                     this.emitter.emit('rqSettlementInfoConfirm',undefined, true, settlementInfoConfirmData)
                     break
                 case 42:
-                  
+                    this.emitter.emit('rSettlementInfoConfirm',undefined, true, {})
                     console.log('42---', length)
                     break
                 case 43:
@@ -137,7 +137,7 @@ class pupTrade {
                 
                     const commissionData = commissionRateRsaMsg.decodeMsg(data.slice(8, commissionRateRsaMsg.dsLen + 8 ))
                     respInfo= respInfomsg.decodeMsg(data.slice(commissionRateRsaMsg.dsLen + 8))
-                    console.log('commissionData', commissionData, respInfo , data.length)
+                    // console.log('commissionData', commissionData, respInfo , data.length)
                     this.emitter.emit('rqInstrumentCommissionRate', respInfo.requestId, respInfo.isLast, commissionData, respInfo.info)
                     break
                 case 50:
@@ -158,19 +158,19 @@ class pupTrade {
     connect(callback){
     
         let tcp_client = new net.Socket();
-        console.log('online tcp connect', PuppetUrl, this.port, 12312)
-        infoLog(`傀儡机链接  ${PuppetUrl} ${ this.port}`)
+        console.log('online tcp connect', puppetIp, this.port, 12312)
+        infoLog(`傀儡机链接  ${puppetIp} ${ this.port}`)
         this.tcp_client = tcp_client;
         tcp_client.connect({
-            host:PuppetUrl,
+            host:puppetIp,
             port: this.port
         })
         this.relogining = false;
         tcp_client.setKeepAlive(true, 5*1000);
         tcp_client.on('close',(hadError ) =>{
             
-            console.log('tcp-close', hadError)
-            setTimeout(()=> this.connect(), 1000)
+            infoLog(`傀儡机断开 原因 ${hadError}`)
+            // setTimeout(()=> this.connect(), 1000)
             this.emitter.emit('disconnected')
             this.tcp_client = null;
           })
@@ -190,30 +190,33 @@ class pupTrade {
                 callback()
                 callback= null
             }
-            console.log(data.length)
+            // console.log(data.length)
             const cacheArr= this.cacheArr;
-            cacheArr.push(data)
-            const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+            if(cacheArr.length){
+                cacheArr.push(data)
+                const length = cacheArr.reduce((a,b)=> a + b.length, 0);
+               
+                if(length < 8) return
+                
+                data = Buffer.concat(cacheArr, length)
+                this.cacheArr = []
+            }
            
-            if(length < 8) return
             
-            data = Buffer.concat(cacheArr, length)
-            this.cacheArr = []
             data = this.parseData(data)
-            
             if(data.length){
                 this.cacheArr.push(data);
             }
         })
     }
     on(event, fn){
-        console.log(event, 'event')
+        // console.log(event, 'event')
         this.emitter.on(event, fn)
     }
     sendmsg(message, headcode){
        
         const length = headMsg2.dsLen+ message.length;
-        // console.log('send =---head', headcode, length, message.length)
+        console.log('send =---head', headcode, length, message.length,this.encrygyKey)
         const head = headMsg2.encodeMsg2({
             length,
             encrygyKey: this.encrygyKey,
@@ -264,7 +267,7 @@ class pupTrade {
         };
        
         const message = commissionRateMsg.encodeMsg2(data)
-        console.log('commission', message.toString())
+        // console.log('commission', message.toString())
         this.sendmsg(message, 49 )
     }
     reqQrySettlementInfoConfirm(BrokerID, InvestorID){
@@ -317,6 +320,7 @@ class pupTrade {
 class onlineTrade extends Trade{
     constructor(args){
         super(args)
+        console.log(args, 111)
     }
     init(args){
         this.tasks =[];
@@ -341,28 +345,71 @@ class onlineTrade extends Trade{
     relogin(){
         this.getPuppetMsg().then(()=>{
             if(this._trader.tcp_client){
+                infoLog('傀儡机 关闭')
                 this._trader.tcp_client.destroy()
             }
           
         })
     }
-    getPuppetMsg(){
-        return axios({
+    getPuppetMsg(){ 
+        //return axios({
+        //     url: '/future/puppet',
+        //     method: 'GET'
+        // }).then(({data}) => {
+        //     console.log(data,12133)
+        //     if(data.code === 'REQ_SUCCESS'){
+        //         const list = data.puppetInfoVOList
+               
+        //         const account = list.find(({futureId}) => futureId === this.id)
+        //         if(account){
+        //             console.log(account)
+        //             const { encrygyKey, port} = account
+        //             this._trader.encrygyKey =encrygyKey;
+        //             this._trader.port = port;
+        //             infoLog(`傀儡机信息 ${encrygyKey} ${port}`)
+        //             console.log(`傀儡机信息 ${encrygyKey} ${port}`)
+        //         }else{
+        //             const window=  BrowserWindow.getAllWindows();
+        //             if(window.length){
+        //                 window[0].webContents.send('error-msg', {msg:'服务器信息不存在请联系管理员'});
+        //                 errorLog('获取傀儡机信息不存在')
+        //             }
+        //             return Promise.reject()
+        //         }
+        //     }else{
+        //         const window=  BrowserWindow.getAllWindows();
+        //         if(window.length){
+        //             window[0].webContents.send('error-msg', {msg:'获取服务器信息异常请联系管理员'});
+        //             errorLog('获取傀儡机信息异常')
+        //         }
+        //         return Promise.reject()
+        //     }
+        // })
+        return Promise.all([axios({
             url: '/future/puppet',
             method: 'GET'
-        }).then(({data}) => {
-            console.log(data,12133)
+        }),axios({
+            url: 'property/info/proxy_mac_list',
+            method: 'GET'
+        }).then(e => e.data) 
+    ]).then(([{data}, {propertyValue}]) => {
+            console.log(typeof(propertyValue),12133)
+            
+            propertyValue= JSON.parse(propertyValue)
             if(data.code === 'REQ_SUCCESS'){
                 const list = data.puppetInfoVOList
                
                 const account = list.find(({futureId}) => futureId === this.id)
-                if(account){
+                const  ipData= propertyValue[this.m_UserId];
+                console.log(ipData, 'ipdata')
+                if(account && ipData){
                     console.log(account)
                     const { encrygyKey, port} = account
                     this._trader.encrygyKey =encrygyKey;
-                    this._trader.port = port;
-                  
-                   
+                    this._trader.port = ipData.port;
+                    puppetIp = ipData.ip;
+                    infoLog(`傀儡机信息 ${encrygyKey} ${port}`)
+                    console.log(`傀儡机信息 ${encrygyKey} ${port}`)
                 }else{
                     const window=  BrowserWindow.getAllWindows();
                     if(window.length){

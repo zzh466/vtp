@@ -1170,7 +1170,7 @@
             console.log('start data')
             datacount ++
             const instruments = e.subInstruments.split(',')
-            ipcRenderer.send('start-receive', {url, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
+            ipcRenderer.send('start-receive', {exchangeNo:e.exchangeNo, url, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
         })
     },
       cancel(){
@@ -1259,8 +1259,18 @@
         this.login();
       },
       reconnect(){
+        this.loading.push('reconnect');
+
+         request({
+          url:  '/quot/info',
+          method: 'GET',
+        }).then(res=> {
+          setTimeout(()=> {
+              this.loading.pop();
+          }, 2000)
+          ipcRenderer.send('tcp-reconnect', res.quotInfoVOList.map(({exchangeNo, quotAddr}) => ({exchangeNo, quotAddr})))
+        })
         
-        ipcRenderer.send('tcp-reconnect')
       },
       puppetReconnect(){
         console.log('puppet reconnect')
@@ -1288,7 +1298,7 @@
           appId: m_AppId,
           futureUserId:m_AccountId,
           puppet,
-          tradeProxyCode
+          tradeProxyCode = 1
         } = account;;
         
          ipcRenderer.send('trade-login', {
@@ -1333,6 +1343,7 @@
           })
         this.loginVisible = false;
       },
+      
       testDev(){
         
         let instruments = 'IC,IF'

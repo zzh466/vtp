@@ -329,8 +329,13 @@
             this.loading = false;
              if(res.code === 'REQ_SUCCESS'){
                this.$message.success('修改成功');
+              request({
+                method: 'GET',
+                url: '/user/info'}).then(res=>{
+                  if(res.code === "REQ_SUCCESS")
+                   ipcRenderer.send('update-all-config', res.instrumentConfigVOList);
+                })
              
-              ipcRenderer.send('update-all-config', config);
              }else {
                 this.$message.error(res.msg);
              }
