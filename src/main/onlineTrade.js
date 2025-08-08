@@ -44,7 +44,8 @@ class pupTrade {
         this.port = ''
         this.emitter = new  events.EventEmitter();
         this.cacheArr = [];
-        this.relogining = false
+        this.relogining = false;
+        this.reconnect = false;
     }
     parseData(data){
        
@@ -170,7 +171,11 @@ class pupTrade {
         tcp_client.on('close',(hadError ) =>{
             
             infoLog(`傀儡机断开 原因 ${hadError}`)
-            // setTimeout(()=> this.connect(), 1000)
+            if(this.reconnect){
+                setTimeout(()=> this.connect(), 1000)
+                this.reconnect = false;
+            }
+            // 
             this.emitter.emit('disconnected')
             this.tcp_client = null;
           })
@@ -181,7 +186,7 @@ class pupTrade {
                     window[0].webContents.send('error-msg', {msg:'当前账户连接服务器异常请联系管理员'});
                     errorLog(`傀儡机链接异常 ${JSON.stringify(error)}`)
                 }
-               
+               this.emitter.emit('error', error)
             
             
         })
@@ -344,9 +349,14 @@ class onlineTrade extends Trade{
     }
     relogin(){
         this.getPuppetMsg().then(()=>{
+            
+            infoLog('傀儡机 重连')
+            console.log(this._trader.tcp_client, 'tcp')
             if(this._trader.tcp_client){
-                infoLog('傀儡机 关闭')
-                this._trader.tcp_client.destroy()
+                this._trader.reconnect = true;
+                this._trader.tcp_client.destroy();
+            }else{
+                this._trader.connect()
             }
           
         })

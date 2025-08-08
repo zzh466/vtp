@@ -1,3 +1,4 @@
+import { stat } from "original-fs";
 import request from "../../utils/request"; 
 import {subscribeIndicatorKey} from '../../utils/utils'
 const state = {
@@ -42,11 +43,16 @@ const state = {
    
     async 'get-config'({ commit,state }){
      
-      const [ over_price, broadcast, openvolume_limit, vtp_client_cancelvolume_limit, vtp_server_indicator_array,vtp_client_big_cancelvolume_limit,  instrument_info_pre_tradday ] = await Promise.all(
-        [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'vtp_client_openvolume_limit', 'vtp_client_cancelvolume_limit', 'vtp_server_indicator_array', 'vtp_client_big_cancelvolume_limit', 'instrument_info_pre_tradday'].map(e => request({
+      const [ over_price, broadcast, vtp_client_cancelvolume_limit, openvolume_limit, vtp_server_indicator_array,vtp_client_big_cancelvolume_limit,  instrument_info_pre_tradday ] = await Promise.all(
+        [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'openvolume_limit', 'vtp_client_cancelvolume_limit', 'vtp_server_indicator_array', 'vtp_client_big_cancelvolume_limit', 'instrument_info_pre_tradday'].map(e => request({
         url: 'property/info/'+ e,
         method: 'GET'
       })));
+      const new_openvolume_limit = await request({
+        url: 'future/volume/'+ state.activeCtpaccount,
+        method: 'GET'
+      })
+      
       // localStorage.setItem(subscribeIndicatorKey, state.userData.subscribeIndicator);
       localStorage.setItem(`config-${state.userData.id}`, JSON.stringify(state.userData.instrumentConfigVOList));
       commit('setstate', {
@@ -59,7 +65,7 @@ const state = {
       })
       commit('setstate', {
         key: 'openvolume_limit',
-        data: openvolume_limit.propertyValue || ''
+        data: new_openvolume_limit.openVolumeLimit ||openvolume_limit.propertyValue || ''
       })
       commit('setstate', {
         key: 'vtp_client_cancelvolume_limit',
