@@ -570,7 +570,7 @@ ipcMain.on('trade-login', (event, args) => {
       }, 5000)
       return
     }else{
-      infoLog(`${field.OrderStatus} ${field.StatusMsg} ${+new Date() - flagTime}`)
+      devLog(`${field.OrderStatus} ${field.StatusMsg} ${+new Date() - flagTime}`)
     }
    
     event.sender.send('receive-order', orderMap[key], key, needUpdate);
@@ -1131,7 +1131,7 @@ class TcpClient{
     this.index = 1;
     this.openInstruments = [];
     this.connectcount = 0
-
+    this.type = args.type;
   
   }
   addinstrument(instrument){
@@ -1157,20 +1157,15 @@ class TcpClient{
     
   }
   checktype(){
-    const {url} = this.args; 
+    let {url} = this.args; 
+    if(!Array.isArray(url)){
+      url = [url]
+    }
     const _url = url[0].split(':');
     let host= _url[0];
     let port= _url[1];
     let cmd;
-    if(['19301', '19299'].includes(port)){
-      this.type = 'udp'
-    
-     
-    }else {
-      
-      this.type = 'tcp'
-    }
-    console.log(url)
+   
     if(url.length >1 && this.type === 'tcp'){
       return new Promise(resolve => {
         console.log('check start')
@@ -1178,6 +1173,7 @@ class TcpClient{
         // tcp_client.setTimeout(2000)
         let timeout =  setTimeout(()=>{
           console.log(host, port, 'timeout')
+          infoLog(`${host} 检查超时`)
           const _url = url[1].split(':');
           this.host= _url[0];
           this.port= _url[1];
@@ -1188,6 +1184,7 @@ class TcpClient{
           console.log(e, 'error')
         })
         tcp_client.connect({host, port},()=>{
+          infoLog(`${host} 检查通过`)
           console.log(host, 'check')
           this.port = port;
           this.host = host;
@@ -1569,7 +1566,7 @@ ipcMain.on('tcp-reconnect', function(_, tcpinfo){
     let p = Promise.resolve();
     console.log(tcpData)
     if(tcpData){
-      e.args.url = tcpData.quotAddr.split(';') ;
+      e.args.url = tcpData.quotAddr ;
       p = e.checktype();
     }
     p.then(()=>{
@@ -1657,7 +1654,7 @@ ipcMain.on('fake-trade', function(event, {id, orderData, tradeData}){
     event.sender.send('receive-trade', item)
   })
   trade.on('order', function(item){
-    
+    // console.log(item)
     orderMap[item.key] = item;
     event.sender.send('receive-order', item)
     const win = findedopened(item.InstrumentID);

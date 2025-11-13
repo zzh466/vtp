@@ -23,7 +23,7 @@
         
          <div>
          
-           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>  <el-button  type="primary" style="margin-left: 20px" size="small" @click="puppetReconnect">重连</el-button></div>
+           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>  <el-button  type="primary" style="margin-left: 20px" size="small" @click="puppetReconnect" :disabled="reconnectdisable">交易重连</el-button></div>
            
           <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions" @history-trade="historyTraders = $event"></Round>
         </div>
@@ -45,8 +45,20 @@
     <el-button type="primary" v-if="userData.userAccount.toLowerCase() === 'xqlh'" @click=" historydialogVisible = true">历史成交查询 </el-button>
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
         <p >账户昨仓合约：{{positionsList }}</p>
-       <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">强制重连</el-button>     
+        <div style="display: flex; justify-content: space-between;">
+          <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">行情重连</el-button>    
+           
                   <!-- <el-button @click="testDev">测试</el-button> -->
+        </div>
+       
+            <div class="label">所属团队: 
+              <el-select v-model="groupId" @change="reconnect">
+                <el-option :value="1" label="全部"></el-option>
+                <el-option :value="11" label="金华"></el-option>
+                <el-option :value="12" label="上海" >上海</el-option>
+              </el-select> 
+            </div>
+            
       </div>
       <div style="display: flex;">
          
@@ -334,7 +346,9 @@
         deviation: 0,
          loginVisible: false,
          accountStatus: false,
-         historyData: []
+         historyData: [],
+         reconnectdisable: false,
+         groupId: this.$store.state.user.userData.groupId
       }
     },
     created(){
@@ -362,7 +376,9 @@
             instruments = instruments.split(',')
             info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
           }
+          
           ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
+           ipcRenderer.send('info-log', `收盘前平仓`)
         }
         
          
@@ -818,6 +834,7 @@
         this.deviation = 0;
         //重连时间太长导致遮罩层bug关闭不了
         const a = document.querySelectorAll('.v-modal')
+        this.reconnectdisable = false;
         a.forEach(e => e.remove());
         this.$nextTick(function(){
           this.$refs.round.init();
@@ -1136,41 +1153,18 @@
 // 'sc2409',
 // 'zn2408',
 // 'zn2409',],   iCmdID: 101});
-        const _quotVOList = [];
-        quotVOList.forEach(e =>{
-          let quotAddr = e.quotAddr;
-          // if(e.exchangeNo === 3){
-          //   quotAddr = '101.230.82.177:1889;101.132.114.246:18899'
-          // }
+        quotVOList = this.replacequotUrl(quotVOList);
           
-          // else  if(e.exchangeNo === 4){
-          //   quotAddr = '101.132.114.246:18889'
-          // }
-        
-          const q = _quotVOList.find(v=> v.quotAddr===e.quotAddr)
-          if(q){
-            if(q.subInstruments.endsWith(',')){
-              q.subInstruments = q.subInstruments + e.subInstruments;
-            }else{
-              q.subInstruments = q.subInstruments+ ',' + e.subInstruments;
-            }
-          }else{
-            _quotVOList.push({...e, quotAddr})
-          }
-        })
-          
-        _quotVOList.forEach((e) => {
+        quotVOList.forEach((e) => {
           // if(this.userData.id === 18 ){
             
               
           // }
           // let  e= quotVOList [2]
-          let url = e.quotAddr.split(';') 
-            
-            console.log('start data')
-            datacount ++
-            const instruments = e.subInstruments.split(',')
-            ipcRenderer.send('start-receive', {exchangeNo:e.exchangeNo, url, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
+          const {subInstruments, exchangeNo, quotAddr, protocol} = e;
+          datacount ++
+          const instruments  =  subInstruments.split(',')
+            ipcRenderer.send('start-receive', {exchangeNo:exchangeNo, url:quotAddr, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments, type: protocol.toLowerCase()});
         })
     },
       cancel(){
@@ -1268,13 +1262,36 @@
           setTimeout(()=> {
               this.loading.pop();
           }, 2000)
-          ipcRenderer.send('tcp-reconnect', res.quotInfoVOList.map(({exchangeNo, quotAddr}) => ({exchangeNo, quotAddr})))
+          ipcRenderer.send('tcp-reconnect',  this.replacequotUrl(res.quotInfoVOList))
         })
         
+      },
+      replacequotUrl(quotAddr){
+        const groupId = this.groupId;
+        const list =  quotAddr.filter(e => e.groupId === groupId).map(e=>({...e}));
+        
+        if(groupId !== 1){
+          
+          quotAddr.forEach(e =>{
+            if(e.groupId === 1){
+              const item = list.find(l => l.exchangeNo ===e.exchangeNo);
+              if(item){
+                item.quotAddr = [item.quotAddr, e.quotAddr]
+              }else{
+                list.push(e);
+              }
+            }
+            
+          })
+
+        }
+        
+       return list;
       },
       puppetReconnect(){
         console.log('puppet reconnect')
         if(this.currentAccount.puppet){
+          this.reconnectdisable = true;
           ipcRenderer.send('puppet-reconnect')
         }
        

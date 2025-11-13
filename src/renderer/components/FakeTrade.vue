@@ -438,13 +438,14 @@ export default {
          if(this.started)return;
          this.showButton = false;
         this.started = true;
+        
         const {quotVOList, instrumentConfigVOList } = this.userData;
         const subscribelInstruments = instrumentConfigVOList.flatMap(e => e.instruments.split(','));
-        quotVOList.forEach((e) => {
-         
-            const instruments = e.subInstruments.split(',')
-            let url = e.quotAddr.split(';') 
-             ipcRenderer.send('start-receive', {url, instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101});
+        quotVOList.filter(e=> e.groupId===1).forEach((e) => {       
+            const {subInstruments, exchangeNo, quotAddr, protocol} = e;
+            const instruments  =  subInstruments.split(',')
+            ipcRenderer.send('start-receive', {exchangeNo:exchangeNo, url:quotAddr, instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101, instruments, type: protocol.toLowerCase()});
+            // ipcRenderer.send('start-receive', {url, instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101});
         })
         this.subscribelInstruments = subscribelInstruments.map(e => ({ins: e}))
     },

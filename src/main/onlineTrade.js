@@ -86,9 +86,9 @@ class pupTrade {
                     break
                 case 38:
              
-                    console.log(data.length)
+                    // console.log(data.length)
                     const orderData = orderMsg.decodeMsg(data.slice(8))
-                    console.log(orderData)
+                    // console.log(orderData)
                     this.emitter.emit('rtnOrder', orderData)
 
                     break
@@ -167,15 +167,16 @@ class pupTrade {
             port: this.port
         })
         this.relogining = false;
-        tcp_client.setKeepAlive(true, 5*1000);
+        // tcp_client.setKeepAlive(true, 30*1000);
         tcp_client.on('close',(hadError ) =>{
             
             infoLog(`傀儡机断开 原因 ${hadError}`)
-            if(this.reconnect){
-                setTimeout(()=> this.connect(), 1000)
-                this.reconnect = false;
-            }
+            // if(this.reconnect){
+               
+            //     this.reconnect = false;
+            // }
             // 
+            setTimeout(()=> this.connect(), 1000)
             this.emitter.emit('disconnected')
             this.tcp_client = null;
           })
@@ -190,12 +191,14 @@ class pupTrade {
             
             
         })
+        
         tcp_client.on('data', (data) => {
             if(callback){
                 callback()
                 callback= null
             }
-            // console.log(data.length)
+            console.log(data.length)
+            
             const cacheArr= this.cacheArr;
             if(cacheArr.length){
                 cacheArr.push(data)
@@ -213,13 +216,14 @@ class pupTrade {
                 this.cacheArr.push(data);
             }
         })
+        this.sendmsg(Buffer.from(''), 1)
     }
     on(event, fn){
         // console.log(event, 'event')
         this.emitter.on(event, fn)
     }
     sendmsg(message, headcode){
-       
+        
         const length = headMsg2.dsLen+ message.length;
         console.log('send =---head', headcode, length, message.length,this.encrygyKey)
         const head = headMsg2.encodeMsg2({
@@ -240,14 +244,14 @@ class pupTrade {
        
     }
     reqOrderInsert(orderData, callback){
-        console.log('insert', orderData)
+        // console.log('insert', orderData)
         const message = insertMsg.encodeMsg2(orderData)
        
         this.sendmsg(message, 33)
         callback()
     }
     reqQryTradingAccount(BrokerID, InvestorID){
-        // console.log('account', BrokerID, InvestorID)
+        console.log('account', BrokerID, InvestorID)
         const message = accountRspmsg.encodeMsg2({
             BrokerID,
             InvestorID,
@@ -258,7 +262,7 @@ class pupTrade {
         this.sendmsg(message, 50)
     }
     reqOrderAction(cancelData, callback){
-        console.log(cancelData)
+        // console.log(cancelData)
         const message = cancelMsg.encodeMsg2(cancelData)
         this.sendmsg(message, 34)
         callback()

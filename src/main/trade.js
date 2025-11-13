@@ -226,6 +226,7 @@ class Trade {
         })
     }
     send(event, ...args){
+        
         console.log(event,...args, 'send')
         this._trader[event](...args)
     }
@@ -237,7 +238,7 @@ class Trade {
         }
         eventType.add(event)
         _trader.on(event, (...args) => {
-            // console.log(`${event} ---- receive`);
+            console.log(`${event} ---- receive`, this.needrecord, this.startTrader);
             if(this.needrecord && this.startTrader){
                 if(event === 'rtnTrade'){
                     recordAction(`/order/rtn/trade/${this.userId}/`, args[0])
@@ -263,7 +264,7 @@ class Trade {
                         this.next()
                     }
                     
-                    console.log(`${event} ---- receive`, isLast);
+                    // console.log(`${event} ---- receive`, isLast, field);
                     fn.call(this,isLast,field)
                 })
             }
@@ -305,10 +306,10 @@ class Trade {
        }
     }
     chainSend(event, ...args){
-        console.log('chainsend', event, this.haslogin)
+        // console.log('chainsend', event, this.haslogin)
         if(!this.haslogin)return;
         const { tasks} = this;
-        console.log('task', tasks.length)
+        // console.log('task', tasks.length)
         const task =()=>{
             this.send(event,  ...args)
         }

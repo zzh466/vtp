@@ -31,16 +31,20 @@ class Chart {
             volumeScaleCount,
             volumeScaleHeight = 30,
             volumeScaleTick,
-            volumeScaleType
+            volumeScaleType,
+            volumeXOffset = 0,
+            volumeYOffset = 0
         } = config
         this.ctx = dom.getContext('2d');
-        
+        this.rendered = false;
         this.barToBorder = barToBorder;
         this.barWidth =barWidth;
         this.volumeScaleHeight = volumeScaleHeight;
         this.volumeScaleType = volumeScaleType;
         this.volumeScaleCount =volumeScaleCount;
         this.volumeScaleTick = volumeScaleTick;
+        this.volumeXOffset = volumeXOffset;
+        this.volumeYOffset = volumeYOffset;
         this.width = width;
         this.height = height;
         this.step = parseFloat(step);
@@ -323,7 +327,7 @@ class Chart {
         const buyIndex = this.buyIndex;
         const askIndex = this.askIndex;
         const barWidth = this.barWidth;
-        
+        let askX,askY, askV, buyX,buY, buyV;
         for(let i = this.start; (i-this.start)  <= this.count; i ++ ){
             if(!this.data[i]){
                 console.log(i, JSON.parse(JSON.stringify(this.data)))
@@ -349,16 +353,40 @@ class Chart {
                 const  x = _x + (i-this.start) * barWidth;
                 const height = Chart.getHeight(this.range, volum, this.volumeScaleHeight); 
                 ctx.fillRect(x,y,barWidth -1,height);
-                if(i === buyIndex || i === this.askIndex){
-                    ctx.font= '12px 宋体';
-                    ctx.fillStyle= FONTCOLOR;
-                    ctx.fillText(volum, x , y + 10);
+                
+                if(i === askIndex){
+                    askX = x + this.volumeXOffset;
+                    askY = y;
+                    if(this.volumeYOffset < 0){
+                        askY = askY - this.volumeYOffset
+                    }
+                    askV = volum;
+                } else if(i === buyIndex ){
+                    buyX = x + barWidth - this.volumeXOffset;
+                    buY = y;
+                    buyV = volum
+                    if(this.volumeYOffset > 0){
+                        buY = buY + this.volumeYOffset
+                    }
                 }
             }
-            
-           
 
         }
+        
+        ctx.save();
+        ctx.font= '12px 宋体';
+        ctx.fillStyle= FONTCOLOR;
+        if(buyV){
+            buyV = buyV 
+            ctx.textAlign='right'
+            ctx.fillText(buyV, buyX , buY + 10);
+
+        }
+        if(askV){
+            ctx.textAlign='left'
+            ctx.fillText(askV, askX , askY + 10);
+        }
+        ctx.stroke();
     }
     clearData(startPrice, endPrice){
         if(!startPrice || !endPrice) return;
@@ -414,13 +442,14 @@ class Chart {
         if(pure){
             return index;
         }
-        const barToBorder = parseInt(this.barToBorder);
+        let barToBorder = parseInt(this.barToBorder);
+
         let offset = 0;
         let rerender = false;
+        
         if(index > this.data.length - barToBorder){
              offset = index - this.data.length + barToBorder;
             this.pushData(offset);
-          
             rerender = true;
         }
         if(index < barToBorder){
@@ -441,10 +470,11 @@ class Chart {
         if(index > start + this.count - barToBorder){
             offset = index - start- this.count+barToBorder;
             let min = offset;
-            
+
             this.start = start + min;
             rerender = true;
         }
+     
         if(rerender){
             this.renderPrice();
         }
@@ -608,10 +638,10 @@ class Chart {
         const {start, ctx, count, barWidth, height} = this;
         let lowX = (lowindex - start) * barWidth;
         let HighX = (highindex - start) * barWidth
-        if(lowindex < start){
+        if(lowindex < start || lowindex > start + count){
             lowX =  - 50;
         }
-        if(highindex > start + count){
+        if(highindex > start + count || highindex < start){
             HighX = this.width - X - 51
         }
         ctx.clearRect(X -1, Y + 29 ,2 , height - 10);
@@ -656,6 +686,16 @@ class Chart {
         render(highindex);
         ctx.restore();
     }
+    renderseconds(){
+        const time = new Date().getMilliseconds();
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.fillStyle = FONTCOLOR;
+        const width = this.width - 20
+        ctx.clearRect(width,0, 20, 10);
+        ctx.fillText(time, width, 10);
+        ctx.restore();
+    }
     render(arg){
         
         if(!arg.LastPrice){
@@ -672,7 +712,7 @@ class Chart {
         
         this.args= arg
         this.renderTime(arg.UpdateTime)
-        console.log(arg)
+        // console.log(arg)
         if(arg.BidPrice5  &&  arg.BidPrice5 <= Number.MAX_SAFE_INTEGER){
             this.clearData(arg.BidPrice5 , arg.BidPrice1 );
         }
@@ -683,7 +723,8 @@ class Chart {
         for(let i=5; i> 0; i--){
             let buyPirce = arg[`BidPrice${i}`];
             let buyIndex ;
-            const flag = i > 1;
+            const flag = this.rendered?i> 1 : i < 5;
+            
             if(buyPirce && !pasuseBuy){
                 buyIndex = this.getindex(buyPirce, flag)
                 const buyData = this.data[buyIndex];
@@ -736,15 +777,16 @@ class Chart {
         this.HighestPrice = arg.HighestPrice;
        
         this.renderBakcground();
-        this.renderHighandLow()
+        
         this.renderVolume();
-       
+        this.renderHighandLow()
       
         
         this.renderCurrentPirce(arg.LastPrice, arg.Volume);
         this.renderPlaceOrder();
         this.renderTradeOrder();
-
+        this.rendered= true;
+        // this.renderseconds()
 
 
        

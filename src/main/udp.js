@@ -18,7 +18,7 @@ export default class udpClient {
         func();
         const client = this.client;
         client.on("message",(msg,rinfo)=>{
-            console.log('msg', msg)
+            // console.log('msg', msg)
             this.emitter.emit('data', msg)
             
         });
@@ -43,7 +43,7 @@ export default class udpClient {
         msg.copy(_msg)
         this.client.send(_msg, this.port, this.host, (err)=>{
             
-            console.log('udp', err)
+            console.log('nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn', err)
         })
         // if(!this.sleepTime){
         //     // console.log(msg) 

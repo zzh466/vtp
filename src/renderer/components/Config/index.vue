@@ -117,6 +117,14 @@
     key: 'barWidth',
    
   },{
+    name: '挂单量数字横向偏移',
+    key: 'volumeXOffset',
+   
+  },{
+    name: '挂单量数字纵向偏移',
+    key: 'volumeYOffset',
+    extra: '正值为买单量向下偏移，负值为卖单量向下偏移'
+  },{
     name: '挂单数量刻度高度',
     key: 'volumeScaleHeight',
     extra: '无上限类型使用'
@@ -189,18 +197,18 @@
       const price_ = 2902.00;
     const fakeData = {
           ActionDay: "20211203",
-          AskPrice1: price_ + 1,
+          AskPrice1: price_ + 0.5,
           AskPrice2: price_ + 1.5,
           AskPrice3: price_ + 2,
           AskPrice4: price_ + 2.5,
           AskPrice5: price_ + 3,
-          AskVolume1: 2,
+          AskVolume1: 12,
           AskVolume2: 3,
           AskVolume3: 2,
           AskVolume4: 3,
           AskVolume5: 2,
           AveragePrice: 0,
-          BidPrice1: price_ - 1,
+          BidPrice1: price_,
           BidPrice2: price_ - 1.5,
           BidPrice3: price_ - 2,
           BidPrice4: price_ - 2.5,
@@ -252,7 +260,14 @@
         method: 'GET'
       }), ]).then(([res1, res2]) => {
         
-        this.subsInstruments = res1.quotInfoVOList.reduce((a,b) =>  a.concat(Array.from(new Set(b.instrumentList)).map(e => ({key: e, label: e}))), [])
+        this.subsInstruments = res1.quotInfoVOList.reduce((a,b) =>  {
+          if(b.groupId===1){
+
+            return a.concat(Array.from(new Set(b.instrumentList)).map(e => ({key: e, label: e})))
+          }
+          return a
+
+}, [])
         this.loading = false;
         
         const {vtpUserId} =res2
@@ -332,10 +347,11 @@
               request({
                 method: 'GET',
                 url: '/user/info'}).then(res=>{
-                  if(res.code === "REQ_SUCCESS")
+                  if(res.code === "REQ_SUCCESS")     
                    ipcRenderer.send('update-all-config', res.instrumentConfigVOList);
+                  this.preview()
                 })
-             
+                
              }else {
                 this.$message.error(res.msg);
              }
@@ -343,10 +359,10 @@
       
       }, 
       preview(){
+       
+        ['barToBorder', 'barWidth', 'volumeScaleHeight', 'volumeScaleType', 'volumeScaleCount', 'volumeScaleTick', 'volumeXOffset' , 'volumeYOffset'].forEach(key =>{
         
-        ['barToBorder', 'barWidth', 'volumeScaleHeight', 'volumeScaleType', 'volumeScaleCount', 'volumeScaleTick'].forEach(key =>{
-        
-                
+                console.log(this.config[key])
                 this.chart[key] = parseInt(this.config[key])
                 
      

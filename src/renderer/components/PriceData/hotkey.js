@@ -19,7 +19,7 @@ export default function generate(hotKey){
          function order(config) {
             
             if(!chart.data.length)return;
-            debugger
+            
             const direction = haskey[3];
             const overprice = haskey[4];
             let price;

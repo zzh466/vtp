@@ -230,7 +230,7 @@ export default {
              
               // console.log(this.$refs.progress, 123)
               // console.log(time - this.time, arg.UpdateTime, new Date().toTimeString())
-                // ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime} ${arg.Volume}, ${new Date().toISOString()}, ${time - this.time}`);
+                ipcRenderer.send('data-log', `${arg.InstrumentID}, ${this.$route.query.accountIndex}, ${arg.UpdateTime}, ${time}`);
                 
                 // console.log(arg)
               // if(this.time && id.startsWith('I')){
@@ -256,7 +256,8 @@ export default {
               barToBorder,
               
               barWidth = 10,
-              
+              volumeXOffset,
+              volumeYOffset,
               volumeScaleCount,
               volumeScaleHeight = 30,
               volumeScaleTick,
@@ -270,7 +271,8 @@ export default {
           this.chart.volumeScaleType = volumeScaleType;
           this.chart.volumeScaleCount =volumeScaleCount;
           this.chart.volumeScaleTick = volumeScaleTick;
-          
+          this.chart.volumeXOffset = volumeXOffset;
+          this.chart.volumeYOffset = volumeYOffset;
           this.chart.ctx.clearRect(0, 0, this.width, this.height);
           this.chart.resize( this.width, this.height);
           this.changeHotKey(config);
