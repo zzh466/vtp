@@ -14,5 +14,6 @@ thumbs.db
 .vscode/c_cpp_properties.json
 node_modules/*
 .history/*
+.clinic/*
 *.con
 electron-build/*
