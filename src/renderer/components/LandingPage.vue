@@ -372,13 +372,14 @@
         }
         this.ws.closeTrade = (instruments) => {
           let info = this.instrumentInfo;
+          ipcRenderer.send('info-log', `收盘前平仓`)
           if(instruments) {
             instruments = instruments.split(',')
             info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
           }
           
           ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
-           ipcRenderer.send('info-log', `收盘前平仓`)
+          ipcRenderer.send('info-log', `开始发送平仓请求`)
         }
         
          
