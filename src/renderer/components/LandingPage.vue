@@ -1368,7 +1368,7 @@
         let info = this.instrumentInfo;
           if(instruments) {
             instruments = instruments.split(',')
-            info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
+            info = info.filter(e => instruments.indexOf(e.IsTrading) > -1)
           }
           ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
       }
