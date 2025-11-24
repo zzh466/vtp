@@ -372,14 +372,13 @@
         }
         this.ws.closeTrade = (instruments) => {
           let info = this.instrumentInfo;
-          ipcRenderer.send('info-log', `收盘前平仓`)
+          ipcRenderer.send('data-log', `收盘前平仓`)
           if(instruments) {
             instruments = instruments.split(',')
-            info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
+            info = info.filter(e => instruments.indexOf(e.ProductID) > -1)
           }
-          
           ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
-          ipcRenderer.send('info-log', `开始发送平仓请求`)
+          ipcRenderer.send('data-log', `开始发送平仓请求`)
         }
         
          
@@ -1037,6 +1036,16 @@
             
           }).then(({instrumentList}) => {
             this.instrumentInfo = instrumentList;
+
+            // let time = +Date.now();
+            // const instruments = 'a,b,bb,bz,c,cs,eb,eg,fb,i,j,jd,jm,l,lh,lg,m,p,pg,pp,rr,v,y,ag,al,ao,au,bu,br,cu,fu,hc,ni,op,pb,rb,ru,sn,sp,ss,wr,zn,bc,ec,lu,nr,sc,AP,CF,CJ,CY,FG,JR,LR,MA,OI,PF,PK,PL,PM,PR,PX,RI,RM,RS,SA,SF,SH,SM,SR,TA,UR,WH,ZC,IC,IF,IH,IM,lc,si,ps'.split(',');
+
+            // const info = instrumentList.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
+            // let time1 = +Date.now();
+            // console.log(time1 - time,info);
+            // const info1 = instrumentList.filter(e => instruments.indexOf(e.ProductID) > -1)
+            // console.log(+Date.now() - time1, info1);
+            // debugger
             this.finishLoading('instrument')
           })
        

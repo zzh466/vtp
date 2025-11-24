@@ -785,7 +785,10 @@ class Chart {
         this.renderCurrentPirce(arg.LastPrice, arg.Volume);
         this.renderPlaceOrder();
         this.renderTradeOrder();
-        this.rendered= true;
+        if(!this.rendered && arg.UpdateTime >= '08:59:00'){
+            this.rendered= true;
+        }
+     
         // this.renderseconds()
 
 
