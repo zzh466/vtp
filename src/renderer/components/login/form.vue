@@ -6,6 +6,11 @@
        <el-form-item label="密码" prop="userPwd">
         <el-input  type="password"  @keydown.enter.native='login' v-model="form.userPwd"></el-input>
       </el-form-item>
+      <div v-show="showhidden">
+          <el-form-item v-for="value in hiddenArr" :label="value.label" :key= "value.key" :prop= "value.key">
+            <el-input v-model="form[value.key]" ></el-input>
+        </el-form-item>
+      </div>
       <el-form-item>
         <el-button type="primary" @click="login" :disabled='disabled'>登录</el-button>
       </el-form-item>
@@ -16,13 +21,41 @@
  import { getIPAdress, hostname, version, getMac} from '../../utils/utils';
 import request from '../../utils/request';
   import { ipcRenderer } from 'electron';
+const hiddenArr= [{
+    key: 'authcode',
+    label: 'authcode'
+},{
+    key: 'brokeId',
+    label: 'brokeId'
+},{
+    key: 'appId',
+    label: 'appId'
+},{
+    key: 'tradeAddress',
+    label: '交易地址'
+},{
+    key: 'quotAddress',
+    label: '行情地址'
+}]
 export default {
     props: ['userAccount'],
     data() {
+         ipcRenderer.invoke('get-config', 'login-config').then(e => {
+          
+           hiddenArr.forEach(item =>{
+             this.form[item.key] = e[item.key]
+           })
+         })
         return {
+            showhidden: false,
             form: {
                 userNm: this.userAccount || '',
-                userPwd: ''
+                userPwd: '',
+                authcode: '',
+                appId: '',
+                tradeAddress: '',
+                quotAddress: '',
+                brokeId: ''
             },
             rules: {
                 userNm: [
@@ -33,6 +66,7 @@ export default {
                 ],
             },
             disabled: false,
+            hiddenArr
         }
     },
     methods : {
@@ -45,32 +79,15 @@ export default {
            
             if(validate){
                  
-                 const data = {
-                    appVersion: version,
-                    ip: getIPAdress(),
-                    hostNm: hostname,
-                    userMAC: getMac(),
-                    ...this.form};
-                ipcRenderer.send('info-log', `login  ${JSON.stringify(data)}`)
-                request({
-                url: 'access/loginClient', 
-                method: 'POST',
-                data
-                }).then((res) => {
-                this.disabled =  false
-                if(res.code === 'REQ_SUCCESS'){
+               
                     
-                    this.$emit('login', res)
-                    
+                this.$emit('login', res)
+                ipcRenderer.send('set-config', 'login-config', res)
                 
+               
                 }else{
-                    this.$message.error(res.msg || '登陆失败');
-                   
+                    this.disabled =  false
                 }
-                })
-            }else{
-                this.disabled =  false
-            }
             })
         }
     }

@@ -6,7 +6,14 @@ const store = new Store()
 const config = {
     window_width : 1500,
     window_height: 300,
-    color_blindness: false
+    color_blindness: false,
+    login_config: {
+        authcode: 'ZASEVQRCNXRITENY',
+        appId: 'client_mwqcw_1.0.1',
+        tradeAddress: '124.74.248.123:41257',
+        quotAddress: '124.74.248.123:41255',
+        brokeId: '3010'
+    }
 
 }
 for(let key in config){
