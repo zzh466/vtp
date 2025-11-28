@@ -60,40 +60,40 @@
     #           }
     #         ]
     # },
-    {
-      "target_name": "ctpmini",
-      "product_dir": "<(module_root_dir)/build/Release/", 
-      "sources": [
-        ".\\src\\ctpmini\\cpp\\ctpmini.cc",
-        ".\\src\\ctpmini\\cpp\\wrap_trader.cpp",
-        ".\\src\\ctpmini\\cpp\\uv_trader.cpp"
-      ],
-      "libraries": [
-        # "<(module_root_dir)/ctpmini_20240923/WinDataCollect.lib",
-        "<(module_root_dir)/ctpmini_20240923/thosttraderapi.lib",
-        "<(module_root_dir)/ctpmini_20240923/thostmduserapi.lib"
-      ],
-      "include_dirs": ["ctpmini_20240923/","<!(node -e \"require('nan')\")"],
-      "copies": [
-              {
-                "destination": "<(module_root_dir)/build/Release/",
-                "files": [
-                  "<(module_root_dir)/ctpmini_20240923/thosttraderapi.dll",
-                  "<(module_root_dir)/ctpmini_20240923/thostmduserapi.dll",
-                  # "<(module_root_dir)/ctpmini_20240923/WinDataCollect.dll"
-                ]
-              },
-              {
-                "destination": "<(module_root_dir)/build/Debug/",
-                "files": [
-                  "<(module_root_dir)/ctpmini_20240923/thosttraderapi.dll",
-                  "<(module_root_dir)/ctpmini_20240923/thostmduserapi.dll",
-                  # "<(module_root_dir)/ctpmini_20240923/WinDataCollect.dll"
-                ]
-              }
-            ]
-    }
-    ,
+    # {
+    #   "target_name": "ctpmini",
+    #   "product_dir": "<(module_root_dir)/build/Release/", 
+    #   "sources": [
+    #     ".\\src\\ctpmini\\cpp\\ctpmini.cc",
+    #     ".\\src\\ctpmini\\cpp\\wrap_trader.cpp",
+    #     ".\\src\\ctpmini\\cpp\\uv_trader.cpp"
+    #   ],
+    #   "libraries": [
+    #     # "<(module_root_dir)/ctpmini_20240923/WinDataCollect.lib",
+    #     "<(module_root_dir)/ctpmini_20240923/thosttraderapi.lib",
+    #     "<(module_root_dir)/ctpmini_20240923/thostmduserapi.lib"
+    #   ],
+    #   "include_dirs": ["ctpmini_20240923/","<!(node -e \"require('nan')\")"],
+    #   "copies": [
+    #           {
+    #             "destination": "<(module_root_dir)/build/Release/",
+    #             "files": [
+    #               "<(module_root_dir)/ctpmini_20240923/thosttraderapi.dll",
+    #               "<(module_root_dir)/ctpmini_20240923/thostmduserapi.dll",
+    #               # "<(module_root_dir)/ctpmini_20240923/WinDataCollect.dll"
+    #             ]
+    #           },
+    #           {
+    #             "destination": "<(module_root_dir)/build/Debug/",
+    #             "files": [
+    #               "<(module_root_dir)/ctpmini_20240923/thosttraderapi.dll",
+    #               "<(module_root_dir)/ctpmini_20240923/thostmduserapi.dll",
+    #               # "<(module_root_dir)/ctpmini_20240923/WinDataCollect.dll"
+    #             ]
+    #           }
+    #         ]
+     # }
+    # ,
     {
       "target_name": "ctpmd",
       "product_dir": "<(module_root_dir)/build/Release/", 

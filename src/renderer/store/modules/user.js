@@ -1,6 +1,7 @@
 import { stat } from "original-fs";
 import request from "../../utils/request"; 
 import {subscribeIndicatorKey} from '../../utils/utils'
+  import { ipcRenderer } from 'electron';
 const state = {
    userData: {
      
@@ -43,47 +44,38 @@ const state = {
    
     async 'get-config'({ commit,state }){
      
-      const [ over_price, broadcast, vtp_client_cancelvolume_limit, openvolume_limit, vtp_server_indicator_array,vtp_client_big_cancelvolume_limit,  instrument_info_pre_tradday ] = await Promise.all(
-        [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'vtp_client_cancelvolume_limit', 'vtp_client_openvolume_limit', 'vtp_server_indicator_array', 'vtp_client_big_cancelvolume_limit', 'instrument_info_pre_tradday'].map(e => request({
-        url: 'property/info/'+ e,
-        method: 'GET'
-      })));
+      const [ over_price, broadcast, vtp_client_cancelvolume_limit, openvolume_limit, vtp_server_indicator_array,vtp_client_big_cancelvolume_limit ] = await Promise.all(
+        [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'vtp_client_cancelvolume_limit', 'vtp_client_openvolume_limit', 'vtp_server_indicator_array', 'vtp_client_big_cancelvolume_limit'].map(e =>ipcRenderer.invoke('get-config', e)));
        
-      const new_openvolume_limit = await request({
-        url: 'future/volume/'+ state.activeCtpaccount,
-        method: 'GET'
-      })
+     
       
       // localStorage.setItem(subscribeIndicatorKey, state.userData.subscribeIndicator);
       localStorage.setItem(`config-${state.userData.id}`, JSON.stringify(state.userData.instrumentConfigVOList));
       commit('setstate', {
         key: 'over_price',
-        data: parseInt(over_price.propertyValue)
+        data: parseInt(over_price)
       })
       commit('setstate', {
         key: 'broadcast',
-        data: broadcast.propertyValue
+        data: broadcast
       })
       commit('setstate', {
         key: 'openvolume_limit',
-        data: new_openvolume_limit.openVolumeLimit ||openvolume_limit.propertyValue || ''
+        data: openvolume_limit || ''
       })
       commit('setstate', {
         key: 'vtp_client_cancelvolume_limit',
-        data: vtp_client_cancelvolume_limit.propertyValue || ''
+        data: vtp_client_cancelvolume_limit || ''
       })
       commit('setstate', {
         key: 'vtp_server_indicator_array',
-        data: vtp_server_indicator_array.propertyValue || ''
+        data: vtp_server_indicator_array || ''
       })
       commit('setstate', {
         key: 'vtp_client_big_cancelvolume_limit',
-        data: vtp_client_big_cancelvolume_limit.propertyValue || ''
-      }),
-      commit('setstate', {
-        key: 'instrument_info_pre_tradday',
-        data: JSON.parse(instrument_info_pre_tradday.propertyValue)
+        data: vtp_client_big_cancelvolume_limit || ''
       })
+     
       
     },
     async lock(){

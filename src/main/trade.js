@@ -37,7 +37,7 @@ class Trade {
         this.init(options)
       
        
-        // this.getInstrumentList = instruments.map(id => ({id}));
+        this.getInstrumentList = this.instruments.map(id => ({id}));
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
@@ -169,31 +169,31 @@ class Trade {
                 reject()
             });
             
-            // _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
+            _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
               
-            //     const {InstrumentID, PriceTick, ExchangeID} = field;
+                const {InstrumentID, PriceTick, ExchangeID} = field;
             
-            //     const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
-            //     if(item){
-            //         const { resolve } = item;
-            //         item.field = field;
-            //         if(resolve){
+                const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
+                if(item){
+                    const { resolve } = item;
+                    item.field = field;
+                    if(resolve){
                 
-            //             resolve({PriceTick, ExchangeID});
-            //         }
-            //     }else {
-            //         this.getInstrumentList.push({
-            //             id: InstrumentID,
-            //             field
-            //         })
-            //     }
+                        resolve({PriceTick, ExchangeID});
+                    }
+                }else {
+                    this.getInstrumentList.push({
+                        id: InstrumentID,
+                        field
+                    })
+                }
                 
-            //     if(isLast){
-            //         this.next()
-            //         this.emitter.emit('instrument-finish',  this.getInstrumentList)
-            //     }
+                if(isLast){
+                    this.next()
+                    this.emitter.emit('instrument-finish',  this.getInstrumentList)
+                }
                 
-            // })
+            })
             
             // _trader.on('rtnOrder',  (field) => {
             //     console.log('rtnOrder ---- receive' );

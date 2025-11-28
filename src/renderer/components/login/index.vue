@@ -3,18 +3,6 @@
    <loginform @login='login' v-if='step === 1'>
       
     </loginform>
-    
-      <el-form label-width="160px"  v-else-if='step === 2'>
-      <el-form-item label="选择交易账户" >
-        <el-radio-group :value="active" >
-          <el-radio v-for='account in accountList' @change="changeActive(account.id)" :label="account.id" :key='account.id' >{{account.futureUserName}}</el-radio>
-        </el-radio-group>
-      </el-form-item>
-     
-      <el-form-item>
-        <el-button type="primary" @click="cofirm">确认</el-button>
-      </el-form-item>
-   </el-form>
    
   </div>
 </template>
@@ -55,32 +43,27 @@
       }
     },
     methods: {
-      login(data){
-          data = {...data, _datachecked:this.datachecked}
+      async login(data){
+          const thrRealProfit = await ipcRenderer.invoke('get-config', 'thrRealProfit');
+          const config = await ipcRenderer.invoke('get-config', 'config')
           this.$store.commit('setstate', {
               key: 'userData',
-              data
+              data: {
+                  futureAccountVOList: {
+                     futureUserId: data.userNm,
+                    futureUserPwd: data.userPwd,
+                    ...data
+
+                  },
+                  thrRealProfit,
+                  instrumentConfigVOList: config,
+                  id: 88
+              }
           })
-            const { futureAccountVOList} = data;
-            if(!futureAccountVOList && !futureAccountVOList.length){
-              this.$message.error('当前账户没有绑定期货账户');
-              return
-            }
-            this.changeActive(futureAccountVOList[0].id);
-          if(this.checked){
-             ipcRenderer.send('resize-main',  {width: 1600, height: 770});
-              this.$router.replace('trade');
-              return;
-          }
-        
-          if(futureAccountVOList.length > 1){
-               
-            this.$nextTick(()=>  this.step = 2)
-            
-          }else{
            
-              this.checkactive()
-          }
+            ipcRenderer.send('resize-main',  {width: 1600, height: 770});
+            this.$router.replace('main');
+          
               
              
       },

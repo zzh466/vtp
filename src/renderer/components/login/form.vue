@@ -11,6 +11,7 @@
             <el-input v-model="form[value.key]" ></el-input>
         </el-form-item>
       </div>
+      <div @click="showhidden= !showhidden">{{showhidden? '收起': '展开'}}</div>
       <el-form-item>
         <el-button type="primary" @click="login" :disabled='disabled'>登录</el-button>
       </el-form-item>
@@ -22,25 +23,25 @@
 import request from '../../utils/request';
   import { ipcRenderer } from 'electron';
 const hiddenArr= [{
-    key: 'authcode',
+    key: 'authCode',
     label: 'authcode'
 },{
-    key: 'brokeId',
-    label: 'brokeId'
+    key: 'brokerId',
+    label: 'brokerId'
 },{
     key: 'appId',
     label: 'appId'
 },{
-    key: 'tradeAddress',
+    key: 'tradeAddr',
     label: '交易地址'
 },{
-    key: 'quotAddress',
+    key: 'quotAddr',
     label: '行情地址'
 }]
 export default {
     props: ['userAccount'],
     data() {
-         ipcRenderer.invoke('get-config', 'login-config').then(e => {
+         ipcRenderer.invoke('get-config', 'login_config').then(e => {
           
            hiddenArr.forEach(item =>{
              this.form[item.key] = e[item.key]
@@ -49,13 +50,13 @@ export default {
         return {
             showhidden: false,
             form: {
-                userNm: this.userAccount || '',
-                userPwd: '',
-                authcode: '',
+                userNm: this.userAccount || '187849',
+                userPwd: 'hzlianhd520!',
+                authCode: '',
                 appId: '',
-                tradeAddress: '',
-                quotAddress: '',
-                brokeId: ''
+                tradeAddr: '',
+                quotAddr: '',
+                brokerId: ''
             },
             rules: {
                 userNm: [
@@ -80,9 +81,9 @@ export default {
             if(validate){
                  
                
-                    
-                this.$emit('login', res)
-                ipcRenderer.send('set-config', 'login-config', res)
+                
+                this.$emit('login', this.form)
+                ipcRenderer.send('set-config', 'login_config', this.form)
                 
                
                 }else{

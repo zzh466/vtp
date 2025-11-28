@@ -610,11 +610,11 @@ ipcMain.on('trade-login', (event, args) => {
     }
   })
   
-  // trade.emitterOn('instrument-finish', function (list) {
-  //   event.sender.send('receive-instrument', list);
-  //   event.sender.send('finish-loading', 'instrument')
+  trade.emitterOn('instrument-finish', function (list) {
+    event.sender.send('receive-instrument', list);
+    event.sender.send('finish-loading', 'instrument')
     
-  // })
+  })
   
   trade.chainOn('rqTradingAccount', 'reqQryTradingAccount',function( isLast, field){
     // console.log(field, 'index.js', mainWindow)
@@ -677,12 +677,12 @@ ipcMain.on('trade-login', (event, args) => {
     }
     errorLog('disconnected');
   })
-  // trade.login.then(()=>{
-  //   trade.chainSend('reqQryInstrument', '', function (field) {
-  //     // console.log('reqQryInstrument is callback');
-  //     // console.log(field);
-  //   })
-  // })
+  trade.login.then(()=>{
+    trade.chainSend('reqQryInstrument', '', function (field) {
+      // console.log('reqQryInstrument is callback');
+      // console.log(field);
+    })
+  })
   
   trade.chainOn('rqInstrumentCommissionRate', 'reqQryInstrumentCommissionRate',function (isLast, field) {
     console.log('rqInstrumentCommissionRate is callback');

@@ -748,13 +748,13 @@ export default {
     },
     setConfig(update, arg){
       const {account,configId} = this.$route.query;
-       let configs 
+       let config 
        if(update){
-          configs = arg
+          config = arg
        }else{
-        configs = JSON.parse(localStorage.getItem(`config-${account}`));
+        config = JSON.parse(localStorage.getItem(`config-${account}`));
        }
-       const config = configs.find(e => e.id === +configId);
+     
     
       console.log(config, this.$route.query);
       if(!config) return;

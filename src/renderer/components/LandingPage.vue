@@ -41,29 +41,21 @@
      
     </main>
    
-    <el-button type="primary" @click=" timedialogVisible = true;confirmLoading= false">结算单查询</el-button>
-    <el-button type="primary" v-if="userData.userAccount.toLowerCase() === 'xqlh'" @click=" historydialogVisible = true">历史成交查询 </el-button>
+    <!-- <el-button type="primary" @click=" timedialogVisible = true;confirmLoading= false">结算单查询</el-button>
+    <el-button type="primary" v-if="userData.userAccount.toLowerCase() === 'xqlh'" @click=" historydialogVisible = true">历史成交查询 </el-button> -->
     <!-- <el-button type="primary" @click="updateConfig">更新配置</el-button> -->
         <p >账户昨仓合约：{{positionsList }}</p>
         <div style="display: flex; justify-content: space-between;">
-          <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">行情重连</el-button>    
+          <!-- <div class="label">订阅合约： <el-button type="primary" style="margin-left: 20px" size="small" @click="reconnect">行情重连</el-button>     -->
            
                   <!-- <el-button @click="testDev">测试</el-button> -->
-        </div>
-       
-            <div class="label">所属团队: 
-              <el-select v-model="groupId" @change="reconnect">
-                <el-option :value="1" label="全部"></el-option>
-                <el-option :value="11" label="金华"></el-option>
-                <el-option :value="12" label="上海" >上海</el-option>
-              </el-select> 
-            </div>
+        
             
       </div>
       <div style="display: flex;">
          
-        <div v-for='instrument in subscribelInstruments' :key ='instrument.id' :style="{width: 100 / subscribelInstruments.length + '%', marginRight: '4px'}">
-          <Table    height='300' @row-dblclick='start($event, instrument.id)' :tableData='instrumentsData | changeNo(instrument.id)' :columns= 'instrumentsColumns'/>
+        <div style="width: 100%;">
+          <Table    height='300' @row-dblclick='start($event, instrument.id)' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
         </div>
     
           <!-- <el-button @click="open">商品</el-button>
@@ -186,10 +178,8 @@
         
         // return this.userData.subInstruments.split(',').map(e => e.replace(/[\n\r]/g, ''))
         
-         return this.userData.instrumentConfigVOList.map(e=> ({
-          instruments: (e.instruments|| '').split(',').map(e => e.replace(/[\n\r]/g, '')).filter(e=>e),
-          id: e.id
-        }))
+         return this.userData.instrumentConfigVOList.instruments.split(',').map(e => e.replace(/[\n\r]/g, '')).filter(e=>e)
+       
       },
       openvolume_limit(){
           return this.$store.state.user.openvolume_limit.split(';').filter(e=>e).map(e => {
@@ -329,15 +319,6 @@
           label: '撤单限制',
           prop: 'vtp_client_cancelvolume_limit',
           width: 50
-        },{
-          label: '今大额撤单',
-          prop: 'big_todayCancel',
-           width: 50,
-        },
-        {
-          label: '大额撤单限制',
-          prop: 'big_todayCancel_limit',
-          width: 60
         }
         ],
         forcing: false,
@@ -360,108 +341,108 @@
       audio.src = __static+ "/trade.wav";
       this.updateConfig().then(()=>{
         
-        const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
+        // const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
         
-        const broadcast = config.some(e => e.broadcastOpenInterest);
-        this.ws = new TraderSocket(this.userData.id, this.$store.state.user.activeCtpaccount);
-        if(broadcast ){
-          this.ws.onmessage((e)=>{
-            console.log(e)
-            ipcRenderer.send('broadcast-openinterest', e);
-          })
-        }
-        this.ws.closeTrade = (instruments) => {
-          let info = this.instrumentInfo;
-          ipcRenderer.send('info-log', `收盘前平仓`)
-          if(instruments) {
-            instruments = instruments.split(',')
-            info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
-          }
+        // const broadcast = config.some(e => e.broadcastOpenInterest);
+        // this.ws = new TraderSocket(this.userData.id, this.$store.state.user.activeCtpaccount);
+        // if(broadcast ){
+        //   this.ws.onmessage((e)=>{
+        //     console.log(e)
+        //     ipcRenderer.send('broadcast-openinterest', e);
+        //   })
+        // }
+        // this.ws.closeTrade = (instruments) => {
+        //   let info = this.instrumentInfo;
+        //   ipcRenderer.send('info-log', `收盘前平仓`)
+        //   if(instruments) {
+        //     instruments = instruments.split(',')
+        //     info = info.filter(e => instruments.indexOf(e.InstrumentID.match(/^[a-zA-Z]+/)[0]) > -1)
+        //   }
           
-          ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
-          ipcRenderer.send('info-log', `开始发送平仓请求`)
-        }
+        //   ipcRenderer.send('force-close', {over_price:  this.$store.state.user.over_price, instrumentInfo: info}, true)
+        //   ipcRenderer.send('info-log', `开始发送平仓请求`)
+        // }
         
          
-        this.ws.initTask.push(`NotifyIndicatorBroadcast@${!!this.userData._datachecked}`)
+        // this.ws.initTask.push(`NotifyIndicatorBroadcast@${!!this.userData._datachecked}`)
         
-        window.$$ws = this.ws
-        const activeArr = [];
+        // window.$$ws = this.ws
+        // const activeArr = [];
      
-        this.ws.onActiveInstrument((e, needfiter, notifi) =>{
-          if(needfiter && !this.subscribelInstruments.find(a => a.instruments.includes(e))){
-             return;
-          }
-          //因为会出现行情重复提醒情况 所以要做过滤
-          // if(activeArr.includes(e))return
-          // activeArr.push(e)
-          // setTimeout(()=>{ 
-          //   const index = activeArr.indexOf(e);
-          //   if(index >-1){
-          //     activeArr.splice(index,1)
-          //   }
-          // }, 10*60*1000)
-          // console.log(e)
+        // this.ws.onActiveInstrument((e, needfiter, notifi) =>{
+        //   if(needfiter && !this.subscribelInstruments.find(a => a.instruments.includes(e))){
+        //      return;
+        //   }
+        //   //因为会出现行情重复提醒情况 所以要做过滤
+        //   // if(activeArr.includes(e))return
+        //   // activeArr.push(e)
+        //   // setTimeout(()=>{ 
+        //   //   const index = activeArr.indexOf(e);
+        //   //   if(index >-1){
+        //   //     activeArr.splice(index,1)
+        //   //   }
+        //   // }, 10*60*1000)
+        //   // console.log(e)
          
-          if(!notifi){
-            notifi = '来大行情了'
-          }
-          const text = `合约${e}${notifi}`
-          //部分合约TA bu等会被当成拼音 所以加个空格
-          speak(`合约${e.replace(/^([a-zA-Z])(?=[a-zA-Z])/, '$1 ')}${notifi}`);
+        //   if(!notifi){
+        //     notifi = '来大行情了'
+        //   }
+        //   const text = `合约${e}${notifi}`
+        //   //部分合约TA bu等会被当成拼音 所以加个空格
+        //   speak(`合约${e.replace(/^([a-zA-Z])(?=[a-zA-Z])/, '$1 ')}${notifi}`);
           
-          // ipcRenderer.send('instrument-notification', e, text)
-          let notification =  new Notification('通知', {body: text})
-          notification.onclose = () => {
-            console.log('close 111111111')
-            notification = null
-          }
-          ipcRenderer.send('info-log', `触发行情弹窗 ${text}`)
-          notification.onclick = () => {
-            console.log('click 111111111')
-            if( this.loading.length)return;
+        //   // ipcRenderer.send('instrument-notification', e, text)
+        //   let notification =  new Notification('通知', {body: text})
+        //   notification.onclose = () => {
+        //     console.log('close 111111111')
+        //     notification = null
+        //   }
+        //   ipcRenderer.send('info-log', `触发行情弹窗 ${text}`)
+        //   notification.onclick = () => {
+        //     console.log('click 111111111')
+        //     if( this.loading.length)return;
          
-              let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
+        //       let  config = this.subscribelInstruments.find(a => a.instruments.includes(e))
               
-              if(!config){
+        //       if(!config){
                 
               
-                const configs = this.userData.instrumentConfigVOList.slice();
+        //         const configs = this.userData.instrumentConfigVOList.slice();
                 
-                const instruments = configs[0].instruments;
-                configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
-                this.$store.commit('update-config', configs);
-                const openvolume_limit = this.openvolume_limit
-                config = configs[0]
-                const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
-                const big_todayCancel_limit = this.getBigCancelLimit(e.ins);
-                const data = {
-                  instrumentID: e,
-                  id: [configs[0].id],
-                  yesterdayBuy: 0,
-                  yesterdayAsk: 0,
-                  todayBuy: 0,
-                  todayAsk:0,
-                  todayVolume: 0,
-                  'todayCancel': 0,
-                  openvolume_limit: this.findLimit(openvolume_limit, e.ins),
-                  vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins),
-                  big_todayCancel: 0,
-                  big_todayCancel_limit_volume: big_todayCancel_limit.volume,
-                  big_todayCancel_limit: big_todayCancel_limit.limit
-                }
-                ipcRenderer.send('add-sub-instruments', e)
-                this.instrumentsData.push(data);
+        //         const instruments = configs[0].instruments;
+        //         configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
+        //         this.$store.commit('update-config', configs);
+        //         const openvolume_limit = this.openvolume_limit
+        //         config = configs[0]
+        //         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+        //         const big_todayCancel_limit = this.getBigCancelLimit(e.ins);
+        //         const data = {
+        //           instrumentID: e,
+        //           id: [configs[0].id],
+        //           yesterdayBuy: 0,
+        //           yesterdayAsk: 0,
+        //           todayBuy: 0,
+        //           todayAsk:0,
+        //           todayVolume: 0,
+        //           'todayCancel': 0,
+        //           openvolume_limit: this.findLimit(openvolume_limit, e.ins),
+        //           vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins),
+        //           big_todayCancel: 0,
+        //           big_todayCancel_limit_volume: big_todayCancel_limit.volume,
+        //           big_todayCancel_limit: big_todayCancel_limit.limit
+        //         }
+        //         ipcRenderer.send('add-sub-instruments', e)
+        //         this.instrumentsData.push(data);
       
-              }
-              this.start({row:{instrumentID: e}}, config.id)
-          }
+        //       }
+        //       this.start({row:{instrumentID: e}}, config.id)
+        //   }
        
-        })
+        // })
         this.login()
          
       })
-      this.getCtpInfo();
+      // this.getCtpInfo();
       // ipcRenderer.on('open-noti-ins', (event,e)=>{
         
       //   if(this.opened.includes(e) || this.loading.length)return;
@@ -612,52 +593,52 @@
        ipcRenderer.on('receive-price', (event, arg)=>{    
         //计算隔节误差;
         console.log(this.historyTraders, '12321313')
-        if(this.historyTraders.length){
+        // if(this.historyTraders.length){
           
-          for(let i = this.historyTraders.length - 1 ; i >= 0; i--){
+        //   for(let i = this.historyTraders.length - 1 ; i >= 0; i--){
            
-            const {InstrumentID, Volume, Direction, TradeDate , ExchangeID } = this.historyTraders[i];
-            const priceData = arg[InstrumentID];
+        //     const {InstrumentID, Volume, Direction, TradeDate , ExchangeID } = this.historyTraders[i];
+        //     const priceData = arg[InstrumentID];
             
-            const info = this.instrumentInfo.find(e => InstrumentID === e.InstrumentID);
-             console.log(priceData, info, 123136)
-            if(priceData && info){
+        //     const info = this.instrumentInfo.find(e => InstrumentID === e.InstrumentID);
+        //      console.log(priceData, info, 123136)
+        //     if(priceData && info){
               
-              let price;
+        //       let price;
 
               
-              let { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay, UpdateTime} = priceData[4];
+        //       let { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay, UpdateTime} = priceData[4];
               
-              if(ExchangeID === 'CFFEX' && !ClosePrice){
-                const _priceData = this.$store.state.user.instrument_info_pre_tradday[InstrumentID];
-                PreSettlementPrice = _priceData.SettlementPrice;
-                SettlementPrice = _priceData.SettlementPrice;
-                ClosePrice = _priceData.ClosePrice;
-                PreClosePrice = _priceData.ClosePrice;
-              }
-              const current = new Date().getHours()
-              if(UpdateTime.length < 8){
-                UpdateTime='0' + UpdateTime
-              }
-              // if(((updateHour >= 15 && updateHour < 20) || (updateHour < 9 && updateHour > 3)) &&  (current < 15 ||current > 17))continue;
-              if(((current > 18||current < 3) && UpdateTime < '20:59:00') || (current >3 && (UpdateTime > '02:30:00' && UpdateTime < '08:59:00')))continue;
+        //       if(ExchangeID === 'CFFEX' && !ClosePrice){
+        //         const _priceData = this.$store.state.user.instrument_info_pre_tradday[InstrumentID];
+        //         PreSettlementPrice = _priceData.SettlementPrice;
+        //         SettlementPrice = _priceData.SettlementPrice;
+        //         ClosePrice = _priceData.ClosePrice;
+        //         PreClosePrice = _priceData.ClosePrice;
+        //       }
+        //       const current = new Date().getHours()
+        //       if(UpdateTime.length < 8){
+        //         UpdateTime='0' + UpdateTime
+        //       }
+        //       // if(((updateHour >= 15 && updateHour < 20) || (updateHour < 9 && updateHour > 3)) &&  (current < 15 ||current > 17))continue;
+        //       if(((current > 18||current < 3) && UpdateTime < '20:59:00') || (current >3 && (UpdateTime > '02:30:00' && UpdateTime < '08:59:00')))continue;
             
-                if(TradeDate  < TradingDay){
-                  price = PreSettlementPrice - PreClosePrice
-                }else {
-                  price =  SettlementPrice - ClosePrice
-                }
+        //         if(TradeDate  < TradingDay){
+        //           price = PreSettlementPrice - PreClosePrice
+        //         }else {
+        //           price =  SettlementPrice - ClosePrice
+        //         }
     
               
-              let profit = price*Volume * info.VolumeMultiple
-              if(Direction === '1'){
-                profit = -profit;
-              }
-              this.deviation += profit;
-              this.historyTraders.splice(i, 1)
-            }
-          }
-        }
+        //       let profit = price*Volume * info.VolumeMultiple
+        //       if(Direction === '1'){
+        //         profit = -profit;
+        //       }
+        //       this.deviation += profit;
+        //       this.historyTraders.splice(i, 1)
+        //     }
+        //   }
+        // }
          if(this.instrumentsData.some(({todayAsk, todayBuy, yesterdayBuy, yesterdayAsk})=> todayAsk+ yesterdayAsk!== yesterdayBuy+ todayBuy)){
            
             this.price=arg;
@@ -690,16 +671,16 @@
             id: this.$store.state.user.activeCtpaccount
           }
          
-        request({
-          url:  '/future/futureAccountTradingInfo',
-          method: 'PATCH',
-          data
-        }).then(res => {
-          if(res.code === 'LOGIN_UNFINISHED'){
-            this.loginVisible = true
-            return
-          }
-          this.totalProfit =  (res.futureAccountVOList || []).reduce((a,b) => a + b.realProfit, 0).toFixed(2) 
+        // request({
+        //   url:  '/future/futureAccountTradingInfo',
+        //   method: 'PATCH',
+        //   data
+        // }).then(res => {
+        //   if(res.code === 'LOGIN_UNFINISHED'){
+        //     this.loginVisible = true
+        //     return
+        //   }
+        //   this.totalProfit =  (res.futureAccountVOList || []).reduce((a,b) => a + b.realProfit, 0).toFixed(2) 
            if(!this.locked){
             if( this.userData.thrRealProfit && this.totalProfit < -this.userData.thrRealProfit){
               
@@ -718,13 +699,13 @@
          }
         
         
-        })
+        // })
       })
-      // ipcRenderer.on('receive-instrument', (event, arg)=>{
-      //   // console.log(arg)
+      ipcRenderer.on('receive-instrument', (event, arg)=>{
+        // console.log(arg)
 
-      //   this.instrumentInfo = arg
-      // })
+        this.instrumentInfo = arg
+      })
       ipcRenderer.on('update-config', (event, arg)=>{
         // console.log(arg)
         
@@ -1298,15 +1279,16 @@
        
       },
       login(){
-        
+        debugger
         const userData = this.userData;
-        const active = this.$store.state.user.activeCtpaccount;
-        const account = userData.futureAccountVOList.find(e => e.id === active);
+        
+        const account = userData.futureAccountVOList;
         
         this.currentAccount = account;
       
         const {
           tradeAddr:ctp1_TradeAddress,
+          quotAddr,
           id,
           brokerId: m_BrokerId,
           authCode: m_AuthCode,
@@ -1328,12 +1310,13 @@
             m_PassWord,
             m_AppId,
             m_AccountId,
+            quotAddr,
             userId: userData.id,
             idol: userData.idol,
             puppet,
             id,
-            tradeProxyCode
-          //  instruments: this.subscribelInstruments
+            tradeProxyCode,
+           instruments: this.subscribelInstruments
           });
       },
       changeAccount(){
