@@ -149,6 +149,7 @@ class Trade {
                 console.log("rspUserLogin: info", JSON.stringify(info));
                 info = info || {};
                 if(info.ErrorID){
+                     console.log('错误2')
                     this.emitter.emit('error', info.ErrorMsg);
                     errorLog(`登陆失败，${info.ErrorMsg}`)
                     reject(info.ErrorMsg)
@@ -163,7 +164,8 @@ class Trade {
             });
             
             _trader.on('rspError',  (requestId, isLast, field, info) =>{
-                console.log(JSON.stringify(field));
+                console.log(JSON.stringify(field, 1231231));
+                 console.log('错误3', field, info, requestId, isLast    )
                 errorLog(`错误，${info && info.ErrorMsg}`)
                 this.emitter.emit('error',field);
                 reject()
@@ -206,6 +208,7 @@ class Trade {
            
             _trader.on('errInsert', (a,b) =>{
                 errorLog(`报单错误，${JSON.stringify(b)}`)
+                console.log('错误1')
                 this.emitter.emit('error', b, true);
                 console.log(a,b)
             })
@@ -446,8 +449,9 @@ class Trade {
         });
     }
     reconnect(){
+        console.log(this.ctp1_TradeAddress)
         this._trader.connect(this.ctp1_TradeAddress, undefined, 2, 0, function (result) {
-            console.log("in js code:", 'connect return val is ' + result);
+            console.log("trade in js code:", 'connect return val is ' + result);
         });
     }
 }

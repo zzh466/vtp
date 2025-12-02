@@ -699,6 +699,7 @@ ipcMain.on('trade-login', (event, args) => {
   }, '');
 
   trade.emitterOn('error', (msg = {}, skip) =>{
+    console.log('1321313133', msg)
     if(skip && !STARTTRADE) return;
     const win = BrowserWindow.getFocusedWindow();
     const opened = opedwindow.find(e=> e.win === win)
