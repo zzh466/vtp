@@ -37,7 +37,7 @@ class Trade {
         this.init(options)
       
        
-        this.getInstrumentList = this.instruments.map(id => ({id}));
+        this.getInstrumentList =[];
         this.requestID = Math.floor(Math.random() * 100) + 1;
         this.orderRef =  Math.floor(Math.random() * 100) + 1;
         this.emitter = new  events.EventEmitter();
@@ -171,23 +171,20 @@ class Trade {
             
             _trader.on('rqInstrument',  (requestId, isLast, field, info) => {
               
-                const {InstrumentID, PriceTick, ExchangeID} = field;
+                // const {InstrumentID, PriceTick, ExchangeID} = field;
             
-                const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
-                if(item){
-                    const { resolve } = item;
-                    item.field = field;
-                    if(resolve){
+                // const item = this.getInstrumentList.find(({id}) => id===InstrumentID);
+                // if(item){
+                //     const { resolve } = item;
+                //     item.field = field;
+                //     if(resolve){
                 
-                        resolve({PriceTick, ExchangeID});
-                    }
-                }else {
-                    this.getInstrumentList.push({
-                        id: InstrumentID,
-                        field
-                    })
-                }
+                //         resolve({PriceTick, ExchangeID});
+                //     }
+                // }else {
+                    this.getInstrumentList.push(field)
                 
+                 
                 if(isLast){
                     this.next()
                     this.emitter.emit('instrument-finish',  this.getInstrumentList)
@@ -239,13 +236,13 @@ class Trade {
         eventType.add(event)
         _trader.on(event, (...args) => {
             console.log(`${event} ---- receive`, this.needrecord, this.startTrader);
-            if(this.needrecord && this.startTrader){
-                if(event === 'rtnTrade'){
-                    recordAction(`/order/rtn/trade/${this.userId}/`, args[0])
-                }else if(event === 'rtnOrder'){
-                    recordAction(`/order/rtn/order/${this.userId}/`, args[0])
-                }
-            }
+            // if(this.needrecord && this.startTrader){
+            //     if(event === 'rtnTrade'){
+            //         recordAction(`/order/rtn/trade/${this.userId}/`, args[0])
+            //     }else if(event === 'rtnOrder'){
+            //         recordAction(`/order/rtn/order/${this.userId}/`, args[0])
+            //     }
+            // }
             this.emitter.emit(event, ...args);
         })
         this.emitter.on(event, fn.bind(this));
@@ -370,9 +367,9 @@ class Trade {
             "MacAddress": "",
           };
           console.log(insertOrder);
-          if(this.needrecord){
-            recordAction(`/order/insert/${this.userId}/`, insertOrder, time)
-            }
+        //   if(this.needrecord){
+        //     recordAction(`/order/insert/${this.userId}/`, insertOrder, time)
+        //     }
             if(ExchangeID === 'CFFEX'){
                 while(volumeTotalOriginal){
                     if(volumeTotalOriginal > 20){
@@ -426,9 +423,9 @@ class Trade {
                     _combOffsetFlag = true
                 }
                 console.log(cancelOrder);
-                if(this.needrecord){
-                    recordAction(`/order/action/${this.userId}/`, cancelOrder, time)
-                }
+                // if(this.needrecord){
+                //     recordAction(`/order/action/${this.userId}/`, cancelOrder, time)
+                // }
                 this.send('reqOrderAction',cancelOrder, function(field){
                     count++
                     console.log('reqOrderAction is callback');

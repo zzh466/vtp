@@ -1,19 +1,19 @@
 <template>
   <div id="wrapper" v-loading='loading.length || forcing'  :element-loading-text="forcing?'触发强平操作，正在强平中':'正在获取账号信息'" >
     <el-descriptions size= 'samll' direction="vertical" :column="12" border class="account">
-      <el-descriptions-item label="账号">{{userData.userAccount}}</el-descriptions-item>
+      <el-descriptions-item label="账号">{{currentAccount.futureUserId}}</el-descriptions-item>
       <el-descriptions-item label="账户状态"><span :style="{color:locked?'red': 'green'}">{{locked?'锁定': '正常'}}</span></el-descriptions-item>
      
       <el-descriptions-item label="交易日">{{account.TradingDay}}</el-descriptions-item>
-      <el-descriptions-item label="当前账户">{{currentAccount.futureUserName}}</el-descriptions-item>
+      <!-- <el-descriptions-item label="当前账户">{{currentAccount.futureUserName}}</el-descriptions-item> -->
       <el-descriptions-item label="期货账户状态"><span :style="{color:accountStatus?'green': 'red'}">{{accountStatus?'在线': '离线'}}</span></el-descriptions-item>
       <el-descriptions-item label="手续费">{{account.Commission.toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="当前账户盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission).toFixed(2)}}</el-descriptions-item>
-      <el-descriptions-item label="隔节误差">{{deviation.toFixed(2)}}</el-descriptions-item>
+      <!-- <el-descriptions-item label="隔节误差">{{deviation.toFixed(2)}}</el-descriptions-item> -->
        <el-descriptions-item label="实际盈亏">{{(account.CloseProfit + account.PositionProfit - account.Commission + deviation).toFixed(2)}}</el-descriptions-item>
       <el-descriptions-item label="强平线">{{userData.thrRealProfit}}</el-descriptions-item>
       <el-descriptions-item label="可用资金">{{Math.floor(account.Available/ 1000)*1000 }}</el-descriptions-item>
-       <el-descriptions-item label="总实际盈亏">{{totalProfit}}</el-descriptions-item>
+       <!-- <el-descriptions-item label="总实际盈亏">{{totalProfit}}</el-descriptions-item> -->
         <!-- <el-descriptions-item v-if="userData.futureAccountVOList.length > 1"><el-button type="primary" size="small" @click="changeAccount">切换账号</el-button></el-descriptions-item> -->
     </el-descriptions>
       
@@ -55,7 +55,7 @@
       <div style="display: flex;">
          
         <div style="width: 100%;">
-          <Table    height='300' @row-dblclick='start($event, instrument.id)' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
+          <Table    height='300' @row-dblclick='start' :tableData='instrumentsData' :columns= 'instrumentsColumns'/>
         </div>
     
           <!-- <el-button @click="open">商品</el-button>
@@ -703,7 +703,7 @@
       })
       ipcRenderer.on('receive-instrument', (event, arg)=>{
         // console.log(arg)
-
+        debugger
         this.instrumentInfo = arg
       })
       ipcRenderer.on('update-config', (event, arg)=>{
@@ -767,30 +767,19 @@
         const openvolume_limit = this.openvolume_limit
         
         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
-        const data = this.subscribelInstruments.reduce((a,b)=> {
-          b.instruments.forEach(e =>{
-            const repeat = a.find(c=> c.ins===e)
-            if(repeat){
-              repeat.id.push(b.id)
-            }else{
-              a.push(({ins:e, id: [b.id]}))
-            }
-          })
-          return a;
-          }
-          , []).map(e=>{
-          const big_todayCancel_limit = this.getBigCancelLimit(e.ins);
+        const data = this.subscribelInstruments.map(e=>{
+          const big_todayCancel_limit = this.getBigCancelLimit(e);
           return {
-          instrumentID: e.ins,
-          id: e.id,
+          instrumentID: e,
+         
           yesterdayBuy: 0,
           yesterdayAsk: 0,
           todayBuy: 0,
           todayAsk:0,
           todayVolume: 0,
           'todayCancel': 0,
-          openvolume_limit: this.findLimit(openvolume_limit, e.ins),
-          vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins),
+          openvolume_limit: this.findLimit(openvolume_limit, e),
+          vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e),
           big_todayCancel:0,
           big_todayCancel_limit_volume: big_todayCancel_limit.volume,
           big_todayCancel_limit: big_todayCancel_limit.limit
@@ -954,7 +943,7 @@
         title = this.userData.userAccount + ' ' + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
-      async start({row},id) {
+      async start({row}) {
         
         if(this.locked){
           this.$alert('当前账号已锁定', '锁定' )
@@ -976,7 +965,7 @@
         const {PriceTick, ExchangeID, VolumeMultiple:volumeMultiple} = info;
         let checked  = true;
         
-        const config = this.userData.instrumentConfigVOList.find(e => e.id === id );
+        const config = this.userData.instrumentConfigVOList;
         if(config.topQuot !== undefined){
           checked = config.topQuot
         }
@@ -989,7 +978,7 @@
         
         const accountIndex = this.currentAccount.futureUserName;
         const accountStatus = this.currentAccount.accountStatus
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex, accountStatus, volumeMultiple});
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked, accountIndex, accountStatus, volumeMultiple});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
@@ -1122,7 +1111,7 @@
       startVolume(){
          if(this.started)return;
         this.started = true;
-        let {quotVOList } = this.userData;
+        let {futureAccountVOList } = this.userData;
 //         const quotAddr = '192.168.0.19:18899'.split(':');
 //         ipcRenderer.send('start-receive', {host: quotAddr[0], port: quotAddr[1], instrumentIDs: ['ag2408','ag2412','au2408',
 
@@ -1135,19 +1124,19 @@
 // 'sc2409',
 // 'zn2408',
 // 'zn2409',],   iCmdID: 101});
-        quotVOList = this.replacequotUrl(quotVOList);
+        // quotVOList = this.replacequotUrl(quotVOList);
           
-        quotVOList.forEach((e) => {
-          // if(this.userData.id === 18 ){
+        // quotVOList.forEach((e) => {
+        //   // if(this.userData.id === 18 ){
             
               
-          // }
-          // let  e= quotVOList [2]
-          const {subInstruments, exchangeNo, quotAddr, protocol} = e;
-          datacount ++
-          const instruments  =  subInstruments.split(',')
-            ipcRenderer.send('start-receive', {exchangeNo:exchangeNo, url:quotAddr, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments, type: protocol.toLowerCase()});
-        })
+        //   // }
+        //   // let  e= quotVOList [2]
+        //   const {subInstruments, exchangeNo, quotAddr, protocol} = e;
+        //   datacount ++
+        //   const instruments  =  subInstruments.split(',')
+            ipcRenderer.send('start-receive', futureAccountVOList);
+        // })
     },
       cancel(){
         this.dialogVisible = false;
@@ -1279,7 +1268,7 @@
        
       },
       login(){
-        debugger
+        
         const userData = this.userData;
         
         const account = userData.futureAccountVOList;
