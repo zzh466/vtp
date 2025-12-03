@@ -126,6 +126,7 @@ class Trade {
     login(){
         const _trader = this._trader;
         this.login = new Promise((resolve, reject) => {
+            // console.log = infoLog
             _trader.on("connect",  (result)=> {
                 
                 console.log("in js code: ----> on connected , result=", result);

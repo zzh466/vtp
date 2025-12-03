@@ -50,7 +50,7 @@ const config = {
 for(let key in config){
     const value = store.get(key);
      console.log(value, 121313)
-    if(value !== undefined){
+    if(value === undefined){
        
         store.set(key, config[key])
     }else{

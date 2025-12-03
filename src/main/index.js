@@ -80,15 +80,15 @@ function createWindow () {
   mainWindow.on('close', () => {
    console.log('main-close')
     if(trade){
-      request({
-        url: 'access/logoutClient', 
-      })
-      trade.shouldReconnect = false
+      // request({
+      //   url: 'access/logoutClient', 
+      // })
+      // trade.shouldReconnect = false
       if(trade.logout){
         trade.logout();
       }
      
-      infoLog(`${trade.m_UserId} 登出`)
+      infoLog(`${trade.m_InvestorId} 登出`)
 
     }
     if(childwin){

@@ -339,6 +339,7 @@
       this.historyColumns = historyColumns;
       let audio = new Audio()
       audio.src = __static+ "/trade.wav";
+      console.log(this.$store.state.user)
       this.updateConfig().then(()=>{
         
         // const config =JSON.parse(localStorage.getItem(`config-${this.userData.id}`));
