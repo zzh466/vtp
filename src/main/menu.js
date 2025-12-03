@@ -100,12 +100,13 @@ export default function(checked,main){
 
           }
         ]
-      },{
-        label: '配置',
-        submenu: config
+      }
+      // ,{
+      //   label: '配置',
+      //   submenu: config
         
       
-      }
+      // }
       // ,{
       //   label: '订阅波动合约',
       //   click(){

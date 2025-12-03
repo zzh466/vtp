@@ -1,6 +1,6 @@
 {
-  "name": "vtp",
-  "version": "1.13.9",
+  "name": "cw",
+  "version": "1.0.1",
   "author": "",
   "description": "trade",
   "license": null,
@@ -27,8 +27,8 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "vtp2024",
-    "appId": "xinqi",
+    "productName": "长赢期货通",
+    "appId": "cw",
     "nsis": {
       "allowToChangeInstallationDirectory": true,
       "oneClick": false

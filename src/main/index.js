@@ -59,7 +59,7 @@ function createWindow () {
     height: 333,
     useContentSize: true,
     width: 500,
-    title: `Vtp  ${version}`,
+    title: `长赢期货通`,
    
     webPreferences: {
       webSecurity: false,

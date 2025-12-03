@@ -29,8 +29,8 @@ const config = {
         hotkey: '6,54,3,0,0,10,,0;5,53,3,0,0,5,,0;p,80,1,0,-20,0,,0;Num 1,97,1,0,1,1,0,0;Num 3,99,1,1,1,1,0,0;Num 4,100,1,0,3,1,0,0;Num 6,102,1,1,3,1,0,0;Num 7,103,1,0,15,1,,0;Num 9,105,1,1,15,1,,0;Q,81,1,0,-1,1,0,0;A,65,1,0,-3,1,0,0;Z,90,0,0,-5,1,0,0;W,87,1,1,-1,1,0,0;S,83,1,1,-3,1,0,0;X,88,1,1,-10,1,,0;Num 5,101,2,0,0,1,0,0;1,49,3,0,0,1,0,0;2,50,3,0,0,2,0,0;3,51,3,0,0,3,0,0;4,52,3,0,0,4,,0;U,85,6,0,0,1,0,0;I,73,6,0,0,1,0,1;O,79,6,0,0,1,0,2;Num 0,96,1,0,0,1,0,0;Num Del,110,1,1,0,1,0,0',
 
         
-        instruments: "IC2512,IF2512,IM2512,IH2512,IF2601,IM2601,IM2603,IF2603,IC2511,IF2511",
-        sysCloseTStrategy: 0,
+        instruments: "IF2601,IC2601,IC2603,IF2603,SM601,jm2601",
+        sysCloseTStrategy: 1,
         sysCloseType: 0,
         sysOrderVolume: 1,
         topQuot: false,
@@ -50,7 +50,7 @@ const config = {
 for(let key in config){
     const value = store.get(key);
      console.log(value, 121313)
-    if(value === undefined){
+    if(value !== undefined){
        
         store.set(key, config[key])
     }else{
