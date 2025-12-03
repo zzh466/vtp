@@ -775,7 +775,7 @@ export default {
       this.showStartNotice = config.windowsOpenCd;
       this.showEndNotice = config.windowsCloseCd;
 
-       this.func = Gen(config.hotKey)
+       this.func = Gen(config.hotkey)
        return config;
     },
     move(e){
@@ -794,7 +794,7 @@ export default {
         const instrumet =  this.instrumet;
         const {id, accountIndex, volumeMultiple, tick} = this.$route.query;
         const {volume, type, closeType} = this.config;
-        const title =getWinName(id + '-' + volumeMultiple * tick, accountIndex, volume, type, closeType) + getHoldCondition(instrumet);
+        const title =getWinName(id , volume, type, closeType) + getHoldCondition(instrumet);
         ipcRenderer.send('change-title', {id, title});
     },
     conditionTrade(){

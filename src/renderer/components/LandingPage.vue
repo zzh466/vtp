@@ -23,7 +23,7 @@
         
          <div>
          
-           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>  <el-button  type="primary" style="margin-left: 20px" size="small" @click="puppetReconnect" :disabled="reconnectdisable">交易重连</el-button></div>
+           <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>   </div>
            
           <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions" @history-trade="historyTraders = $event"></Round>
         </div>
@@ -244,7 +244,7 @@
         confirmLoading: true,
         confimInfoDate: '',
         orders: {},
-        loading: ['order', 'trade', 'config', 'data'],
+        loading: ['order', 'trade', 'config', 'data', 'instrument'],
         orderData: [],
         instrumentsData: [],
         traderData: [],
@@ -703,7 +703,7 @@
       })
       ipcRenderer.on('receive-instrument', (event, arg)=>{
         // console.log(arg)
-        debugger
+        
         this.instrumentInfo = arg
       })
       ipcRenderer.on('update-config', (event, arg)=>{
@@ -768,7 +768,7 @@
         
         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
         const data = this.subscribelInstruments.map(e=>{
-          const big_todayCancel_limit = this.getBigCancelLimit(e);
+          // const big_todayCancel_limit = this.getBigCancelLimit(e);
           return {
           instrumentID: e,
          
@@ -781,8 +781,8 @@
           openvolume_limit: this.findLimit(openvolume_limit, e),
           vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e),
           big_todayCancel:0,
-          big_todayCancel_limit_volume: big_todayCancel_limit.volume,
-          big_todayCancel_limit: big_todayCancel_limit.limit
+          // big_todayCancel_limit_volume: big_todayCancel_limit.volume,
+          // big_todayCancel_limit: big_todayCancel_limit.limit
 
 
         }})

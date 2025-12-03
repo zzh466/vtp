@@ -47,7 +47,9 @@ class CtpMd {
 
         ctpMdUser.on('rtnDepthMarketData', function (quot) {
             console.log('in js code: ----> rtnDepthMarketData');
-            console.log(JSON.stringify(quot));
+            // const data = JSON.stringify(quot);
+             emitter.emit('data', quot);
+            // console.log(data.InstrumentID);
         })
 
         ctpMdUser.connect(quotAddr, undefined, 2, 0, function (result) {

@@ -290,7 +290,7 @@ class Trade {
         const { tasks} = this;
        
         var last = tasks.shift();
-        const timeout = 1000
+        const timeout = 1100
         // console.log(tasks, last, 123132)
        if(tasks.length){
             let task = tasks[0];
@@ -306,7 +306,7 @@ class Trade {
        }
     }
     chainSend(event, ...args){
-        // console.log('chainsend', event, this.haslogin)
+        console.log('chainsend', event, this.haslogin)
         if(!this.haslogin)return;
         const { tasks} = this;
         // console.log('task', tasks.length)
@@ -315,7 +315,9 @@ class Trade {
         }
         // task()
         if(!tasks.length){
-            task()
+             setTimeout(()=> {
+                task()
+            }, 1000)
         }
         tasks.push(task)
     }

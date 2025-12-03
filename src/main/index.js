@@ -117,6 +117,7 @@ ipcMain.on('close-main', (event, arg) => {
 })
 let opedwindow = [];
 function findedopened(insId){
+
   const win = opedwindow.find(({id}) => id === insId);
   return win;
 }
@@ -1046,50 +1047,51 @@ ipcMain.on('force-close', (event, {over_price = 15, instrumentInfo}, tmpClose) =
 // const decodeMsg = new cppmsg.msg(receiveData['SP'])
 // const endecodeMsg = new cppmsg.msg(receiveData['GZ'])
 
-// function sendParseData(parseData){
+function sendParseData(parseData){
 
-//      //开盘会有错误数据进入 todo判断正无穷
-//     //  console.log(parseData)
-//   if(parseData.OpenPrice >  Number.MAX_SAFE_INTEGER  ||  parseData.LastPrice> Number.MAX_SAFE_INTEGER){
-//       console.log(parseData.InstrumentID, 'data')
-//       return
-//   }
-  
-//   let {InstrumentID} = parseData; 
-//   //  console.log( InstrumentID, parseData.UpdateTime, new Date())                                               
-//   // if(InstrumentID.startsWith('LC')){
-//   //   console.log(InstrumentID)
-//   //   InstrumentID = 'lc' + InstrumentID.substring(2)
-//   // }
-//   if(!historyData[InstrumentID]){
-//     historyData[InstrumentID] = [parseData]
-//   }else{
-//     historyData[InstrumentID].push(parseData)
-//     if(historyData[InstrumentID].length > 20){
-//       historyData[InstrumentID].shift()
-//     }
-//   }
-//   PriceData[InstrumentID] = parseData
+     //开盘会有错误数据进入 todo判断正无穷
+    //  console.log(parseData)
+  if(parseData.OpenPrice >  Number.MAX_SAFE_INTEGER  ||  parseData.LastPrice> Number.MAX_SAFE_INTEGER){
+      console.log(parseData.InstrumentID, 'data')
+      return
+  }
+  // console.log('step2',parseData)
+  let {InstrumentID} = parseData; 
+  //  console.log( InstrumentID, parseData.UpdateTime, new Date())                                               
+  // if(InstrumentID.startsWith('LC')){
+  //   console.log(InstrumentID)
+  //   InstrumentID = 'lc' + InstrumentID.substring(2)
+  // }
+  if(!historyData[InstrumentID]){
+    historyData[InstrumentID] = [parseData]
+  }else{
+    historyData[InstrumentID].push(parseData)
+    if(historyData[InstrumentID].length > 20){
+      historyData[InstrumentID].shift()
+    }
+  }
+  PriceData[InstrumentID] = parseData
 
-//   const win = findedopened(InstrumentID);
-//   // console.log(InstrumentID)
-//   // infoLog(JSON.stringify(parseData))
-//   if(win && win.sender){ 
-//     // console.log(InstrumentID, '11111111111111111111111111111111111')
+  const win = findedopened(InstrumentID);
+  console.log(InstrumentID)
+  // infoLog(JSON.stringify(parseData))
+   console.log('step2', win)
+  if(win && win.sender){ 
+    console.log(InstrumentID, '11111111111111111111111111111111111')
     
-//       win.sender.send(`receive-${parseData.InstrumentID}`, parseData)
-//   }
-//   if(trade.priceData){
-//     trade.priceData[InstrumentID]  = [
-//         parseData.BidPrice1,
-//         parseData.AskPrice1,
-//         parseData.datetime,
-//         parseData.LastPrice,  
-//         parseData.UpdateTime
-//     ];
-//     trade.checktrade(parseData);
-//   }
-// }
+      win.sender.send(`receive-${InstrumentID}`, parseData)
+  }
+  if(trade.priceData){
+    trade.priceData[InstrumentID]  = [
+        parseData.BidPrice1,
+        parseData.AskPrice1,
+        parseData.datetime,
+        parseData.LastPrice,  
+        parseData.UpdateTime
+    ];
+    trade.checktrade(parseData);
+  }
+}
 // function parseReceiveData(data){
      
   
@@ -1332,7 +1334,10 @@ ipcMain.on('start-receive', (event, args) =>{
    ctpMdUser.on('login', function(){
     event.sender.send('finish-loading', 'data')
    })
-  
+  ctpMdUser.on('data', function(data){
+    console.log('data', 1231)
+    sendParseData(data);
+  })
   if(!Maincycle){
     let taskcount =0
     Maincycle=setInterval(()=>{

@@ -29,7 +29,7 @@ console.log(hostname);
 export const typeMap = ['锁仓', '平今', '开仓', '平仓'];
 export const closeTypeMap = ['一键全平', '按指定手数平仓']
 export function getWinName(instrumentID, accountIndex, volume = 1, type = 0, closeType=0){
-    return `${instrumentID}-${accountIndex}   （手数：${volume} 平仓方式：${closeTypeMap[closeType]} 平今策略：${typeMap[type]} ）`
+    return `${instrumentID}  （手数：${volume} 平仓方式：${closeTypeMap[closeType]} 平今策略：${typeMap[type]} ）`
 }
 
 export function getHoldCondition(data={}){
