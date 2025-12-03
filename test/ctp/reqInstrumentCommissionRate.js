@@ -1,17 +1,25 @@
-var ctp = require('../../build/Release/CTP/ctp.node');
+var ctp = require('../../build/Release/ctp.node');
 ctp.settings({ log: true });
 
 // simnow hanzhe
-var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
-var m_BrokerId = "9999";
-var m_UserId = "187849";
-var m_InvestorId = "187849";
-var m_PassWord = "hzlianhd520!";
-var m_TradingDay = "20210805";
-var m_AccountId = "187849";
-var m_CurrencyId = "CNY";
-var m_AppId = "simnow_client_test";
-var m_AuthCode = "0000000000000000";
+// var ctp1_TradeAddress = "tcp://180.168.146.187:10201";
+// var m_BrokerId = "9999";
+// var m_UserId = "187849";
+// var m_InvestorId = "187849";
+// var m_PassWord = "hzlianhd520!";
+// var m_TradingDay = "20210805";
+// var m_AccountId = "187849";
+// var m_CurrencyId = "CNY";
+// var m_AppId = "simnow_client_test";
+// var m_AuthCode = "0000000000000000";
+
+var ctp1_TradeAddress = "tcp://124.74.248.123:41257";
+var m_BrokerId = "3010";
+var m_PassWord = "Xdqh1120";
+var m_AccountId = "10102089";
+var m_InvestorId = "10102089";
+var m_AppId = "client_mwqcw_1.0.1";
+var m_AuthCode = "ZASEVQRCNXRITENY";
 
 console.log("try.js starting");
 

@@ -9,26 +9,26 @@
         ".\\src\\ctp\\cpp\\uv_trader.cpp"
       ],
       "libraries": [
-        "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.lib",
-        "<(module_root_dir)/20220613_tradeapi64_se_windows/thosttraderapi_se.lib",
-        "<(module_root_dir)/20220613_tradeapi64_se_windows/thostmduserapi_se.lib"
+        # "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.lib",
+        "<(module_root_dir)/20250415_traderapi64_se_windows/thosttraderapi_se.lib",
+        "<(module_root_dir)/20250415_traderapi64_se_windows/thostmduserapi_se.lib"
       ],
-      "include_dirs": ["20220613_tradeapi64_se_windows/","<!(node -e \"require('nan')\")"],
+      "include_dirs": ["20250415_traderapi64_se_windows/","<!(node -e \"require('nan')\")"],
       "copies": [
               {
                 "destination": "<(module_root_dir)/build/Release/",
                 "files": [
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/thosttraderapi_se.dll",
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/thostmduserapi_se.dll",
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.dll"
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thosttraderapi_se.dll",
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thostmduserapi_se.dll",
+                  # "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.dll"
                 ]
               },
               {
                 "destination": "<(module_root_dir)/build/Debug/",
                 "files": [
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/thosttraderapi_se.dll",
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/thostmduserapi_se.dll",
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.dll"
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thosttraderapi_se.dll",
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thostmduserapi_se.dll",
+                  # "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.dll"
                 ]
               }
             ]
@@ -103,26 +103,26 @@
         ".\\src\\ctpmd\\cpp\\uv_mduser.cpp"
       ],
       "libraries": [
-        "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.lib",
-        "<(module_root_dir)/20220613_tradeapi64_se_windows/thosttraderapi_se.lib",
-        "<(module_root_dir)/20220613_tradeapi64_se_windows/thostmduserapi_se.lib"
+        # "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.lib",
+        "<(module_root_dir)/20250415_traderapi64_se_windows/thosttraderapi_se.lib",
+        "<(module_root_dir)/20250415_traderapi64_se_windows/thostmduserapi_se.lib"
       ],
-      "include_dirs": ["20220613_tradeapi64_se_windows/","<!(node -e \"require('nan')\")"],
+      "include_dirs": ["20250415_traderapi64_se_windows/","<!(node -e \"require('nan')\")"],
       "copies": [
               {
                 "destination": "<(module_root_dir)/build/Release/",
                 "files": [
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/thosttraderapi_se.dll",
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/thostmduserapi_se.dll",
-                  "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.dll"
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thosttraderapi_se.dll",
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thostmduserapi_se.dll",
+                  # "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.dll"
                 ]
               },
               {
                 "destination": "<(module_root_dir)/build/Debug/",
                 "files": [
-                  "<(module_root_dir)/ctp_win64_md/thosttraderapi_se.dll",
-                  "<(module_root_dir)/ctp_win64_md/thostmduserapi_se.dll",
-                  "<(module_root_dir)/ctp_win64_md/WinDataCollect.dll"
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thosttraderapi_se.dll",
+                  "<(module_root_dir)/20250415_traderapi64_se_windows/thostmduserapi_se.dll",
+                  # "<(module_root_dir)/20220613_tradeapi64_se_windows/WinDataCollect.dll"
                 ]
               }
             ]
