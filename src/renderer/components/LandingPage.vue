@@ -16,13 +16,13 @@
        <!-- <el-descriptions-item label="总实际盈亏">{{totalProfit}}</el-descriptions-item> -->
         <!-- <el-descriptions-item v-if="userData.futureAccountVOList.length > 1"><el-button type="primary" size="small" @click="changeAccount">切换账号</el-button></el-descriptions-item> -->
     </el-descriptions>
-      
+    
     <main >
       
       <div class="left-side">
         
          <div>
-         
+             <el-button @click="locked=!locked">{{locked?'解锁账户': '暂停交易'}}</el-button>
            <div class="label">回合信息： <el-button type="primary" size="small" @click="exportroud">导出</el-button>   </div>
            
           <Round ref="round" :data='traderData' :rates='rates'  :price='price' :instrumentInfo='instrumentInfo' :positions="positions" @history-trade="historyTraders = $event"></Round>
@@ -61,7 +61,7 @@
           <!-- <el-button @click="open">商品</el-button>
               <el-button @click="open1">郑商所</el-button>
               <el-button @click="open2">股指</el-button>  -->
-              <!-- <el-button @click="forceClose">强平</el-button> -->
+             
       </div>
       <el-dialog
       title="结算单查询"
@@ -218,8 +218,13 @@
         get(){
           return this.$store.state.user.userData.locked;
         },
-        set(){
-          this.$store.commit('lock-user');
+        set(value){
+          if(value){
+             this.$store.commit('lock-user');
+          }else{
+            this.$store.commit('unlock-user');
+          }
+         
         }
       },
       positionsList(){
@@ -687,7 +692,7 @@
               
               if(this.forceCloseCount > 2){
                 ipcRenderer.send('err-log', `盈亏超过强平两次 触发强平操作${this.totalProfit}`)
-                this.$store.dispatch('lock');
+                // this.$store.dispatch('lock');
                 this.locked = true
               }else {
                 this.forceCloseCount ++

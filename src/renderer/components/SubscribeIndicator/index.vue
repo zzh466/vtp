@@ -3,13 +3,13 @@
       <div style="margin: 0px 15px">
         <el-form ref="form" :model="formdata" label-width="120px">
           
-                <el-form-item v-for = 'item in list' :key="item.indicatorCode" :label='item.indicatorNmCn' :prop='item.indicatorNmEn' :rules='[{ required: true, message: `请输入${item.indicatorNmCn}`,trigger: "blur"}, {
+                <el-form-item v-for = 'item in list' :key="item.key" :label='item.name' :prop='item.key' :rules='[{ required: true, message: `请输入${item.name}`,trigger: "blur"}, {
                     trigger: "blur",
                     validator,
 
                 }]'>
-                    <el-input v-model='formdata[item.indicatorNmEn]' type="number"></el-input>
-                    <p class="memo">{{ item.memo }}</p>
+                    <el-input v-model='formdata[item.key]'></el-input>
+                   
                 </el-form-item>
                
           
@@ -17,7 +17,7 @@
       </div>
    
        <div class="config-foot">
-            <el-button  @click="reset">恢复默认</el-button>
+           
             <el-button type="primary" @click="onSubmit">保存</el-button>
           </div>
      </div>
@@ -31,31 +31,29 @@
     import {subscribeIndicatorKey } from '../../utils/utils';
     export default {
         created(){
-          
-            request({
-                url: '/user/indicator',
-                method: 'GET'
-            }).then(res =>{
+            
+            ipcRenderer.invoke('get-config', 'vtp_client_openvolume_limit').then(e => {
                 
-                if(res.code === 'REQ_SUCCESS'){
-                    this.loading = false;
-                    this.list = res.indicatorList;
-                 
-                    this.list.forEach(e => {
-                        this.$set(this.formdata, e.indicatorNmEn, e.value || e.defaultValue)
-                    })
-                }
-               
-            })
+                this.formdata.open_limit = e
+            } );
+             ipcRenderer.invoke('get-config', 'vtp_client_cancelvolume_limit').then(e => this.formdata.close_limit = e);
+           
         },
         data () {
 
             return {
-                list : [],
+                list : [{
+                    name: '开仓限制',
+                    key: 'open_limit'
+                },{
+                    name: '撤单限制',
+                    key: 'close_limit'
+                }],
                 
-                loading: true,
+                loading: false,
                 formdata : {
-
+                    open_limit: '',
+                    close_limit: ''
                 }
             }
         },
@@ -76,30 +74,8 @@
                 this.$refs.form.validate((valid) => {
                     let arr = []
                     if(valid){
-                        for(let key in this.formdata){
-                            let item = this.list.find(e => e.indicatorNmEn === key)
-                            arr.push({
-                                indicatorCode : item.indicatorCode,
-                                value: this.formdata[key]
-                            })
-                        }
-                        this.loading= true;
-                        request({
-                            method: 'PATCH',
-                            url: '/user/indicator',
-                            data: {
-                                indicatorList: arr
-                            }
-                        }).then(res=> {
-                            this.loading = false;
-                            if(res.code === 'REQ_SUCCESS'){
-                                this.$message.success('修改成功');
-                            
-                            
-                            }else {
-                                this.$message.error(res.msg);
-                            }
-                        })
+                         ipcRenderer.send('set-config', 'vtp_client_openvolume_limit', this.formdata.open_limit);
+                            ipcRenderer.send('set-config', 'vtp_client_cancelvolume_limit', this.formdata.close_limit);
                     }
                 })
               

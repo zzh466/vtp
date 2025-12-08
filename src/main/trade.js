@@ -376,29 +376,29 @@ class Trade {
         //   if(this.needrecord){
         //     recordAction(`/order/insert/${this.userId}/`, insertOrder, time)
         //     }
-            if(ExchangeID === 'CFFEX'){
-                while(volumeTotalOriginal){
-                    if(volumeTotalOriginal > 20){
-                        insertOrder = {...insertOrder, VolumeTotalOriginal: 20, "OrderRef": this.getKey('orderRef')}
-                        volumeTotalOriginal = volumeTotalOriginal- 20;
-                    }else{
-                        insertOrder = {...insertOrder, VolumeTotalOriginal: volumeTotalOriginal, "OrderRef": this.getKey('orderRef'),}
-                        volumeTotalOriginal = 0
-                    }
+            // if(ExchangeID === 'CFFEX'){
+            //     while(volumeTotalOriginal){
+            //         if(volumeTotalOriginal > 20){
+            //             insertOrder = {...insertOrder, VolumeTotalOriginal: 20, "OrderRef": this.getKey('orderRef')}
+            //             volumeTotalOriginal = volumeTotalOriginal- 20;
+            //         }else{
+            //             insertOrder = {...insertOrder, VolumeTotalOriginal: volumeTotalOriginal, "OrderRef": this.getKey('orderRef'),}
+            //             volumeTotalOriginal = 0
+            //         }
                   
-                    this.send('reqOrderInsert', insertOrder, function (field) {
-                        console.log('ReqOrderInsert is callback');
-                        console.log(field);
-                    })
+            //         this.send('reqOrderInsert', insertOrder, function (field) {
+            //             console.log('ReqOrderInsert is callback');
+            //             console.log(field);
+            //         })
                     
-                }
+            //     }
             
-            }else{
+            // }else{
                 this.send('reqOrderInsert', insertOrder, function (field) {
                     console.log('ReqOrderInsert is callback');
                     console.log(field);
                 })
-            }
+            // }
            
             
         

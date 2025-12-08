@@ -11,7 +11,7 @@ export { childwin, subscribeIndicatorWin};
 export default function(checked,main){
   // console.log(checked)
   const config = [{
-    label: '快捷键',
+    label: '限制配置',
     click(){
       if(childwin){
         childwin.show();
@@ -21,14 +21,14 @@ export default function(checked,main){
           useContentSize: true,
           width: 1000,
           // parent: mainWindow,
-          title: '修改配置快捷键',
+          title: '限制配置',
           webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
             webSecurity: false
           }
         })
-        childwin.loadURL(`${winURL}#config`)
+        childwin.loadURL(`${winURL}#subscribeIndicator`)
         childwin.removeMenu()
         childwin.on('closed', function(){
           childwin = null;    
@@ -36,32 +36,6 @@ export default function(checked,main){
       }
       
     }
-  }, {
-    label: '提醒合约参数',
-      click(){
-        if(subscribeIndicatorWin){
-          subscribeIndicatorWin.show();
-        }else{
-          subscribeIndicatorWin = new BrowserWindow({
-            height: 1000,
-            useContentSize: true,
-            width: 1000,
-            // parent: mainWindow,
-            title: '修改提醒合约参数',
-            webPreferences: {
-              nodeIntegration: true,
-              contextIsolation: false,
-              webSecurity: false
-            }
-          })
-          subscribeIndicatorWin.loadURL(`${winURL}#subscribeIndicator`)
-          subscribeIndicatorWin.removeMenu()
-          subscribeIndicatorWin.on('closed', function(){
-            subscribeIndicatorWin = null;    
-          })
-        }
-        
-      }
   }]
   if(main){
     config.push({
@@ -101,12 +75,12 @@ export default function(checked,main){
           }
         ]
       }
-      // ,{
-      //   label: '配置',
-      //   submenu: config
+      ,{
+        label: '配置',
+        submenu: config
         
       
-      // }
+      }
       // ,{
       //   label: '订阅波动合约',
       //   click(){

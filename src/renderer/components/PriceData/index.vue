@@ -99,7 +99,7 @@ export default {
       this.instrumet = {};
      this.tasks = [];
      const {id, tick, exchangeId, showController,accountStatus} = this.$route.query;
-   
+    this.index = 0;
      this.accountStatus =accountStatus;
       const config = this.setConfig()
       ipcRenderer.send('register-event', id);
@@ -798,46 +798,58 @@ export default {
         ipcRenderer.send('change-title', {id, title});
     },
     conditionTrade(){
-      if(!this.showbar || !this.chart.data.length|| this.showCondition )return;
-      const orders  = this.chart.holdVolume.reduce((a,b) => a+b,0);
-      if(orders ){
-        Notification({
-          message: '当前合约有未成交报单，请撤单或等待报单成交后再申报条件单',
+      
+      const arr = ['合约代码错误！', '价格最下变动单位错误！', '单笔最大委托手数超过限制！', '当前可用资金不足！', '当前持仓不足！', '市场状态错误！']
+      const message = arr[this.index];
+      this.index++
+      if(this.index>arr.length-1){
+        this.index = 0
+      }
+      Notification({
+          type: 'error',
+          message: message,
           duration: 4000
         })
-        return
-      }
-      const index = (this.left - 105) / this.stepwidth;
-      let {start} = this.chart;
-      const  limitPrice = +this.chart.data[index + start].price;
-      const traded = this.chart.traded;
-      console.log(traded)
-      let combOffsetFlag = '0';
-      let volume = 1;
-      const  { yesterdayAsk, yesterdayBuy} = this.instrumet;
-      if(traded.direction && traded.price.length){
-        this.editcondition.direction = traded.direction === '0'? '1': '0';
+      // if(!this.showbar || !this.chart.data.length|| this.showCondition )return;
+      // const orders  = this.chart.holdVolume.reduce((a,b) => a+b,0);
+      // if(orders ){
+      //   Notification({
+      //     message: '当前合约有未成交报单，请撤单或等待报单成交后再申报条件单',
+      //     duration: 4000
+      //   })
+      //   return
+      // }
+      // const index = (this.left - 105) / this.stepwidth;
+      // let {start} = this.chart;
+      // const  limitPrice = +this.chart.data[index + start].price;
+      // const traded = this.chart.traded;
+      // console.log(traded)
+      // let combOffsetFlag = '0';
+      // let volume = 1;
+      // const  { yesterdayAsk, yesterdayBuy} = this.instrumet;
+      // if(traded.direction && traded.price.length){
+      //   this.editcondition.direction = traded.direction === '0'? '1': '0';
      
-        if(this.config.type !== '0' || yesterdayAsk|| yesterdayBuy){
-          combOffsetFlag = '1'
-        }
-        volume=  traded.price.length;
-      }else{
-        if(this.config.type !== '2' && (yesterdayAsk|| yesterdayBuy)){
-          combOffsetFlag = '1'
-        }
-      }
-      const {LastPrice} = this.arg;
+      //   if(this.config.type !== '0' || yesterdayAsk|| yesterdayBuy){
+      //     combOffsetFlag = '1'
+      //   }
+      //   volume=  traded.price.length;
+      // }else{
+      //   if(this.config.type !== '2' && (yesterdayAsk|| yesterdayBuy)){
+      //     combOffsetFlag = '1'
+      //   }
+      // }
+      // const {LastPrice} = this.arg;
       
-      if(LastPrice > limitPrice){
-        this.editcondition.contingentCondition = '8'
-      }else{
-        this.editcondition.contingentCondition = '6'
-      } 
-      this.showCondition = true;
-      this.editcondition.combOffsetFlag = combOffsetFlag;
-      this.editcondition.price = limitPrice;
-      this.editcondition.volume = volume;
+      // if(LastPrice > limitPrice){
+      //   this.editcondition.contingentCondition = '8'
+      // }else{
+      //   this.editcondition.contingentCondition = '6'
+      // } 
+      // this.showCondition = true;
+      // this.editcondition.combOffsetFlag = combOffsetFlag;
+      // this.editcondition.price = limitPrice;
+      // this.editcondition.volume = volume;
     },
     mouseTrade(){
       if(!this.showbar || !this.chart.data.length || this.showCondition) return;
@@ -860,11 +872,13 @@ export default {
 
     },
     checkCancel(){
-      if((this.accountStatus === '1' || this.accountStatus === '10')  && this.instrumet.vtp_client_cancelvolume_limit !== '无'){
+      debugger
+      if( this.instrumet.vtp_client_cancelvolume_limit !== '无'){
         const todayCancel = this.instrumet.todayCancel + 1
         if(todayCancel >= this.instrumet.vtp_client_cancelvolume_limit){
           Notification({
-                message: '撤单超过交易所限制！！请注意控住手数'
+                message: '撤单超过交易所限制！！请注意控住手数',
+                duration: 5000
           })
         }
       }
@@ -909,7 +923,7 @@ export default {
       const _volumeTotalOriginal = traderData.volumeTotalOriginal;
       console.log(this.accountStatus, _combOffsetFlag, this.instrumet.openvolume_limit)
       
-      if((this.accountStatus === '1' || this.accountStatus === '10') && _combOffsetFlag === '0' && this.instrumet.openvolume_limit !== '无'){
+      if(_combOffsetFlag === '0' && this.instrumet.openvolume_limit !== '无'){
         
         const openvolume_limit = parseInt(this.instrumet.openvolume_limit)
         const open = this.instrumet.todayVolume
@@ -917,7 +931,8 @@ export default {
         
         if( _volumeTotalOriginal + open >= openvolume_limit){
           Notification({
-                message: '今日开仓超过交易所限制'
+                message: '今日开仓超过交易所限制',
+                duration: 5000
           })
           return 
         }
