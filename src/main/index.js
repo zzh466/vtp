@@ -18,6 +18,7 @@ import {version, winURL, specialExchangeId, tagTime } from '../renderer/utils/ut
 import  { exec } from 'child_process';
 import  events  from 'events';
 import { error } from 'console';
+import { add } from 'xe-utils';
 
 
 const Mainemitter = new  events.EventEmitter();
@@ -1157,7 +1158,7 @@ class TcpClient{
     
   }
   checktype(){
-    let {url} = this.args; 
+    let {url,exchangeNo} = this.args; 
     if(!Array.isArray(url)){
       url = [url]
     }
@@ -1176,9 +1177,9 @@ class TcpClient{
           infoLog(`${host} 检查超时`)
           const _url = url[1].split(':');
           this.host= _url[0];
-          this.port= _url[1];
+          this.port= _url[1]; 
           tcp_client.destroy()
-          resolve()
+          resolve({exchangeNo, url:url[1]})
         }, 3000)
         tcp_client.on('error',  (e) => {
           console.log(e, 'error')
@@ -1190,14 +1191,14 @@ class TcpClient{
           this.host = host;
           tcp_client.destroy()
           clearTimeout(timeout)
-          resolve()
+          resolve({exchangeNo, url:url[0]})
           
         })
       })
     }else{
       this.port = port;
       this.host = host;
-      return Promise.resolve()
+      return Promise.resolve({exchangeNo, url:url[0]})
     }
   }
   connect(){
@@ -1374,9 +1375,9 @@ ipcMain.on('start-receive', (event, args) =>{
       }
     }, 1000)
   }
-  tcp_client.checktype().then(()=>{
-    console.log('check-client finish')
-    event.sender.send('check-client')
+  tcp_client.checktype().then(({exchangeNo, url})=>{
+    console.log('check-client finish',exchangeNo, url)
+    event.sender.send('check-client',exchangeNo, url)
     tcp_client.connect();
   })
  
@@ -1562,27 +1563,43 @@ ipcMain.on('tcp-reconnect', function(_, tcpinfo){
   infoLog(`强制重连 重连${tcp_reconnct_count}个链接`)
   console.log(tcpinfo)
   tcp_client_list.forEach(e=>{
-    const tcpData = tcpinfo.find( d => d.exchangeNo === e.args.exchangeNo);
-    let p = Promise.resolve();
-    console.log(tcpData)
-    if(tcpData){
-      e.args.url = tcpData.quotAddr ;
-      p = e.checktype();
-    }
-    p.then(()=>{
+    // const tcpData = tcpinfo.find( d => d.exchangeNo === e.args.exchangeNo);
+    // let p = Promise.resolve();
+    // console.log(tcpData)
+    // if(tcpData){
+    //   e.args.url = tcpData.quotAddr ;
+    //   p = e.checktype();
+    // }
+    // p.then(()=>{
       if(e.connectcount > 5){
         e.connectcount = 0;
         e.connect()
       }else{
         e.destroy();
       }
-    })
-    
-    
+    // })
   })
 
 })
-
+//换服务器
+ipcMain.on('tcp-change', function(_, exchangeNo, addr, type){
+  
+  const item = tcp_client_list.find( d => d.args.exchangeNo === exchangeNo);
+  // console.log(tcp_client_list,item)
+  if(item){
+    console.log(item)
+    item.type =  type;
+    addr = addr.split(':');
+    item.host = addr[0];
+    item.port= addr[1];
+    if(item.connectcount > 5){
+        item.connectcount = 0;
+        item.connect()
+      }else{
+        item.destroy();
+      }
+  }
+})
 ipcMain.on('broadcast-openinterest', function(_, arg){
   // console.log(arg);
   const instrument = arg.split(':');

@@ -50,15 +50,14 @@
            
                   <!-- <el-button @click="testDev">测试</el-button> -->
         </div>
-       
-            <div class="label">所属团队: 
-              <el-select v-model="groupId" @change="reconnect">
-                <el-option :value="1" label="全部"></el-option>
-                <el-option :value="11" label="金华"></el-option>
-                <el-option :value="12" label="上海" >上海</el-option>
-              </el-select> 
+            <div style="display: flex;">
+              <div v-for="quot,index in quotArr" :key="quot.exchangeNo" class="label">
+                <el-select :value="quotcheckMap[index]" @change="changequot($event,quot.exchangeNo, index)">
+                  <el-option v-for="item in quot.quot" :key="item.quot_addr" :value="item.quot_addr" :label="item.quot_name"></el-option>
+                
+                </el-select> 
+              </div>
             </div>
-            
       </div>
       <div style="display: flex;">
          
@@ -127,7 +126,7 @@
 </template>
 
 <script>
-  import { ipcRenderer } from 'electron';
+  import { ipcRenderer, protocol } from 'electron';
 
   import {getWinName, getyyyyMMdd, getHoldCondition, getClientSize, specialExchangeId, subscribeIndicatorKey, speak} from '../utils/utils';
   import request, {TraderSocket}  from '../utils/request';
@@ -348,7 +347,9 @@
          accountStatus: false,
          historyData: [],
          reconnectdisable: false,
-         groupId: this.$store.state.user.userData.groupId
+         groupId: this.$store.state.user.userData.groupId,
+         quotArr: [],
+         quotcheckMap: []
       }
     },
     created(){
@@ -732,9 +733,11 @@
           this.init()
         })
       })
-      ipcRenderer.on('check-client', (event, arg)=>{
-        console.log('check-client', datacount )
+      ipcRenderer.on('check-client', (event, exchangeNo, url)=>{
         
+        console.log('check-client', datacount )
+        const index = this.quotArr.findIndex(e => e.exchangeNo === exchangeNo);
+        this.$set(this.quotcheckMap, index, url);
         datacount--
         if(datacount===0){
           this.finishLoading('data')
@@ -1163,8 +1166,9 @@
 // 'sc2409',
 // 'zn2408',
 // 'zn2409',],   iCmdID: 101});
-        quotVOList = this.replacequotUrl(quotVOList);
-          
+      
+        this.getQuotArr(quotVOList)
+          quotVOList = this.replacequotUrl(quotVOList);
         quotVOList.forEach((e) => {
           // if(this.userData.id === 18 ){
             
@@ -1272,8 +1276,41 @@
           setTimeout(()=> {
               this.loading.pop();
           }, 2000)
-          ipcRenderer.send('tcp-reconnect',  this.replacequotUrl(res.quotInfoVOList))
+          this.getQuotArr(res.quotInfoVOList)
+          ipcRenderer.send('tcp-reconnect')
         })
+        
+      },
+      changequot(quot_addr, exchangeNo, index ){
+        
+         this.$set(this.quotcheckMap, index, quot_addr);
+        const item = this.quotArr[index].quot.find(e=>e.quot_addr === quot_addr)
+        
+         ipcRenderer.send('tcp-change',  exchangeNo, quot_addr, item.protocol)
+      },
+      getQuotArr(quotAddr){
+        this.quotArr = quotAddr.reduce((a,b) =>{
+          
+          const { exchangeNo, quotName: quot_name, quotAddr:quot_addr,protocol} =b;
+          const index = a.find(e => e.exchangeNo === exchangeNo);
+          if(index){
+            index.quot.push({
+              quot_name,
+              quot_addr,
+              protocol
+            })
+          }else{
+            a.push({
+              exchangeNo,
+              quot: [{
+                quot_name,
+                quot_addr,
+                protocol
+              }]
+            })
+          }
+          return a;
+        }, [])
         
       },
       replacequotUrl(quotAddr){
