@@ -3,7 +3,9 @@ import path from 'path';
 import {ipcMain, app} from 'electron';
 import {getyyyyMMdd} from '../renderer/utils/utils'
 const needLog =process.env.NODE_ENV !== 'development';
+console.log(app, 1231233)
 // const needLog =true;
+debugger
 let homeDir =  path.dirname(app.getPath('logs'))
 console.log('1111111111111111111', homeDir)
 const logName = `${getyyyyMMdd()}.log`;

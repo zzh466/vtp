@@ -128,6 +128,7 @@
    import Order from './LandingPage/Order.vue';
 
   import loginform from './Login/form.vue'
+// import { infoLog } from '../../main/log';
 
  
 
@@ -143,9 +144,11 @@
       locked(val, old){
         if(val && !old){
           this.forceClose()
+         ipcRenderer.send('info-log', `锁定账户`)
           ipcRenderer.send('change-lock', true)
         }
         if(!val){
+         ipcRenderer.send('info-log', `解锁账户`)
           ipcRenderer.send('change-lock', false)
           this.forceCloseCount = 0
         }
@@ -181,8 +184,9 @@
          return this.userData.instrumentConfigVOList.instruments.split(',').map(e => e.replace(/[\n\r]/g, '')).filter(e=>e)
        
       },
-      openvolume_limit(){
-          return this.$store.state.user.openvolume_limit.split(';').filter(e=>e).map(e => {
+      vtp_client_openvolume_limit(){
+        
+          return this.$store.state.user.vtp_client_openvolume_limit.split(';').filter(e=>e).map(e => {
           const msg= e.split(':')
           return {
             instrumentID: msg[0],
@@ -313,7 +317,7 @@
         },
         {
           label: '开仓限制',
-          prop: 'openvolume_limit',
+          prop: 'vtp_client_openvolume_limit',
           width: 50
         },{
           label: '今撤单',
@@ -418,7 +422,7 @@
         //         const instruments = configs[0].instruments;
         //         configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
         //         this.$store.commit('update-config', configs);
-        //         const openvolume_limit = this.openvolume_limit
+        //         const vtp_client_openvolume_limit = this.vtp_client_openvolume_limit
         //         config = configs[0]
         //         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
         //         const big_todayCancel_limit = this.getBigCancelLimit(e.ins);
@@ -431,7 +435,7 @@
         //           todayAsk:0,
         //           todayVolume: 0,
         //           'todayCancel': 0,
-        //           openvolume_limit: this.findLimit(openvolume_limit, e.ins),
+        //           vtp_client_openvolume_limit: this.findLimit(vtp_client_openvolume_limit, e.ins),
         //           vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e.ins),
         //           big_todayCancel: 0,
         //           big_todayCancel_limit_volume: big_todayCancel_limit.volume,
@@ -463,7 +467,7 @@
       //     const instruments = configs[0].instruments;
       //     configs[0] = {...configs[0], instruments: instruments? instruments+ `,${e}`: e};
       //     this.$store.commit('update-config', configs);
-      //     const openvolume_limit = this.openvolume_limit
+      //     const vtp_client_openvolume_limit = this.vtp_client_openvolume_limit
       //     config = configs[0]
       //     const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
       //     const data = {
@@ -475,7 +479,7 @@
       //       todayAsk:0,
       //       todayVolume: 0,
       //       'todayCancel': 0,
-      //       openvolume_limit: (openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
+      //       vtp_client_openvolume_limit: (vtp_client_openvolume_limit.find(({instrumentID})=> instrumentID ===e) || {limit: "无"}).limit,
       //       vtp_client_cancelvolume_limit:  (vtp_client_cancelvolume_limit.find(({instrumentID})=> e.includes(instrumentID)) || {limit: "无"}).limit
       //     }
       //     ipcRenderer.send('add-sub-instruments', e)
@@ -712,6 +716,16 @@
         
         this.instrumentInfo = arg
       })
+       ipcRenderer.on('update-configs', (event, arg)=>{
+        console.log(arg)
+        for(let key in arg){
+          this.$store.commit('setstate',{key,data:arg[key]});
+        }
+       
+        this.$nextTick(()=>{
+          this.init()
+        })
+      })
       ipcRenderer.on('update-config', (event, arg)=>{
         // console.log(arg)
         
@@ -770,9 +784,10 @@
         this.traderData = this.positions.concat(this.traders);
 
     
-        const openvolume_limit = this.openvolume_limit
+        const vtp_client_openvolume_limit = this.vtp_client_openvolume_limit
         
         const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+        
         const data = this.subscribelInstruments.map(e=>{
           // const big_todayCancel_limit = this.getBigCancelLimit(e);
           return {
@@ -784,7 +799,7 @@
           todayAsk:0,
           todayVolume: 0,
           'todayCancel': 0,
-          openvolume_limit: this.findLimit(openvolume_limit, e),
+          vtp_client_openvolume_limit: this.findLimit(vtp_client_openvolume_limit, e),
           vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e),
           big_todayCancel:0,
           // big_todayCancel_limit_volume: big_todayCancel_limit.volume,

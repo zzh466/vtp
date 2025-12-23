@@ -7,7 +7,7 @@ const state = {
      
    },
    over_price: 0,
-    openvolume_limit: '',
+    vtp_client_openvolume_limit: '',
     broadcast: true,
     config: {},
     activeCtpaccount: 0,
@@ -38,13 +38,12 @@ const state = {
       const {userData} = state;
       state.userData = {...userData, instrumentConfigVOList}
     }
-   
   }
   const actions = {
    
     async 'get-config'({ commit,state }){
      
-      const [ over_price, broadcast, vtp_client_cancelvolume_limit, openvolume_limit, vtp_server_indicator_array,vtp_client_big_cancelvolume_limit ] = await Promise.all(
+      const [ over_price, broadcast, vtp_client_cancelvolume_limit, vtp_client_openvolume_limit, vtp_server_indicator_array,vtp_client_big_cancelvolume_limit ] = await Promise.all(
         [ "vtp_client_forced_liquidation_over_price", 'vtp_client_broadcast_openinterest', 'vtp_client_cancelvolume_limit', 'vtp_client_openvolume_limit', 'vtp_server_indicator_array', 'vtp_client_big_cancelvolume_limit'].map(e =>ipcRenderer.invoke('get-config', e)));
        
      
@@ -60,8 +59,8 @@ const state = {
         data: broadcast
       })
       commit('setstate', {
-        key: 'openvolume_limit',
-        data: openvolume_limit || ''
+        key: 'vtp_client_openvolume_limit',
+        data: vtp_client_openvolume_limit || ''
       })
       commit('setstate', {
         key: 'vtp_client_cancelvolume_limit',

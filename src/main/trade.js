@@ -449,6 +449,7 @@ class Trade {
         this.haslogin = false;
         this.send('reqUserLogout', this.m_BrokerId, this.m_UserId, function (result) {
             console.log("in js code: reqUserlogout result=", result);
+            // infoLog('')
         });
     }
     reconnect(){

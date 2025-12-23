@@ -19,7 +19,7 @@ import {version, winURL, specialExchangeId, tagTime } from '../renderer/utils/ut
 import  { exec } from 'child_process';
 import  events  from 'events';
 import { error } from 'console';
-
+import {getConfig} from './config'
 
 const Mainemitter = new  events.EventEmitter();
 let COLOSEALL = false;
@@ -618,7 +618,7 @@ ipcMain.on('trade-login', (event, args) => {
   })
   trade.emitterOn('connect', function () {
     if(!mainWindow)return;
-    infoLog(`${trade.m_UserId}第${connectcount + 1}次链接`)
+    infoLog(`${trade.m_UserId}已登录`)
     console.log('ctp已连接')
     tradeMap = [];
     orderMap = {};
@@ -669,7 +669,7 @@ ipcMain.on('trade-login', (event, args) => {
     if(mainWindow){
       event.sender.send('account-connect', false)
     }
-    errorLog('disconnected');
+     infoLog(`${trade.m_UserId}断开链接`)
   })
   trade.login.then(()=>{
     trade.chainSend('reqQryInstrument', '', function (field) {
@@ -1602,6 +1602,19 @@ ipcMain.on('broadcast-openinterest', function(_, arg){
   }
   
 })
+
+ipcMain.on('update-configs', function(_, arg){
+ 
+  const data = {};
+  arg.forEach(e=>{
+    data[e] = getConfig(e)
+  })
+   console.log(arg, data);
+  mainWindow.webContents.send('update-configs', data)
+ 
+
+})
+
 ipcMain.on('update-all-config', function(_, arg){
   // console.log(arg);
   mainWindow.webContents.send('update-config', arg)

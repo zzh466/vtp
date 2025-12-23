@@ -75,7 +75,8 @@
                     let arr = []
                     if(valid){
                          ipcRenderer.send('set-config', 'vtp_client_openvolume_limit', this.formdata.open_limit);
-                            ipcRenderer.send('set-config', 'vtp_client_cancelvolume_limit', this.formdata.close_limit);
+                        ipcRenderer.send('set-config', 'vtp_client_cancelvolume_limit', this.formdata.close_limit);
+                        ipcRenderer.send('update-configs', ['vtp_client_openvolume_limit', 'vtp_client_cancelvolume_limit'])
                     }
                 })
               

@@ -33,8 +33,8 @@ export function getWinName(instrumentID, accountIndex, volume = 1, type = 0, clo
 }
 
 export function getHoldCondition(data={}){
-    const {todayAsk=0, todayBuy=0, yesterdayAsk=0, yesterdayBuy=0, todayVolume=0, todayCancel=0, openvolume_limit ='无', vtp_client_cancelvolume_limit='无', big_todayCancel = 0, big_todayCancel_limit = 0} = data;
-    return `今多：${todayBuy} 今空：${todayAsk} 昨多：${yesterdayBuy} 昨空：${yesterdayAsk} 今开仓：${todayVolume} 开仓限制：${openvolume_limit} 今撤单：${todayCancel} 撤单限制:${vtp_client_cancelvolume_limit} 大额撤单: ${big_todayCancel} 大额撤单限制：${big_todayCancel_limit}`
+    const {todayAsk=0, todayBuy=0, yesterdayAsk=0, yesterdayBuy=0, todayVolume=0, todayCancel=0, vtp_client_openvolume_limit ='无', vtp_client_cancelvolume_limit='无', big_todayCancel = 0, big_todayCancel_limit = 0} = data;
+    return `今多：${todayBuy} 今空：${todayAsk} 昨多：${yesterdayBuy} 昨空：${yesterdayAsk} 今开仓：${todayVolume} 开仓限制：${vtp_client_openvolume_limit} 今撤单：${todayCancel} 撤单限制:${vtp_client_cancelvolume_limit} 大额撤单: ${big_todayCancel} 大额撤单限制：${big_todayCancel_limit}`
 }
 export const Direction = ['买', '卖'];
 

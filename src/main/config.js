@@ -74,3 +74,8 @@ ipcMain.on('set-config', (event, key, value) => {
     console.log(key,'set')
     setconfig(key, value)
 })
+// ipcMain.on('update-configs', function(_, arg){
+
+  
+//   mainWindow.webContents.send('update-configs', arg)
+// })

@@ -1,11 +1,11 @@
 <template>
   <div class="config-content" v-loading='loading'>
     <div style="margin: 0px 15px">
-    <el-tabs  @tab-click="change"  type="card" >
+    <!-- <el-tabs  @tab-click="change"  type="card" >
       <el-tab-pane :label="`配置${index+1}`" v-for='key,index in configs' :key='key.id' :prop="key.id.toString()"></el-tab-pane>
       
-    </el-tabs>
-     <Table :columns='columns' :tableData='hotKey' @config-action='edit' :height='400' row-key='key'/>
+    </el-tabs> -->
+     <Table :columns='columns' :tableData='hotkey' @config-action='edit' :height='400' row-key='key'/>
      <el-button style="margin-top: 5px" type='primary' @click='edit({type: "add"})'> 新增快捷键</el-button>
     </div>
     <div style="margin: 20px 0">
@@ -29,7 +29,8 @@
               </el-select> 
           </el-form-item>
           <el-form-item label='订阅合约' prop='instruments'  :rules='[{ required: true, message: `请选择订阅合约`}]'>
-            <el-transfer filterable :titles= "['全部合约', '已订阅合约']" v-model="config.instruments" :data="subsInstruments"></el-transfer>
+            <!-- <el-transfer filterable :titles= "['全部合约', '已订阅合约']" v-model="config.instruments" :data="subsInstruments"></el-transfer> -->
+            <el-input v-model="config.instruments" ></el-input>
           </el-form-item>
           <!-- <el-form-item label='行情提醒合约' prop='subscribeIndicator' >
               <el-select  multiple   filterable v-model="config.subscribeIndicator">
@@ -59,19 +60,19 @@
               </el-select> 
           </el-form-item> -->
         
-          <el-form-item v-if="groupId !== 12" label='是否展示他人持仓' prop='broadcastOpenInterest'  :rules='[{ required: true}]'>
+          <!-- <el-form-item v-if="groupId !== 12" label='是否展示他人持仓' prop='broadcastOpenInterest'  :rules='[{ required: true}]'>
             <el-radio-group  v-model='config.broadcastOpenInterest' >
               <el-radio :label='true'>是</el-radio>
               <el-radio :label='false'>否</el-radio>
             </el-radio-group>
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item  label='默认置顶' prop='topQuot'   :rules='[{ required: true}]'>
             <el-radio-group  v-model='config.topQuot' >
               <el-radio :label='true'>是</el-radio>
               <el-radio :label='false'>否</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item  label='开盘前一分钟提醒' prop='windowsOpenCd'   :rules='[{ required: true}]'>
+          <!-- <el-form-item  label='开盘前一分钟提醒' prop='windowsOpenCd'   :rules='[{ required: true}]'>
             <el-radio-group  v-model='config.windowsOpenCd' >
               <el-radio :label='true'>是</el-radio>
               <el-radio :label='false'>否</el-radio>
@@ -82,7 +83,7 @@
               <el-radio :label='true'>是</el-radio>
               <el-radio :label='false'>否</el-radio>
             </el-radio-group>
-          </el-form-item>
+          </el-form-item> -->
        </el-form>
       
     </div>
@@ -152,6 +153,7 @@
           prop: '2',
           width: '150',
           render(a){
+            
             if(a[2] === '6'){
                 return `设置为${typeMap[a[7]]}模式`;
             }
@@ -252,40 +254,26 @@
       
     
    
-      Promise.all([request({
-        url: '/quot/info',
-        method: 'GET'
-      }), request({
-        url: '/user/info',
-        method: 'GET'
-      }), ]).then(([res1, res2]) => {
-        
-        this.subsInstruments = res1.quotInfoVOList.reduce((a,b) =>  {
-          if(b.groupId===1){
+      ipcRenderer.invoke('get-config', 'config').then(e =>{
 
-            return a.concat(Array.from(new Set(b.instrumentList)).map(e => ({key: e, label: e})))
-          }
-          return a
-
-}, [])
+    
         this.loading = false;
         
-        const {vtpUserId} =res2
+        // const {vtpUserId} =res2
       
-        const config = JSON.parse(localStorage.getItem(`config-${vtpUserId}`));
-        this.configs = config.map(e => ({...e, instruments: (e.instruments||'').split(',').filter(e=>e),hotKey: e.hotKey.split(';').filter(e => e).map(key => {
-          return key.split(',')
-        })})) 
+       this.config = e;
         const chartDom = document.getElementById('preview');
        
-        this.groupId = res2.groupId;
-        this.config = this.configs[0];
+        // this.groupId = res2.groupId;
+      
       
      
         console.log('config', this.config)
         this.chart = new Chart(chartDom,this.width, this.height,0.5, this.config);
         this.chart.render(fakeData)
-        this.hotKey = this.configs[0].hotKey;
+    
+        this.hotkey = this.config.hotkey.split(';').map(e=> e.split(','));
+        console.log(this.hotkey)
 
       })
      
@@ -299,7 +287,7 @@
       return {
           loading: true,
           config: {},
-          hotKey: [],
+          hotkey: [],
           configs :[],
           columns,
           formItem,
@@ -317,8 +305,9 @@
     },
     methods: {
       onSubmit(){
-        const config = this.configs.map(e => {
+       
           const data ={};
+          const e= this.config
           for(let key in e){
             if(typeof e[key] === 'string'){
               data[key] = parseInt(e[key])
@@ -326,36 +315,39 @@
               data[key] =e[key]
             }
           }
-          data.hotKey= e.hotKey.map(key=>key.join(',')).join(';');
+          data.hotkey= e.hotkey.map(key=>key.join(',')).join(';');
           data.instruments =e.instruments.filter(e => this.subsInstruments.find(a => a.key === e)).join(',');
         
-          return data;
-        })
+        
+       
          const {id} =this.$route.query;
-         console.log(config)
-         this.loading = true;
-         request({
-           method: 'PATCH',
-           url: '/user/config',
-           data: {
-             configVOList: config
-           }
-         }).then(res=> {
-            this.loading = false;
-             if(res.code === 'REQ_SUCCESS'){
-               this.$message.success('修改成功');
-              request({
-                method: 'GET',
-                url: '/user/info'}).then(res=>{
-                  if(res.code === "REQ_SUCCESS")     
-                   ipcRenderer.send('update-all-config', res.instrumentConfigVOList);
-                  this.preview()
-                })
+         console.log(data)
+        //  this.loading = true;
+        debugger
+        ipcRenderer.send('set-config', 'config', data);
+        ipcRenderer.send('update-all-config', data);
+        //  request({
+        //    method: 'PATCH',
+        //    url: '/user/config',
+        //    data: {
+        //      configVOList: config
+        //    }
+        //  }).then(res=> {
+        //     this.loading = false;
+        //      if(res.code === 'REQ_SUCCESS'){
+        //        this.$message.success('修改成功');
+        //       request({
+        //         method: 'GET',
+        //         url: '/user/info'}).then(res=>{
+        //           if(res.code === "REQ_SUCCESS")     
+        //            ipcRenderer.send('update-all-config', res.instrumentConfigVOList);
+        //           this.preview()
+        //         })
                 
-             }else {
-                this.$message.error(res.msg);
-             }
-         })
+        //      }else {
+        //         this.$message.error(res.msg);
+        //      }
+        //  })
       
       }, 
       preview(){
@@ -379,10 +371,10 @@
           
             this.showModal = true;
             this.editIndex = index;
-            this.editItem = this.hotKey[index] || {};
+            this.editItem = this.hotkey[index] || {};
             break;
           case 'del':
-            this.hotKey.splice(index, 1);
+            this.hotkey.splice(index, 1);
            
 
         }
@@ -391,23 +383,23 @@
       update(arr){
         const code =arr[1]
   
-        const key = this.hotKey.some((e,index)=> index !== this.editIndex && e[1]===code);
+        const key = this.hotkey.some((e,index)=> index !== this.editIndex && e[1]===code);
         if(key){
           this.$alert('当前快捷键已存在');
           return
         }
         this.showModal =false;
         if(this.editIndex !== undefined){
-          this.hotKey.splice(this.editIndex, 1, arr)
+          this.hotkey.splice(this.editIndex, 1, arr)
         }else{
-          this.hotKey.unshift(arr);
+          this.hotkey.unshift(arr);
         }
         
       },
       change(tab) {
         const {index} = tab;
         this.config = this.configs[index];
-        this.hotKey = this.configs[index].hotKey;
+        this.hotkey = this.configs[index].hotkey;
         this.preview();
       }
     }

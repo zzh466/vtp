@@ -11,7 +11,7 @@ export { childwin, subscribeIndicatorWin};
 export default function(checked,main){
   // console.log(checked)
   const config = [{
-    label: '限制配置',
+    label: '手数限制配置',
     click(){
       if(childwin){
         childwin.show();
@@ -21,7 +21,7 @@ export default function(checked,main){
           useContentSize: true,
           width: 1000,
           // parent: mainWindow,
-          title: '限制配置',
+          title: '手数限制配置',
           webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -32,6 +32,32 @@ export default function(checked,main){
         childwin.removeMenu()
         childwin.on('closed', function(){
           childwin = null;    
+        })
+      }
+      
+    }
+  },{
+    label: '快捷键及合约配置',
+    click(){
+      if(childwin){
+        childwin.show();
+      }else{
+        subscribeIndicatorWin = new BrowserWindow({
+          height: 1000,
+          useContentSize: true,
+          width: 1000,
+          // parent: mainWindow,
+          title: '快捷键及合约配置',
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            webSecurity: false
+          }
+        })
+        subscribeIndicatorWin.loadURL(`${winURL}#Config`)
+        subscribeIndicatorWin.removeMenu()
+        subscribeIndicatorWin.on('closed', function(){
+          subscribeIndicatorWin = null;    
         })
       }
       

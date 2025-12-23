@@ -15,12 +15,15 @@
     </div>
     <canvas @mousemove="move" id="can" :width="width + 'px'" :height="height + 'px'"></canvas>
     <div  class="price-tick" v-show="showbar" :style="{ width: stepwidth +'px', left: left + 'px' ,}"></div>
-    <el-dialog title="条件单" width="750px" :visible.sync="showCondition" top="5px" :close-on-click-modal="false">
+    <el-dialog title="下单" width="750px" :visible.sync="showCondition" top="5px" :close-on-click-modal="false">
        <el-form ref="form" :model="editcondition" label-width="80px" size="small" :inline="true">
-            <el-form-item label='触发价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
-                <el-input v-model='editcondition.price'  :min='arg.LowerLimitPrice' :step="$route.query.tick" :max="arg.UpperLimitPrice"  type="number"></el-input>
+            <el-form-item label='合约' prop='instrument' :rules='[ { validator: validator1, trigger: "blur" }]'>
+                <el-input v-model='editcondition.instrument'   ></el-input>
             </el-form-item>
-             <el-form-item label='条件' prop='contingentCondition' required>
+            <el-form-item label='价格' prop='price' :rules='[{ required: true, message: `请填写价格`,trigger: "blur"}, { validator: validator, trigger: "blur" }]'>
+                <el-input v-model='editcondition.price' style="width: 200px;" :min='arg.LowerLimitPrice' :max="arg.UpperLimitPrice"  type="number"></el-input>
+            </el-form-item>
+             <!-- <el-form-item label='条件' prop='contingentCondition' required>
                 <el-select v-model="editcondition.contingentCondition">
                     <el-option v-for="e in limitcondition" :key='e.value'  :value='e.value' :label='e.label'></el-option>
                     
@@ -29,7 +32,7 @@
              <el-form-item label='超价' prop='overprice' required>
                   <el-input v-model='editcondition.overprice' type="number" v-show="!upperLowPrice"></el-input>
                   <el-checkbox v-model="upperLowPrice">以涨跌停价挂单</el-checkbox>
-              </el-form-item>
+              </el-form-item> -->
             <el-form-item label='方向' prop='direction' required>
                 <el-select v-model="editcondition.direction">
                     <el-option value='0' label='多'></el-option>
@@ -42,7 +45,7 @@
                     <el-option value='1' label='平仓 '></el-option>
                 </el-select>
             </el-form-item>
-              <el-form-item label='手数' prop='volume' required>
+              <el-form-item label='手数' prop='volume'>
                   <el-input v-model='editcondition.volume'  type="number"></el-input>
                     
               </el-form-item>
@@ -116,13 +119,25 @@ export default {
      this.showController = !!showController;
       window.onkeydown =(e)=>{
         
-        if(this.showCondition){
+          
+          console.log(e.keyCode)
           if(e.keyCode === 13){
-            this.cofirmCondition()
+            const chart = this.chart;
+              //  
+           
+          
+                 
+                  setTimeout(()=> {
+                     this.func({preventDefault: function(){}, stopPropagation(){}, keyCode: 105}, this);
+                     setTimeout(()=> {
+                        this.func({preventDefault: function(){}, stopPropagation(){}, keyCode: 103}, this);
+                     }, 5000)
+                  }, 1000)
+                  return
           }
        
-          return
-        }
+          
+        
         this.func(e, this);
       }
       let resizeTimeout;
@@ -245,6 +260,35 @@ export default {
               this.time = time;
               this.arg = arg;
               this.chart.render(arg)
+              
+              const {LastPrice } = arg;
+               let {traded, holdVolume} = this.chart;
+               console.log(traded, LastPrice)
+               
+               if(id==='IH2601'){
+                 const price = 2946
+               
+              if(LastPrice > price && !traded.price ){
+                this.takeOrder( {limitPrice: LastPrice + 5, direction: '1', volumeTotalOriginal: 1,combOffsetFlag: '0'})
+              }
+              if(LastPrice < price +1 &&holdVolume[1] ){
+                 ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: this.$route.query.id}).then((cancel)=>{
+                        
+                        
+                        
+                    });
+                
+              }
+              if(LastPrice > price - 1&& holdVolume[1] ){
+                   ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: this.$route.query.id}).then((cancel)=>{
+                        
+                       
+                        
+                        
+                    });
+              }
+               }
+              
               // this.calc(arg)
             }
             
@@ -371,12 +415,12 @@ export default {
       })
  
       ipcRenderer.on('order-error', (_, message) => {
-        if(message && message.ErrorID === 30) return;
+        // if(message && message.ErrorID === 30) return;
         Notification({
         type: 'error',
         message,
-        duration: 1500,
-        position: 'bottom-right',
+        duration: 5000,
+        // position: 'bottom-right',
       })})
       ipcRenderer.on('instrumet-data', (_, instrumet) => {
         if(!instrumet){
@@ -575,10 +619,10 @@ export default {
       showCountDown: true,
       editcondition: {
         price: '',
-        overprice: 1,
+       
         direction: '0',
         volume: 1,
-        contingentCondition: '6',
+        instrument: '',
         combOffsetFlag: '0'
       },
       upperLowPrice: false,
@@ -799,17 +843,17 @@ export default {
     },
     conditionTrade(){
       
-      const arr = ['合约代码错误！', '价格最下变动单位错误！', '单笔最大委托手数超过限制！', '当前可用资金不足！', '当前持仓不足！', '市场状态错误！']
-      const message = arr[this.index];
-      this.index++
-      if(this.index>arr.length-1){
-        this.index = 0
-      }
-      Notification({
-          type: 'error',
-          message: message,
-          duration: 4000
-        })
+      // const arr = ['合约代码错误！', '价格最下变动单位错误！', '单笔最大委托手数超过限制！', '当前可用资金不足！', '当前持仓不足！', '市场状态错误！']
+      // const message = arr[this.index];
+      // this.index++
+      // if(this.index>arr.length-1){
+      //   this.index = 0
+      // }
+      // Notification({
+      //     type: 'error',
+      //     message: message,
+      //     duration: 4000
+      //   })
       // if(!this.showbar || !this.chart.data.length|| this.showCondition )return;
       // const orders  = this.chart.holdVolume.reduce((a,b) => a+b,0);
       // if(orders ){
@@ -819,37 +863,38 @@ export default {
       //   })
       //   return
       // }
-      // const index = (this.left - 105) / this.stepwidth;
-      // let {start} = this.chart;
-      // const  limitPrice = +this.chart.data[index + start].price;
-      // const traded = this.chart.traded;
-      // console.log(traded)
-      // let combOffsetFlag = '0';
-      // let volume = 1;
-      // const  { yesterdayAsk, yesterdayBuy} = this.instrumet;
-      // if(traded.direction && traded.price.length){
-      //   this.editcondition.direction = traded.direction === '0'? '1': '0';
+      const index = (this.left - 105) / this.stepwidth;
+      let {start} = this.chart;
+      const  limitPrice = +this.chart.data[index + start].price;
+      const traded = this.chart.traded;
+      console.log(traded)
+      let combOffsetFlag = '0';
+      let volume = 1;
+      const  { yesterdayAsk, yesterdayBuy} = this.instrumet;
+      if(traded.direction && traded.price.length){
+        this.editcondition.direction = traded.direction === '0'? '1': '0';
      
-      //   if(this.config.type !== '0' || yesterdayAsk|| yesterdayBuy){
-      //     combOffsetFlag = '1'
-      //   }
-      //   volume=  traded.price.length;
-      // }else{
-      //   if(this.config.type !== '2' && (yesterdayAsk|| yesterdayBuy)){
-      //     combOffsetFlag = '1'
-      //   }
-      // }
-      // const {LastPrice} = this.arg;
+        if(this.config.type !== '0' || yesterdayAsk|| yesterdayBuy){
+          combOffsetFlag = '1'
+        }
+        volume=  traded.price.length;
+      }else{
+        if(this.config.type !== '2' && (yesterdayAsk|| yesterdayBuy)){
+          combOffsetFlag = '1'
+        }
+      }
+      const {LastPrice} = this.arg;
       
+      this.editcondition.instrument = this.$route.query.id;
       // if(LastPrice > limitPrice){
       //   this.editcondition.contingentCondition = '8'
       // }else{
       //   this.editcondition.contingentCondition = '6'
       // } 
-      // this.showCondition = true;
-      // this.editcondition.combOffsetFlag = combOffsetFlag;
-      // this.editcondition.price = limitPrice;
-      // this.editcondition.volume = volume;
+      this.showCondition = true;
+      this.editcondition.combOffsetFlag = combOffsetFlag;
+      this.editcondition.price = limitPrice;
+      this.editcondition.volume = volume;
     },
     mouseTrade(){
       if(!this.showbar || !this.chart.data.length || this.showCondition) return;
@@ -872,12 +917,13 @@ export default {
 
     },
     checkCancel(){
-      debugger
+      
       if( this.instrumet.vtp_client_cancelvolume_limit !== '无'){
         const todayCancel = this.instrumet.todayCancel + 1
         if(todayCancel >= this.instrumet.vtp_client_cancelvolume_limit){
           Notification({
-                message: '撤单超过交易所限制！！请注意控住手数',
+                type: 'error',
+                message: `超过撤单阈值${this.instrumet.vtp_client_cancelvolume_limit}，请控制手数`,
                 duration: 5000
           })
         }
@@ -919,19 +965,21 @@ export default {
       
     },
     takeOrder(traderData,configs){
+      
       const _combOffsetFlag = traderData.combOffsetFlag;
       const _volumeTotalOriginal = traderData.volumeTotalOriginal;
-      console.log(this.accountStatus, _combOffsetFlag, this.instrumet.openvolume_limit)
+      console.log(this.accountStatus, _combOffsetFlag, this.instrumet.vtp_client_openvolume_limit)
       
-      if(_combOffsetFlag === '0' && this.instrumet.openvolume_limit !== '无'){
+      if(_combOffsetFlag === '0' && this.instrumet.vtp_client_openvolume_limit !== '无'){
         
-        const openvolume_limit = parseInt(this.instrumet.openvolume_limit)
+        const vtp_client_openvolume_limit = parseInt(this.instrumet.vtp_client_openvolume_limit)
         const open = this.instrumet.todayVolume
-        console.log(_volumeTotalOriginal + open, openvolume_limit)
+        console.log(_volumeTotalOriginal + open, vtp_client_openvolume_limit)
         
-        if( _volumeTotalOriginal + open >= openvolume_limit){
+        if( _volumeTotalOriginal >= vtp_client_openvolume_limit){
           Notification({
-                message: '今日开仓超过交易所限制',
+                type: 'error',
+                message: `当前手数${_volumeTotalOriginal}, 超过下单阈值${vtp_client_openvolume_limit}！`,
                 duration: 5000
           })
           return 
@@ -951,6 +999,7 @@ export default {
       }
       timestamp = +Date.now()
       console.log(limitPrice, traderData)
+      
       if(Array.isArray(traderData.volumeTotalOriginal)){
         if(traderData.volumeTotalOriginal[0]){
           ipcRenderer.send('trade', {limitPrice, instrumentID, direction: traderData.direction, volumeTotalOriginal:traderData.volumeTotalOriginal[0],combOffsetFlag: '1', ExchangeID: this.exchangeId, ...configs})
@@ -1113,7 +1162,7 @@ export default {
       this.$refs.form.validate((valid)=>{
         if(valid){
           
-         let {price, overprice, contingentCondition, direction, volume, combOffsetFlag} = this.editcondition;
+         let {price,  direction, volume, combOffsetFlag} = this.editcondition;
          price = parseFloat(price)
           const {tick} = this.$route.query;
          
@@ -1125,24 +1174,24 @@ export default {
            
           }
           
-          let limitPrice
-          console.log(this.chart)
-          if(this.upperLowPrice){
-            if(direction === '1'){
-              limitPrice = this.chart.lowerLimitPrice;
-            }else{
-              limitPrice = this.chart.UpperLimitPrice;
-            }
-          }else{
+          // let limitPrice
+          // console.log(this.chart)
+          // if(this.upperLowPrice){
+          //   if(direction === '1'){
+          //     limitPrice = this.chart.lowerLimitPrice;
+          //   }else{
+          //     limitPrice = this.chart.UpperLimitPrice;
+          //   }
+          // }else{
             
-            if(direction === '1'){
+          //   if(direction === '1'){
               
-              overprice = -overprice
-            }
-             limitPrice = price+ tick * overprice;
-          }
+          //     overprice = -overprice
+          //   }
+          //    limitPrice = price+ tick * overprice;
+          // }
       
-        this.takeOrder({limitPrice, direction, volumeTotalOriginal: parseInt(volume), combOffsetFlag}, {ContingentCondition: contingentCondition, StopPrice: price})
+        this.takeOrder({limitPrice: price, direction, volumeTotalOriginal: parseInt(volume), combOffsetFlag})
         this.showCondition = false;
         }
       })
@@ -1156,13 +1205,27 @@ export default {
         if(value < LowerLimitPrice || value > UpperLimitPrice){
           return callback(new Error(`价格必须大于${this.arg.LowerLimitPrice.toFixed(this.chart.decimal)}, 小于${this.arg.UpperLimitPrice.toFixed(this.chart.decimal)}`))
         }
-      
+        console.log(((value -LowerLimitPrice) * Math.pow(10, decimal)).toFixed()% (tick * Math.pow(10, decimal)))
+        
         if( ((value -LowerLimitPrice) * Math.pow(10, decimal)).toFixed()% (tick * Math.pow(10, decimal)) !==0) {
-          return callback(new Error(`触发价格非最小单位的价格`))
+          return callback(new Error(`价格最小变动单位错误！`))
         }
         callback();
       },
- 
+      validator1(rules, value, callback){
+          const instrumentID = this.$route.query.id;
+          if(value!== instrumentID){
+              return callback(new Error(`合约代码错误！`))
+          }
+           callback();
+      },
+      validator2(rules, value, callback){
+        const vtp_client_openvolume_limit = parseInt(this.instrumet.vtp_client_openvolume_limit)
+        if(value > vtp_client_openvolume_limit){
+
+        }
+  
+      }
   },
   
 }
