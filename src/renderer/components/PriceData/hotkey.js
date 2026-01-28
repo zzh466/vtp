@@ -36,7 +36,7 @@ export default function generate(hotKey){
          if(haskey){
              e.preventDefault();
              e.stopPropagation();
-            ipcRenderer.send('info-log', `快捷键：${haskey[0]}`)
+            ipcRenderer.send('info-log', `快捷键：${haskey[0]}`) 
              switch(haskey[2]){
                  case '0':
                     order();

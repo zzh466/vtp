@@ -33,7 +33,8 @@ class Chart {
             volumeScaleTick,
             volumeScaleType,
             volumeXOffset = 0,
-            volumeYOffset = 0
+            volumeYOffset = 0,
+            barLevel= '1'
         } = config
         this.ctx = dom.getContext('2d');
         this.rendered = false;
@@ -45,6 +46,7 @@ class Chart {
         this.volumeScaleTick = volumeScaleTick;
         this.volumeXOffset = volumeXOffset;
         this.volumeYOffset = volumeYOffset;
+        this.barLevel= barLevel
         this.width = width;
         this.height = height;
         this.step = parseFloat(step);
@@ -248,12 +250,14 @@ class Chart {
         if(askIndex < 0) {
             askIndex = 0;
         } 
-        
+        if(buyIndex > this.count){
+            buyIndex = this.count
+        }
         if( this.askIndex === this.UpperLimitindex){
             askIndex = askIndex +1
         }
         
-        if(askIndex  > this.count || askIndex === 0) {
+        if(askIndex  > this.count) {
             askIndex = this.count ;
         } 
         if(buyIndex > this.count || askIndex < 0){
@@ -261,7 +265,8 @@ class Chart {
             ipcRenderer.send('error-log', JSON.stringify(this.data));
         }
         ctx.fillStyle = BUYBACKGROUND;
-        ctx.fillRect(_x, y, buyIndex *barWidth + barWidth,this.height);
+        let xwidth = buyIndex *barWidth + barWidth;
+        ctx.fillRect(_x, y, xwidth,this.height);
         ctx.fillStyle = ASKBACKGROUND;
         ctx.fillRect(_x + askIndex *barWidth, y, this.width- _x - askIndex *barWidth - 30 , this.height);
         for(let i = start; (i-start) <= this.count; i ++ ){
@@ -720,13 +725,16 @@ class Chart {
             this.clearData(arg.AskPrice1 , arg.AskPrice5 );
         }
         let pauseAsk, pasuseBuy;
+        
+        this.getindex( arg['BidPrice' + this.barLevel])
+        this.getindex( arg['AskPrice' + this.barLevel]) 
         for(let i=5; i> 0; i--){
             let buyPirce = arg[`BidPrice${i}`];
             let buyIndex ;
-            const flag = this.rendered?i> 1 : i < 5;
+          
             
             if(buyPirce && !pasuseBuy){
-                buyIndex = this.getindex(buyPirce, flag)
+                buyIndex = this.getindex(buyPirce, true)
                 const buyData = this.data[buyIndex];
                 if(buyData){
                     buyData.volum = arg[`BidVolume${i}`];
@@ -738,7 +746,7 @@ class Chart {
             const askPirce = arg[`AskPrice${i}`] ;
             let askIndex;
             if(askPirce && !pauseAsk){
-                askIndex = this.getindex(askPirce, flag)
+                askIndex = this.getindex(askPirce, true)
                 const askData = this.data[askIndex];
                 if(askData){
                     askData.volum = arg[`AskVolume${i}`];
@@ -785,9 +793,9 @@ class Chart {
         this.renderCurrentPirce(arg.LastPrice, arg.Volume);
         this.renderPlaceOrder();
         this.renderTradeOrder();
-        if(!this.rendered && arg.UpdateTime >= '08:59:00'){
-            this.rendered= true;
-        }
+        // if(!this.rendered && arg.UpdateTime >= '08:59:00'){
+        //     this.rendered= true;
+        // }
      
         // this.renderseconds()
 

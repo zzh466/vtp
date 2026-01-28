@@ -254,7 +254,7 @@ export default {
           const config = this.setConfig(true, arg);
           const {
               barToBorder,
-              
+              barLevel= '1',
               barWidth = 10,
               volumeXOffset,
               volumeYOffset,
@@ -273,6 +273,7 @@ export default {
           this.chart.volumeScaleTick = volumeScaleTick;
           this.chart.volumeXOffset = volumeXOffset;
           this.chart.volumeYOffset = volumeYOffset;
+            this.chart.barLevel = barLevel;
           this.chart.ctx.clearRect(0, 0, this.width, this.height);
           this.chart.resize( this.width, this.height);
           this.changeHotKey(config);
@@ -308,48 +309,101 @@ export default {
           this.chart.setColor(checked)
           this.chart.render(this.arg)
       })
-      ipcRenderer.on('total-order', (_, orders, current = {}) => { 
+      function getorderKey(obj){
+ 
+        const {FrontID, SessionID,  OrderRef} = obj;
+        const frontId = FrontID.toString();
+        const sessionId = SessionID.toString();
+        const orderRef = OrderRef;
+        return frontId + sessionId + orderRef;
+      }
+
+      ipcRenderer.on('total-order', (_, orders, current, needUpdate) => { 
         // p.then(()=>{
-          // console.log(orders, current, 111)
+          console.log(orders, current, 111)
           // console.log('延迟', +Date.now() - timestamp)
-          const arr = [];const id = this.$route.query.id;
-          for(let key in orders){
-            if(orders[key].InstrumentID === id){
-              arr.push(orders[key])
-            }
-          }
-          console.log(arr)
-          if(this.chart.data.length ){
             let cancel = 0;
             let open = 0;
             let big_todayCancel = 0;
             let condition = false;
-            arr.forEach(e => {
-              const {OrderStatus, CombOffsetFlag, VolumeTraded, VolumeTotal} = e;
-              if(CombOffsetFlag === '0'){
-                open = VolumeTraded + open;
+            console.log(current, needUpdate)
+            
+          if(current){
+            open =  this.instrumet.todayVolume ;
+            cancel =this.instrumet.todayCancel;
+            big_todayCancel = this.instrumet.big_todayCancel;
+             let {OrderStatus, CombOffsetFlag, VolumeTraded, VolumeTotal} = current;
+             
+            if(needUpdate){
+                const key = getorderKey(current)
+               const old = this.chart.placeOrder.find(e => getorderKey(e)===key);
+               console.log(old)
+              const _VolumeTraded = old.VolumeTraded
+              VolumeTraded = VolumeTraded -_VolumeTraded;
+              for(let k in current){
+                old[ k] = current[ k]
               }
-              if(OrderStatus === '5'){
-                
-                cancel += 1;
-                if( this.instrumet.big_todayCancel_limit_volume && VolumeTotal - VolumeTraded >= this.instrumet.big_todayCancel_limit_volume){
-                  big_todayCancel+= 1
+            }else{
+                this.chart.placeOrder.unshift(current);
+            }
+           
+            if(CombOffsetFlag === '0'){
+              open = VolumeTraded + open;
+            }
+            if(OrderStatus === '5'){
+              
+              cancel += 1;
+              if( this.instrumet.big_todayCancel_limit_volume && VolumeTotal - VolumeTraded >= this.instrumet.big_todayCancel_limit_volume){
+                big_todayCancel+= 1
+              }
+            }
+            if(OrderStatus === 'b'){
+              condition = true;
+            }
+          
+          }else {
+               const arr = [];const id = this.$route.query.id;
+              for(let key in orders){
+                if(orders[key].InstrumentID === id){
+                  arr.unshift(orders[key])
                 }
               }
-              if(OrderStatus === 'b'){
-                condition = true;
-              }
-            })
+            
+         -
+                
+                arr.forEach(e => {
+                  const {OrderStatus, CombOffsetFlag, VolumeTraded, VolumeTotal} = e;
+                  if(CombOffsetFlag === '0'){
+                    open = VolumeTraded + open;
+                  }
+                  if(OrderStatus === '5'){
+                    
+                    cancel += 1;
+                    if( this.instrumet.big_todayCancel_limit_volume && VolumeTotal - VolumeTraded >= this.instrumet.big_todayCancel_limit_volume){
+                      big_todayCancel+= 1
+                    }
+                  }
+                  if(OrderStatus === 'b'){
+                    condition = true;
+                  }
+                })
+                this.chart.placeOrder = arr;
+              
+            }
+         
             conditionStatus = condition;
             this.instrumet.todayVolume = open;
             this.instrumet.todayCancel = cancel;
             this.instrumet.big_todayCancel = big_todayCancel;
             this.update();
-            this.chart.placeOrder = arr;
-            this.chart.renderBakcground();
-            this.chart.renderVolume();  
-            this.chart.renderPlaceOrder();
-            this.chart.renderHighandLow();
+            
+            if(this.chart.data.length){
+              this.chart.renderBakcground();
+              this.chart.renderVolume();  
+              this.chart.renderPlaceOrder();
+              this.chart.renderHighandLow();
+            }
+           
             if(this.tasks.length && current.OrderStatus === '5'){
               this.tasks.forEach(e => e());
               this.tasks =[];
@@ -364,7 +418,7 @@ export default {
                
               }
             }
-          }
+          
          
          
         //  })
@@ -405,7 +459,7 @@ export default {
         // console.log(field, 22222)
           const index = this.traded.findIndex(e => e.TradeType === TradeType && e.ExchangeID + e.OrderSysID + e.TradeID===ExchangeID + OrderSysID + TradeID);
           if(index > -1){
-            console.log(this.traded, field, 1112356)
+             ipcRenderer.send('error-log', `${field}重复的成交单`)
             return;
           }
           if(!flag){

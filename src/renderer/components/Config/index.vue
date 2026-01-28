@@ -16,6 +16,12 @@
       </div>
      
       <el-form ref="form" :model="config" label-width="180px">
+        <el-form-item label='滚动基准价格' prop='barLevel'  :rules='[{ required: true, message: `请选择挂单数量刻度类型`}]'>
+                <el-select  v-model='config.barLevel'>
+                <el-option v-for="v in 5" :value='v' :key="v" :label="v + '价'"></el-option>
+                
+                </el-select> 
+            </el-form-item>
         <el-form-item v-for='item in formItem' :label="item.name" :key='item.key' :rules="[
             { required: true, message: `请输入${item.name}`, trigger: 'blur' }]">
           <el-input v-model="config[item.key]" type="number"></el-input>
@@ -105,6 +111,7 @@
   import request from '../../utils/request';
   import Chart from '../PriceData/chart'
   import {closeTypeMap, typeMap } from '../../utils/utils';
+import { v } from 'vxe-table';
 
   const actions = ['下单','先撤再下','当前交易所全部撤单','修改手数','修改平仓方式','切换平今策略','设置平今策略','全交易所全部撤单','当前合约全部撤单','当前合约撤最近一手报单' ,'撤最近一手报单' ,'当前合约全部平仓', '市价下单'];
   const orderaction = ['0', '1', '12']

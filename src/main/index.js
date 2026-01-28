@@ -554,7 +554,7 @@ ipcMain.on('trade-login', (event, args) => {
         // setTimeout(()=>
         // win.sender.send('total-order',orderMap, field), 500
         // )
-        win.sender.send('total-order',orderMap, field);
+        win.sender.send('total-order',"", field, needUpdate);
       }
     // }
     
@@ -774,12 +774,14 @@ ipcMain.on('trade', (event, args) => {
   trade.trade(args, time);
 })
 function findCancelorder(args, title){
+  console.log('撤单', args)
   const arr = [];
   function needCancel(order){
     return (order.OrderStatus === '1' || order.OrderStatus === 'a' || order.OrderStatus === '3'|| order.OrderStatus === 'b') && (!args || args.value === order[args.key])
   }
  for(let key in orderMap){
    const item = orderMap[key];
+   console.log(item)
    if(needCancel(item)){
     //  console.log(item, '123133')
      arr.push(item)
@@ -789,6 +791,7 @@ function findCancelorder(args, title){
   flagTime = +new Date();
   infoLog(`${title}: ${JSON.stringify(arr.map(({InstrumentID, LimitPrice, VolumeTotalOrigina}) => ({InstrumentID, LimitPrice, VolumeTotalOrigina})))}`)
  }
+ console.log('撤单',  arr)
  return arr;
 }
 ipcMain.on('cancel-order', (event, args) => {
@@ -1131,7 +1134,7 @@ class TcpClient{
     this.index = 1;
     this.openInstruments = [];
     this.connectcount = 0
-    this.type = args.type;
+  
   
   }
   addinstrument(instrument){
@@ -1161,11 +1164,11 @@ class TcpClient{
     if(!Array.isArray(url)){
       url = [url]
     }
-    const _url = url[0].split(':');
+    const _url = url[0].url.split(':');
     let host= _url[0];
     let port= _url[1];
     let cmd;
-   
+     this.type = url[0].type;
     if(url.length >1 && this.type === 'tcp'){
       return new Promise(resolve => {
         console.log('check start')
@@ -1174,9 +1177,10 @@ class TcpClient{
         let timeout =  setTimeout(()=>{
           console.log(host, port, 'timeout')
           infoLog(`${host} 检查超时`)
-          const _url = url[1].split(':');
+          const _url = url[1].url.split(':');
           this.host= _url[0];
           this.port= _url[1];
+          this.type = url[1].type;
           tcp_client.destroy()
           resolve()
         }, 3000)
@@ -1189,6 +1193,7 @@ class TcpClient{
           this.port = port;
           this.host = host;
           tcp_client.destroy()
+          
           clearTimeout(timeout)
           resolve()
           
@@ -1653,14 +1658,14 @@ ipcMain.on('fake-trade', function(event, {id, orderData, tradeData}){
   trade.on('main-trade', function(item){
     event.sender.send('receive-trade', item)
   })
-  trade.on('order', function(item){
+  trade.on('order', function(item, needUpdate){
     // console.log(item)
     orderMap[item.key] = item;
     event.sender.send('receive-order', item)
     const win = findedopened(item.InstrumentID);
     console.log(win)
     if(win && win.sender){ 
-      win.sender.send('total-order',orderMap, item);
+      win.sender.send('total-order',orderMap, item, needUpdate);
     }
 
   })

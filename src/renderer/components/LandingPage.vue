@@ -1171,10 +1171,10 @@
               
           // }
           // let  e= quotVOList [2]
-          const {subInstruments, exchangeNo, quotAddr, protocol} = e;
+          const {subInstruments, exchangeNo, quotAddr} = e;
           datacount ++
           const instruments  =  subInstruments.split(',')
-            ipcRenderer.send('start-receive', {exchangeNo:exchangeNo, url:quotAddr, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments, type: protocol.toLowerCase()});
+            ipcRenderer.send('start-receive', {exchangeNo:exchangeNo, url:quotAddr, instrumentIDs: instruments.filter(e => this.subscribelInstruments.some(a=> a.instruments.includes(e))),   iCmdID: 101, instruments});
         })
     },
       cancel(){
@@ -1278,7 +1278,15 @@
       },
       replacequotUrl(quotAddr){
         const groupId = this.groupId;
-        const list =  quotAddr.filter(e => e.groupId === groupId).map(e=>({...e}));
+        
+        const list =  quotAddr.filter(e => e.groupId === groupId).map(e=>({ quotAddr: [{
+                    url: e.quotAddr,
+                    type: e.protocol.toLowerCase()
+                   
+                  }],
+                  exchangeNo: e.exchangeNo,
+                   subInstruments: e.subInstruments
+                }));
         
         if(groupId !== 1){
           
@@ -1286,9 +1294,20 @@
             if(e.groupId === 1){
               const item = list.find(l => l.exchangeNo ===e.exchangeNo);
               if(item){
-                item.quotAddr = [item.quotAddr, e.quotAddr]
+                item.quotAddr.push({
+                  url: e.quotAddr,
+                  type: e.protocol.toLowerCase()
+                })
               }else{
-                list.push(e);
+                list.push({
+                  quotAddr: [{
+                    url: e.quotAddr,
+                    type: e.protocol.toLowerCase(),
+                   
+                  }],
+                  exchangeNo: e.exchangeNo,
+                  subInstruments: e.subInstruments
+                });
               }
             }
             

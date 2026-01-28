@@ -444,7 +444,11 @@ export default {
         quotVOList.filter(e=> e.groupId===1).forEach((e) => {       
             const {subInstruments, exchangeNo, quotAddr, protocol} = e;
             const instruments  =  subInstruments.split(',')
-            ipcRenderer.send('start-receive', {exchangeNo:exchangeNo, url:quotAddr, instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101, instruments, type: protocol.toLowerCase()});
+            ipcRenderer.send('start-receive', {exchangeNo:exchangeNo, url:{
+                    url: quotAddr,
+                    type: protocol.toLowerCase()
+                   
+                  }, instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101, instruments});
             // ipcRenderer.send('start-receive', {url, instrumentIDs: instruments.filter(e => subscribelInstruments.includes(e)),   iCmdID: 101});
         })
         this.subscribelInstruments = subscribelInstruments.map(e => ({ins: e}))

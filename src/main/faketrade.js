@@ -134,7 +134,10 @@ export default class FakeTrader{
             InsertDate: getDay(),
             InsertTime: priceData[4],
             VolumeTraded: 0,
-            key: +new Date()
+            FrontID: `${+new Date()}`,
+            key: +new Date(),
+            SessionID: '',
+            OrderRef: ""
         }
         this.orders.push(item)
         this.emitter.emit('order', item);
@@ -146,7 +149,7 @@ export default class FakeTrader{
         arr.forEach(item => {
             item.StatusMsg = '已撤单';
             item.OrderStatus = '5';
-            this.emitter.emit('order', item);
+            this.emitter.emit('order', item, true);
         })
     }
     send(msg){
@@ -265,7 +268,7 @@ export default class FakeTrader{
                 item.StatusMsg = '已成交';
                 item.OrderStatus = '0';
                 item.VolumeTraded = VolumeTotalOriginal;
-                this.emitter.emit('order', item);
+                this.emitter.emit('order', item, true);
             }
         })
     }
