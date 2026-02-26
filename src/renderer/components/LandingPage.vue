@@ -712,7 +712,7 @@
         // })
       })
       ipcRenderer.on('receive-instrument', (event, arg)=>{
-        // console.log(arg)
+        console.log(arg, 'instrument')
         
         this.instrumentInfo = arg
       })
