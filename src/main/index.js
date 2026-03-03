@@ -59,7 +59,7 @@ function createWindow () {
     height: 333,
     useContentSize: true,
     width: 500,
-    title: `长赢期货通`,
+    title: `Xzh_trade`,
    
     webPreferences: {
       webSecurity: false,

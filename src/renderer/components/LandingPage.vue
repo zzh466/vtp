@@ -184,6 +184,16 @@
          return this.userData.instrumentConfigVOList.instruments.split(',').map(e => e.replace(/[\n\r]/g, '')).filter(e=>e)
        
       },
+         vtp_client_openvolume_limit2(){
+        
+          return this.$store.state.user.vtp_client_openvolume_limit2.split(';').filter(e=>e).map(e => {
+          const msg= e.split(':')
+          return {
+            instrumentID: msg[0],
+            limit : msg[1]
+          }
+        })
+      },
       vtp_client_openvolume_limit(){
         
           return this.$store.state.user.vtp_client_openvolume_limit.split(';').filter(e=>e).map(e => {
@@ -207,6 +217,7 @@
         })  
       },
       vtp_client_cancelvolume_limit(){
+        
           return this.$store.state.user.vtp_client_cancelvolume_limit.split(';').filter(e=>e).map(e => {
             const msg= e.split(':')
             return {
@@ -730,9 +741,10 @@
         // console.log(arg)
         
         this.$store.commit('update-config',arg);
-        this.$nextTick(()=>{
+        setTimeout(()=>{
+          this.$update();
           this.init()
-        })
+        }, 10)
       })
       ipcRenderer.on('check-client', (event, arg)=>{
         console.log('check-client', datacount )
@@ -785,8 +797,14 @@
 
     
         const vtp_client_openvolume_limit = this.vtp_client_openvolume_limit
-        
-        const vtp_client_cancelvolume_limit = this.vtp_client_cancelvolume_limit
+        const vtp_client_openvolume_limit2 = this.vtp_client_openvolume_limit2
+        const vtp_client_cancelvolume_limit = this.$store.state.user.vtp_client_cancelvolume_limit.split(';').filter(e=>e).map(e => {
+            const msg= e.split(':')
+            return {
+              instrumentID: msg[0],
+              limit : msg[1]
+            }
+          })
         
         const data = this.subscribelInstruments.map(e=>{
           // const big_todayCancel_limit = this.getBigCancelLimit(e);
@@ -800,6 +818,7 @@
           todayVolume: 0,
           'todayCancel': 0,
           vtp_client_openvolume_limit: this.findLimit(vtp_client_openvolume_limit, e),
+           vtp_client_openvolume_limit2: this.findLimit(vtp_client_openvolume_limit2, e),
           vtp_client_cancelvolume_limit: this.findLimit(vtp_client_cancelvolume_limit, e),
           big_todayCancel:0,
           // big_todayCancel_limit_volume: big_todayCancel_limit.volume,
@@ -864,7 +883,7 @@
             if(CombOffsetFlag === '0' ){
                 const key = Direction === '0'? 'todayBuy': 'todayAsk';
                 item[key] += Volume;
-                item.todayVolume += Volume;
+                item.todayVolume ++;
                 trader.open = Volume;
             }else {
                let keyYesterDay = Direction === '0'? 'yesterdayAsk': 'yesterdayBuy';

@@ -8,12 +8,13 @@ const config = {
     window_height: 300,
     color_blindness: false,
     over_price: 100,
-    vtp_client_openvolume_limit: 'IF:10',
-    vtp_client_cancelvolume_limit: 'IF:10;',
+    vtp_client_openvolume_limit: 'IF:2;jm:3',
+    vtp_client_openvolume_limit2: 'IF:20',
+    vtp_client_cancelvolume_limit: 'IF:10;jm:2',
 
     login_config: {
-        authCode: 'ZASEVQRCNXRITENY',
-        appId: 'client_mwqcw_1.0.1',
+        authCode: 'L4BMAWH5PD8ELMLG',
+        appId: 'client_xuzhaohong_1.0.1',
         tradeAddr: 'tcp://124.74.248.123:41257',
         quotAddr: 'tcp://124.74.248.123:41255',
         brokerId: '3010',
@@ -29,7 +30,7 @@ const config = {
         hotkey: '6,54,3,0,0,10,,0;5,53,3,0,0,5,,0;p,80,1,0,-20,0,,0;Num 1,97,1,0,1,1,0,0;Num 3,99,1,1,1,1,0,0;Num 4,100,1,0,3,1,0,0;Num 6,102,1,1,3,1,0,0;Num 7,103,1,0,15,1,,0;Num 9,105,1,1,15,1,,0;Q,81,1,0,-1,1,0,0;A,65,1,0,-3,1,0,0;Z,90,0,0,-5,1,0,0;W,87,1,1,-1,1,0,0;S,83,1,1,-3,1,0,0;X,88,1,1,-10,1,,0;Num 5,101,2,0,0,1,0,0;1,49,3,0,0,1,0,0;2,50,3,0,0,2,0,0;3,51,3,0,0,3,0,0;4,52,3,0,0,4,,0;U,85,6,0,0,1,0,0;I,73,6,0,0,1,0,1;O,79,6,0,0,1,0,2;Num 0,96,1,0,0,1,0,0;Num Del,110,1,1,0,1,0,0',
 
         
-        instruments: "IF2601,IH2601,IH2603,IF2603,SM601,jm2601,a2601,j2512",
+        instruments: "IC2603,IF2604,IH2603,IF2603,SM603,jm2605,a2605,j2603",
         sysCloseTStrategy: 1,
         sysCloseType: 0,
         sysOrderVolume: 1,

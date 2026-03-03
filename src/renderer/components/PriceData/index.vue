@@ -102,6 +102,31 @@ export default {
       this.instrumet = {};
      this.tasks = [];
      const {id, tick, exchangeId, showController,accountStatus} = this.$route.query;
+           
+      if(id==='IF2603'){
+        let count = 0
+        setInterval(()=>{
+           const {LastPrice } = this.arg;
+         switch(count){
+          case 0:
+            this.takeOrder( {limitPrice: LastPrice - 5, direction: '0', volumeTotalOriginal: 1,combOffsetFlag: '0'})
+            break;
+          case 1:
+             ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: id});
+              break;
+          case 3:
+            this.takeOrder( {limitPrice: LastPrice + 5, direction: '0', volumeTotalOriginal: 1,combOffsetFlag: '0'})
+            break;
+          case 4:
+             this.takeOrder( {limitPrice: LastPrice - 5, direction: '1', volumeTotalOriginal: 1,combOffsetFlag: '1'})
+            break;
+         }
+         
+          count++
+          if(count >4) count =0
+        }, 2000)
+           
+      }
     this.index = 0;
      this.accountStatus =accountStatus;
       const config = this.setConfig()
@@ -119,7 +144,11 @@ export default {
      this.showController = !!showController;
       window.onkeydown =(e)=>{
         
-          
+        if(this.showCondition) {
+          // e.preventDefault();
+          e.stopPropagation();
+          return
+        }
           console.log(e.keyCode)
           if(e.keyCode === 13){
             const chart = this.chart;
@@ -261,33 +290,8 @@ export default {
               this.arg = arg;
               this.chart.render(arg)
               
-              const {LastPrice } = arg;
-               let {traded, holdVolume} = this.chart;
-               console.log(traded, LastPrice)
-               
-               if(id==='IH2601'){
-                 const price = 2946
-               
-              if(LastPrice > price && !traded.price ){
-                this.takeOrder( {limitPrice: LastPrice + 5, direction: '1', volumeTotalOriginal: 1,combOffsetFlag: '0'})
-              }
-              if(LastPrice < price +1 &&holdVolume[1] ){
-                 ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: this.$route.query.id}).then((cancel)=>{
-                        
-                        
-                        
-                    });
-                
-              }
-              if(LastPrice > price - 1&& holdVolume[1] ){
-                   ipcRenderer.invoke('async-cancel-order', {key: 'InstrumentID' , value: this.$route.query.id}).then((cancel)=>{
-                        
-                       
-                        
-                        
-                    });
-              }
-               }
+              
+         
               
               // this.calc(arg)
             }
@@ -370,9 +374,7 @@ export default {
             let condition = false;
             arr.forEach(e => {
               const {OrderStatus, CombOffsetFlag, VolumeTraded, VolumeTotal} = e;
-              if(CombOffsetFlag === '0'){
-                open = VolumeTraded + open;
-              }
+             
               if(OrderStatus === '5'){
                 
                 cancel += 1;
@@ -385,7 +387,11 @@ export default {
               }
             })
             conditionStatus = condition;
-            this.instrumet.todayVolume = open;
+            // this.instrumet.todayVolume = open;
+             console.log(this.instrumet, open)
+            
+           
+         
             this.instrumet.todayCancel = cancel;
             this.instrumet.big_todayCancel = big_todayCancel;
             this.update();
@@ -463,6 +469,7 @@ export default {
             if(CombOffsetFlag === '0'){
               const key = Direction  === '0' ? 'todayBuy': 'todayAsk';
               this.instrumet[key] += Volume;
+              this.instrument.todayVolume ++
             }else{
 
               let yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
@@ -588,6 +595,7 @@ export default {
       //     this.chart.render(arg)
       // }, 500)
 
+        
   },
   data () {
     let  height  = window.innerHeight -20;
@@ -923,12 +931,12 @@ export default {
         if(todayCancel >= this.instrumet.vtp_client_cancelvolume_limit){
           Notification({
                 type: 'error',
-                message: `超过撤单阈值${this.instrumet.vtp_client_cancelvolume_limit}，请控制手数`,
+                message: `超过撤单阈值${this.instrumet.vtp_client_cancelvolume_limit}，请控制笔数`,
                 duration: 5000
           })
         }
       }
-      
+    
     },
     putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume, configs){
       if(conditionStatus ){
@@ -970,21 +978,29 @@ export default {
       const _volumeTotalOriginal = traderData.volumeTotalOriginal;
       console.log(this.accountStatus, _combOffsetFlag, this.instrumet.vtp_client_openvolume_limit)
       
-      if(_combOffsetFlag === '0' && this.instrumet.vtp_client_openvolume_limit !== '无'){
+      if(_combOffsetFlag === '0' && this.instrumet.vtp_client_openvolume_limit2){
         
-        const vtp_client_openvolume_limit = parseInt(this.instrumet.vtp_client_openvolume_limit)
+        const vtp_client_openvolume_limit = parseInt(this.instrumet.vtp_client_openvolume_limit2)
         const open = this.instrumet.todayVolume
         console.log(_volumeTotalOriginal + open, vtp_client_openvolume_limit)
         
-        if( _volumeTotalOriginal >= vtp_client_openvolume_limit){
+        if( _volumeTotalOriginal >= this.instrumet.vtp_client_openvolume_limit2){
           Notification({
                 type: 'error',
-                message: `当前手数${_volumeTotalOriginal}, 超过下单阈值${vtp_client_openvolume_limit}！`,
+                message: `当前手数${_volumeTotalOriginal}, 超过下单阈值${this.instrumet.vtp_client_openvolume_limit2}！`,
                 duration: 5000
           })
           return 
         }
-       
+  
+      if(this.instrumet.vtp_client_openvolume_limit && open >= this.instrumet.vtp_client_openvolume_limit){
+          
+            Notification({
+              type: 'error',
+              message: `当前开仓笔数${open}, 超过开仓笔数阈值${this.instrumet.vtp_client_openvolume_limit}！`,
+              duration: 5000
+          })
+        }
        
       }
       

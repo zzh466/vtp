@@ -37,23 +37,28 @@
                 this.formdata.open_limit = e
             } );
              ipcRenderer.invoke('get-config', 'vtp_client_cancelvolume_limit').then(e => this.formdata.close_limit = e);
+               ipcRenderer.invoke('get-config', 'vtp_client_openvolume_limit2').then(e => this.formdata.open_limit2 = e);
            
         },
         data () {
 
             return {
                 list : [{
-                    name: '开仓限制',
+                    name: '开仓手数限制',
+                    key: 'open_limit2'
+                },{
+                    name: '开仓笔数限制',
                     key: 'open_limit'
                 },{
-                    name: '撤单限制',
+                    name: '撤单笔数限制',
                     key: 'close_limit'
                 }],
                 
                 loading: false,
                 formdata : {
                     open_limit: '',
-                    close_limit: ''
+                    close_limit: '',
+                    open_limit2: ''
                 }
             }
         },
@@ -76,7 +81,8 @@
                     if(valid){
                          ipcRenderer.send('set-config', 'vtp_client_openvolume_limit', this.formdata.open_limit);
                         ipcRenderer.send('set-config', 'vtp_client_cancelvolume_limit', this.formdata.close_limit);
-                        ipcRenderer.send('update-configs', ['vtp_client_openvolume_limit', 'vtp_client_cancelvolume_limit'])
+                          ipcRenderer.send('set-config', 'vtp_client_openvolume_limit2', this.formdata.open_limit2);
+                        ipcRenderer.send('update-configs', ['vtp_client_openvolume_limit', 'vtp_client_cancelvolume_limit', 'vtp_client_openvolume_limit2'])
                     }
                 })
               

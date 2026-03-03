@@ -1,5 +1,5 @@
 {
-  "name": "cw",
+  "name": "xzh",
   "version": "1.0.1",
   "author": "",
   "description": "trade",
@@ -27,8 +27,8 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "长赢期货通",
-    "appId": "cw",
+    "productName": "Xzh_trade",
+    "appId": "xzh",
     "nsis": {
       "allowToChangeInstallationDirectory": true,
       "oneClick": false

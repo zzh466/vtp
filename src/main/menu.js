@@ -11,7 +11,7 @@ export { childwin, subscribeIndicatorWin};
 export default function(checked,main){
   // console.log(checked)
   const config = [{
-    label: '手数限制配置',
+    label: '报测单笔数限制配置',
     click(){
       if(childwin){
         childwin.show();
@@ -21,7 +21,7 @@ export default function(checked,main){
           useContentSize: true,
           width: 1000,
           // parent: mainWindow,
-          title: '手数限制配置',
+          title: '单数限制配置',
           webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
