@@ -1,7 +1,6 @@
 
 import { ipcRenderer } from 'electron';
 import { baseURL, speak } from './utils';
-// const baseURL = '192.168.0.18:8082/vtpmanagerapi'
 export default function request(config){
     
     return ipcRenderer.invoke('request', config).then(res=>{

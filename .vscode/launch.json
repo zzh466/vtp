@@ -12,12 +12,13 @@
             // "args": ["${workspaceFolder}/test/ctpmini/reqInvestorPositionDetail.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInsertOrder.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js"],
-            "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
+            // "args": ["${workspaceFolder}/test/ctp/reqInstrumentCommissionRate.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqQrySettlementInfoConfirm.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqSettlementInfoConfirm.js"],
             // "args": ["${workspaceFolder}/test/ctp/tradingAccount.js"],
             // "args": ["${workspaceFolder}/test/ctp/reqTwoTraderAccount2.js"],
             // "args": ["${workspaceFolder}/test/qdp/tradingAccount.js"],
+            "args": ["${workspaceFolder}/test/ctpmd/mdtest.js"],
             "cwd": "${workspaceFolder}"
         },
         {
@@ -29,7 +30,8 @@
             // "program": "${workspaceFolder}/test/ctp/reqInsertOrder.js",
             // "program": "${workspaceFolder}/test/ctp/reqInvestorPositionDetail.js",
             // "program": "${workspaceFolder}/test/qdp/tradingAccount.js",
-            "program": "${workspaceFolder}/test/ctpmini/reqInstrumentCommissionRate.js",
+            // "program": "${workspaceFolder}/test/ctpmini/reqInstrumentCommissionRate.js",
+            "program": "${workspaceFolder}/test/ctpmd/mdtest.js",
             "preLaunchTask": "npm: rebuildCTP:dev"
         },
         {

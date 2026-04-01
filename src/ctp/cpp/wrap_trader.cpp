@@ -54,24 +54,20 @@ void logger_cout(const char *content)
     }
 }
 
-WrapTrader::WrapTrader(void)
-{
+WrapTrader::WrapTrader(void) {
     logger_cout("wrap_trader------>object start init");
     uvTrader = new uv_trader();
     logger_cout("wrap_trader------>object init successed");
 }
 
-WrapTrader::~WrapTrader(void)
-{
-    if (uvTrader)
-    {
+WrapTrader::~WrapTrader(void) {
+    if (uvTrader) {
         delete uvTrader;
     }
     logger_cout("wrap_trader------>object destroyed");
 }
 
-void WrapTrader::Init(Isolate *isolate)
-{
+void WrapTrader::Init(Isolate *isolate) {
     // Prepare constructor template
     Local<Context> context = isolate->GetCurrentContext();
 

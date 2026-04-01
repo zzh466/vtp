@@ -94,6 +94,39 @@
             ]
     }
     ,
+    {
+      "target_name": "ctpmd",
+      "product_dir": "<(module_root_dir)/build/Release/", 
+      "sources": [
+        ".\\src\\ctpmd\\cpp\\ctpmd.cc",
+        ".\\src\\ctpmd\\cpp\\wrap_mduser.cpp",
+        ".\\src\\ctpmd\\cpp\\uv_mduser.cpp"
+      ],
+      "libraries": [
+        "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/WinDataCollect.lib",
+        "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/thosttraderapi_se.lib",
+        "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/thostmduserapi_se.lib"
+      ],
+      "include_dirs": ["ctp_20210406tradeapi_v6.6.1/","<!(node -e \"require('nan')\")"],
+      "copies": [
+              {
+                "destination": "<(module_root_dir)/build/Release/",
+                "files": [
+                  "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/thosttraderapi_se.dll",
+                  "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/thostmduserapi_se.dll",
+                  "<(module_root_dir)/ctp_20210406tradeapi_v6.6.1/WinDataCollect.dll"
+                ]
+              },
+              {
+                "destination": "<(module_root_dir)/build/Debug/",
+                "files": [
+                  "<(module_root_dir)/ctp_win64_md/thosttraderapi_se.dll",
+                  "<(module_root_dir)/ctp_win64_md/thostmduserapi_se.dll",
+                  "<(module_root_dir)/ctp_win64_md/WinDataCollect.dll"
+                ]
+              }
+            ]
+    }
     # {
     #   "target_name": "qdp",
     #   "sources": [
