@@ -55,7 +55,7 @@ export class TraderSocket{
         this.onActiveInstrumentFn = fn;
     }
     onmessageResolve(msg){
-        console.log(msg)
+        ipcRenderer.send('info-log', `socket收到${msg.data}`)
         msg = msg.data.split('@');
         switch(msg[0]){
             case 'heart':
@@ -129,6 +129,13 @@ export class TraderSocket{
                 break;
             case "MarketCloseImmediately":
                 speak('还有一分钟就收盘啦，请注意平仓')
+                break
+            case "BroadcastCountdownMarketOpen":
+                 ipcRenderer.send('open-count', msg[1]);
+                break;
+            case "BroadcastCountdownMarketClose":
+                ipcRenderer.send('close-count', msg[1]);
+                break;
             
         }
     }

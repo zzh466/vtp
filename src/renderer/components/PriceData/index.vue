@@ -761,12 +761,14 @@ export default {
               }
               break;
             case '22:59:00':
-              if(['rb', 'hc', 'bu', 'ru', 'fu', 'sp', 'a', 'b', 'y', 'm', 'jm', 'j', 'p', 'i', 'l', 'v', 'pp', 'eg', 'c', 'cs', 'rr', 'eb', 'SA', 'SH', 'SR', 'CF', 'CY', 'RM', 'PR', 'PX', 'MA', 'TA', 'OI', 'FG', 'ZC', 'nr', 'lu'].includes(instrumentID)){
+              if(("br,bu,fu,hc,lu,nr,op,rb,ru,sp," +
+			"a,b,bz,c,cs,eb,eg,i,j,jm,l,m,p,pg,pp,rr,v,y," +
+			"CF,CY,FG,MA,OI,PF,PL,PR,PX,RM,SA,SH,SR,TA,ZC").split(',').includes(instrumentID)){
                 className = endClasee
               }
               break;
             case '00:59:00':
-              if(['cu', 'bc', 'al', 'ao', 'pb', 'zn', 'ni', 'sn', 'ss'].includes(instrumentID)){
+              if('ad,al,ao,bc,cu,ni,pb,sn,ss,zn'.split(',').includes(instrumentID)){
                  className = endClasee
               }
               break;
