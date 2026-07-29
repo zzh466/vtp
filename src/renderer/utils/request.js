@@ -55,7 +55,10 @@ export class TraderSocket{
         this.onActiveInstrumentFn = fn;
     }
     onmessageResolve(msg){
-        ipcRenderer.send('info-log', `socket收到${msg.data}`)
+        if(msg !== 'heart@'){
+            ipcRenderer.send('info-log', `socket收到${msg.data}`)
+        }
+        
         msg = msg.data.split('@');
         switch(msg[0]){
             case 'heart':

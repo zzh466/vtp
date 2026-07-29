@@ -16,13 +16,26 @@ for(var devName in interfaces){
 }
 console.log(getIPAdress())
 export function getMac(){
-    for(var i in interfaces){
-        for(var j in interfaces[i]){
-            if(interfaces[i][j]["family"]==="IPv4" && (interfaces[i][j]["mac"]!=="00:00:00:00:00:00" || interfaces[i][j]["mac"]!=='00:50:56:c0:00:01' )&& interfaces[i][j]["address"]!=="127.0.0.1"){
-            return interfaces[i][j]["mac"]
+    let mac;
+     for(var i in interfaces){
+        if(i.includes('以太网') || i.toLowerCase().includes('ethernet‌')){
+            for(var j in interfaces[i]){
+                if(interfaces[i][j]["family"]==="IPv4"&& interfaces[i][j]["address"]!=="127.0.0.1" ){
+                    return interfaces[i][j]["mac"]
+                }
+                
+            }
+        }else{
+            for(var j in interfaces[i]){
+                if(interfaces[i][j]["family"]==="IPv4" && (interfaces[i][j]["mac"]!=="00:00:00:00:00:00" || interfaces[i][j]["mac"]!=='00:50:56:c0:00:01' )&& interfaces[i][j]["address"]!=="127.0.0.1"){
+                    mac = interfaces[i][j]["mac"]
+                    break;
+                }
             }
         }
+       
     }
+    return mac;
 }
 export const hostname = os.hostname();//主机名
 console.log(hostname);
@@ -44,7 +57,7 @@ export const CombOffsetFlag = ['开仓', '平仓', '', '平仓']
 export const Status = [{msg: '全部成交', key: '0', type: 'success'},{msg: '部分成交', key: '1', type: 'warn'},{msg: '部分成交', key: '2', type: 'warn'},{msg: '未成交', key: '3', type: 'warn'},{msg: '未成交不在队列中', key: '4', type: 'warn'},{msg: '已撤单', key: '5', type: 'danger'},{msg: '未知', key: 'a', type: 'info'},{msg: '条件单尚未触发', key: 'b'},{msg: '条件单已触发', key: 'c'}]
   
 
-export const version = '260325a';
+export const version = '260630a';
 export function getyyyyMMdd(d){
     if(!d){
         d = new Date();

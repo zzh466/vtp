@@ -338,6 +338,7 @@ class onlineTrade extends Trade{
         this.m_BrokerId =args.m_BrokerId;
         this.m_UserId = args.m_UserId;
         this.m_InvestorId = args.m_InvestorId;
+        this.needrecord = args.idol;
         this._trader = new pupTrade()
         this._trader.on('connect', ()=>{
             this.emitter.emit('connect')

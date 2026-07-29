@@ -144,6 +144,7 @@
     return num
   }
   let datacount = 0;
+  let fisrtInit = false;
   export default {
     name: 'landing-page',
     components: {  Round , loginform, Order},
@@ -220,9 +221,6 @@
               limit : msg[1]
             }
           })
-      },
-      opened() {
-         return this.$store.state.PriceData.InstrumentIDs
       },
       locked: {
         get(){
@@ -559,13 +557,14 @@
            console.log(this.rates.map(a => a.InstrumentID))
       });
       ipcRenderer.on('finish-loading', (event, arg) =>{
-        
+       
+         console.log('finish-loading', arg)
         this.finishLoading(arg);
       });
        ipcRenderer.on('add-loading', (event, arg) =>{
         
          const index = this.loading.indexOf(arg);
-        // console.log(tag)
+        console.log('add-loading', arg)
         if(index  === -1) {
 
           this.loading.push(arg)
@@ -838,7 +837,34 @@
         a.forEach(e => e.remove());
         this.$nextTick(function(){
           this.$refs.round.init();
-    
+          if(!fisrtInit){
+            ipcRenderer.invoke('get-config', 'historyWin').then(historywin => {
+              if(historywin.length){
+                this.$confirm('打开上一次未关闭的合约？','提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+                }).then(()=>{
+                  historywin.forEach(({id, position, size, configId})=> {
+                    const instrumentdata= this.instrumentsData.find(({instrumentID}) => instrumentID === id);
+                    if(instrumentdata){
+                      if(!instrumentdata.id.includes(configId)){
+                        configId = instrumentdata.id[0]
+                      }
+                      this.start({row: instrumentdata}, configId, {
+                        width: size[0]  ,
+                        height: size[1],
+                        offsetX: position[0],
+                        offsetY: position[1]
+                      })
+                    }
+                  })
+                  
+                })
+              }
+              fisrtInit = true;
+            })
+          } 
         })
       },
       setTradeItem(trader, orderData, data= this.instrumentsData){
@@ -972,7 +998,7 @@
         title = this.userData.userAccount + ' ' + title;
        ipcRenderer.send('export-excel', {title ,excelData});
       },
-      async start({row},id) {
+      async start({row},id, offset={}) {
         
         if(this.locked){
           this.$alert('当前账号已锁定', '锁定' )
@@ -983,8 +1009,12 @@
         // if(this.userData.subscribeIndicator && this.userData.subscribeIndicator.includes(instrumentID)){
         //   this.ws.ws.send(`NotifyIndicatorInstrument@${instrumentID}`)
         // }
-       
-        const {width, height} = await getClientSize()
+        let {width, height, offsetX, offsetY} = offset
+        if(!width){
+          const size = await getClientSize()
+          width = size.width;
+          height = size.height
+         }
         const info = this.instrumentInfo.find(e => e.InstrumentID === instrumentID);
         if(!info){
            this.$alert('合约尚未订阅行情，请联系管理员订阅！');
@@ -1007,7 +1037,7 @@
         
         const accountIndex = this.currentAccount.futureUserName;
         const accountStatus = this.currentAccount.accountStatus
-        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex, accountStatus, volumeMultiple});
+        ipcRenderer.send('open-window', {id:instrumentID, title: getWinName(instrumentID, accountIndex) + getHoldCondition(row), account: this.userData.id, width, height, offsetX, offsetY, tick: PriceTick, exchangeId: ExchangeID, checked,configId:id, accountIndex, accountStatus, volumeMultiple});
         this.$store.dispatch('updateIns', instrumentID);
       },
       stop(){
@@ -1036,7 +1066,7 @@
             
           }).then(({instrumentList}) => {
             this.instrumentInfo = instrumentList;
-
+            
             // let time = +Date.now();
             // const instruments = 'a,b,bb,bz,c,cs,eb,eg,fb,i,j,jd,jm,l,lh,lg,m,p,pg,pp,rr,v,y,ag,al,ao,au,bu,br,cu,fu,hc,ni,op,pb,rb,ru,sn,sp,ss,wr,zn,bc,ec,lu,nr,sc,AP,CF,CJ,CY,FG,JR,LR,MA,OI,PF,PK,PL,PM,PR,PX,RI,RM,RS,SA,SF,SH,SM,SR,TA,UR,WH,ZC,IC,IF,IH,IM,lc,si,ps'.split(',');
 
@@ -1129,7 +1159,7 @@
         
       },
       finishLoading(tag){
-        
+         ipcRenderer.send('info-log', `结束查询${tag}`)
         const index = this.loading.indexOf(tag);
         console.log(tag, this.loading)
         if(index > -1) {

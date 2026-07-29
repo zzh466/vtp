@@ -11,7 +11,7 @@ import OnlineTrade from './onlineTrade';
 import FakeTrade from './faketrade';
 import meun, {childwin, subscribeIndicatorWin} from  './menu';
 import  './export';
-import  './config';
+import {setconfig} from  './config';
 import  request  from './request';
 import '../renderer/store';
 import {version, winURL, specialExchangeId, tagTime } from '../renderer/utils/utils'
@@ -41,7 +41,7 @@ let DicatorMap = {};
 let flagTime = +new Date()
 let TMPCLOSE = false;
 let InstrumentIDINFO = []
-
+let opedwindow = [];
 function checkLock(instrumentID){
  
   if(LOCK && (!TMPCLOSE || !instrumentID || InstrumentIDINFO.find(e => e.InstrumentID === instrumentID))){
@@ -90,6 +90,21 @@ function createWindow () {
       infoLog(`${trade.m_UserId} 登出`)
 
     }
+    let wins = ''
+    setconfig('historyWin', opedwindow.map(e=> {
+      const win = e.win;
+      const position = win.getPosition();
+      const size = win.getContentSize();
+      // console.log(win.getContentSize(), win.getSize())
+      wins+= `${e.id},`
+      return {
+        id: e.id,
+        position,
+        size,
+        configId: e.configId
+      }
+    }))
+    infoLog(`未关闭合约${wins}`)
     if(childwin){
       childwin.close();
     }
@@ -114,7 +129,7 @@ ipcMain.on('close-main', (event, arg) => {
   }
   app.quit();
 })
-let opedwindow = [];
+
 function findedopened(insId){
   const win = opedwindow.find(({id}) => id === insId);
   return win;
@@ -137,7 +152,7 @@ ipcMain.on('subscribe-instrument', (event, id) => {
   
   subscribeInstrument(id);
 })
-ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = '', accountStatus, volumeMultiple}) => {
+ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exchangeId, tick, checked, configId, accountIndex, showController = '', accountStatus, volumeMultiple, offsetX, offsetY}) => {
   console.log('open-window')
   COLOSEALL = false;
   const hasInsId = opedwindow.find(({id}) => id === insId)
@@ -150,6 +165,8 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
       height,
       useContentSize: true,
       width,
+      x: offsetX,
+      y: offsetY,
       // parent: mainWindow,
       title: title,
       webPreferences: {
@@ -179,7 +196,8 @@ ipcMain.on('open-window', (evnt, {id: insId, title, account, width, height, exch
     childwin.setAlwaysOnTop(checked, 'screen-saver')
     opedwindow.push({
       id: insId,
-      win: childwin
+      win: childwin,
+      configId
     })
   }
 })
@@ -773,11 +791,11 @@ ipcMain.on('trade', (event, args) => {
   const time = PriceData[args.instrumentID].UpdateTime + `.${PriceData[args.instrumentID].UpdateMillisec}`
   trade.trade(args, time);
 })
-function findCancelorder(args, title){
-  console.log('撤单', args)
+function findCancelorder(args= {}, title){
+  console.log('撤单', args )
   const arr = [];
   function needCancel(order){
-    return (order.OrderStatus === '1' || order.OrderStatus === 'a' || order.OrderStatus === '3'|| order.OrderStatus === 'b') && (!args || args.value === order[args.key])
+    return (order.OrderStatus === '1' || order.OrderStatus === 'a' || order.OrderStatus === '3'|| order.OrderStatus === 'b') && (!args.key || args.value === order[args.key]) &&(!args.iscondition || order.OrderSysID.startsWith('TJBD_'))
   }
  for(let key in orderMap){
    const item = orderMap[key];
@@ -1168,6 +1186,7 @@ class TcpClient{
     let host= _url[0];
     let port= _url[1];
     let cmd;
+    console.log(url, 'url')
      this.type = url[0].type;
     if(url.length >1 && this.type === 'tcp'){
       return new Promise(resolve => {
@@ -1572,6 +1591,7 @@ ipcMain.on('tcp-reconnect', function(_, tcpinfo){
     console.log(tcpData)
     if(tcpData){
       e.args.url = tcpData.quotAddr ;
+      
       p = e.checktype();
     }
     p.then(()=>{

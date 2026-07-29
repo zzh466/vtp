@@ -234,9 +234,9 @@ export default {
                 
                 // console.log(arg)
               // if(this.time && id.startsWith('I')){
-              //   const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
-              //   console.log(log)
-              //   ipcRenderer.send('data-log', log)
+                const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
+                console.log(log)
+                ipcRenderer.send('data-log', log)
               // }
               // for(let i =1; i<=5;i++){
               //   arg[`BidPrice${i}`] = Number.MAX_VALUE
@@ -383,15 +383,13 @@ export default {
                       big_todayCancel+= 1
                     }
                   }
-                  if(OrderStatus === 'b'){
-                    condition = true;
-                  }
+                 
                 })
                 this.chart.placeOrder = arr;
               
             }
          
-            conditionStatus = condition;
+          
             this.instrumet.todayVolume = open;
             this.instrumet.todayCancel = cancel;
             this.instrumet.big_todayCancel = big_todayCancel;
@@ -465,8 +463,10 @@ export default {
           if(!flag){
             
             const item =  this.chart.placeOrder.find(e => e.ExchangeID + e.OrderSysID ===  ExchangeID + OrderSysID);
-            if(conditionStatus){
-              ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: this.$route.query.id});
+            
+            if(this.chart._iscondition){
+              
+              ipcRenderer.send('cancel-order', {key: 'InstrumentID' , value: this.$route.query.id, iscondition: true});
             }
            //以为网络等原因拍单情况下 成交信息会比报单信息先返回，所以这里一单出现这种情况将成交信息放到延迟队列中等报单信息返回在做操作
            const delay = function(CombOffsetFlag){
@@ -889,7 +889,7 @@ export default {
         this.editcondition.contingentCondition = '8'
       }else{
         this.editcondition.contingentCondition = '6'
-      } 
+      }  
       this.showCondition = true;
       this.editcondition.combOffsetFlag = combOffsetFlag;
       this.editcondition.price = limitPrice;
@@ -927,7 +927,7 @@ export default {
       
     },
     putOrder(limitPrice, direction, volumeTotalOriginal = this.config.volume, configs){
-      if(conditionStatus ){
+      if(this.chart._iscondition ){
         Notification({
             message: '当前合约存在未触发条件单，请撤单后再交易',
             duration: 5000
@@ -971,7 +971,7 @@ export default {
         const open = this.instrumet.todayVolume
         console.log(_volumeTotalOriginal + open, openvolume_limit)
         
-        if( _volumeTotalOriginal + open >= openvolume_limit){
+        if( _volumeTotalOriginal + open > openvolume_limit){
           Notification({
                 message: '今日开仓超过交易所限制'
           })

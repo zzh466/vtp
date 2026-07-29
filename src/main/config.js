@@ -6,7 +6,8 @@ const store = new Store()
 const config = {
     window_width : 1500,
     window_height: 300,
-    color_blindness: false
+    color_blindness: false,
+    historyWin: []
 
 }
 for(let key in config){

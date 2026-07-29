@@ -99,6 +99,7 @@ class Trade {
             break;
             case 6:
             break;
+            
         }
         
         

@@ -503,7 +503,7 @@ class Chart {
         ctx.setLineDash([]);
         ctx.strokeStyle = FONTCOLOR;
 
-        console.log(volume, this.volume)
+        // console.log(volume, this.volume)
         if(this.volume < volume){
             ctx.strokeStyle = '#ffff00';
         };
@@ -564,13 +564,14 @@ class Chart {
         const _x = X + 50.5;
         const {barWidth, volumeScaleHeight, range} = this;
         let _volume = [0, 0];
-        
+        let _iscondition = false
         pricearray.forEach(({price, volume, direction, OrderSysID = '', StopPrice}) => {
             let index 
             console.log(this.start, this.start + this.count)
             const iscondition = OrderSysID.startsWith('TJBD_');
             let color;
             if(iscondition){
+                _iscondition = true;
                 color = 'blue';
                 index = this.getindex(StopPrice, true);
             }else{
@@ -588,6 +589,7 @@ class Chart {
         })
         this.holdVolume = _volume;
         // console.log(this.placeOrder, pricearray)
+        this._iscondition = _iscondition;
         ctx.restore()
     }
     renderTradeOrder(){
@@ -725,9 +727,16 @@ class Chart {
             this.clearData(arg.AskPrice1 , arg.AskPrice5 );
         }
         let pauseAsk, pasuseBuy;
-        
-        this.getindex( arg['BidPrice' + this.barLevel])
-        this.getindex( arg['AskPrice' + this.barLevel]) 
+        if(arg.BidPrice1 && arg.BidPrice1 < arg.UpperLimitPrice){
+             this.getindex( arg['BidPrice' + this.barLevel])
+        }
+       
+        if(arg.AskPrice1 && arg.AskPrice1 > arg.LowerLimitPrice){
+             this.getindex( arg['AskPrice' + this.barLevel]) 
+        }
+
+       
+       
         for(let i=5; i> 0; i--){
             let buyPirce = arg[`BidPrice${i}`];
             let buyIndex ;
