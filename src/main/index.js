@@ -59,7 +59,7 @@ function createWindow () {
     height: 333,
     useContentSize: true,
     width: 500,
-    title: `Xzh_trade`,
+    title: `ShaoBTrader`,
    
     webPreferences: {
       webSecurity: false,

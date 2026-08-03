@@ -27,7 +27,7 @@
     "rebuild": "node_modules/.bin/electron-rebuild.cmd"
   },
   "build": {
-    "productName": "Xzh_trade",
+    "productName": "ShaoBTrader",
     "appId": "xzh",
     "nsis": {
       "allowToChangeInstallationDirectory": true,
