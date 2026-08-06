@@ -13,11 +13,11 @@ const config = {
     vtp_client_cancelvolume_limit: 'IF:10;jm:2',
 
     login_config: {
-        authCode: 'L4BMAWH5PD8ELMLG',
-        appId: 'client_xuzhaohong_1.0.1',
-        tradeAddr: 'tcp://124.74.248.123:41257',
-        quotAddr: 'tcp://124.74.248.123:41255',
-        brokerId: '3010',
+        authCode: '3KBA9KLGMWPJN6K7',
+        appId: 'client_shaob_20260717',
+        tradeAddr: 'tcp://58.240.234.72:41211',
+        quotAddr: 'tcp://58.240.234.72:41222',
+        brokerId: '9060',
         
     },
     config: {
@@ -30,7 +30,7 @@ const config = {
         hotkey: '6,54,3,0,0,10,,0;5,53,3,0,0,5,,0;p,80,1,0,-20,0,,0;Num 1,97,1,0,1,1,0,0;Num 3,99,1,1,1,1,0,0;Num 4,100,1,0,3,1,0,0;Num 6,102,1,1,3,1,0,0;Num 7,103,1,0,15,1,,0;Num 9,105,1,1,15,1,,0;Q,81,1,0,-1,1,0,0;A,65,1,0,-3,1,0,0;Z,90,0,0,-5,1,0,0;W,87,1,1,-1,1,0,0;S,83,1,1,-3,1,0,0;X,88,1,1,-10,1,,0;Num 5,101,2,0,0,1,0,0;1,49,3,0,0,1,0,0;2,50,3,0,0,2,0,0;3,51,3,0,0,3,0,0;4,52,3,0,0,4,,0;U,85,6,0,0,1,0,0;I,73,6,0,0,1,0,1;O,79,6,0,0,1,0,2;Num 0,96,1,0,0,1,0,0;Num Del,110,1,1,0,1,0,0',
 
         
-        instruments: "IC2603,IF2604,IH2603,IF2603,SM603,jm2605,a2605,j2603",
+        instruments: "IC2609,IF2609,IH2609,IF2612,SM609,jm2609,a2609,j2609",
         sysCloseTStrategy: 1,
         sysCloseType: 0,
         sysOrderVolume: 1,
@@ -48,16 +48,16 @@ const config = {
     thrRealProfit: 20000
 
 }
-// for(let key in config){
-//     const value = store.get(key);
-//      console.log(value, 121313)
-//     if(value === undefined){
+for(let key in config){
+    const value = store.get(key);
+     console.log(value, 121313)
+    if(value === undefined){
        
-//         store.set(key, config[key])
-//     }else{
-//         config[key] = value
-//     }
-// }
+        store.set(key, config[key])
+    }else{
+        config[key] = value
+    }
+}
 
 export function getConfig(key){
     return config[key]

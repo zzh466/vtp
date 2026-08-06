@@ -153,15 +153,13 @@ export default {
           if(e.keyCode === 13){
             const chart = this.chart;
               //  
-           
-          
                  
                   setTimeout(()=> {
                      this.func({preventDefault: function(){}, stopPropagation(){}, keyCode: 105}, this);
                      setTimeout(()=> {
                         this.func({preventDefault: function(){}, stopPropagation(){}, keyCode: 103}, this);
                      }, 5000)
-                  }, 1000)
+                  }, 2000)
                   return
           }
        
@@ -438,6 +436,7 @@ export default {
             yesterdayBuy: 0
           }
         }
+        console.log(instrumet)
         this.instrumet = instrumet;
         this.update()
         
@@ -452,7 +451,7 @@ export default {
       ipcRenderer.on('trade-order', (_, field, flag) => {
        
         let {Direction, Volume, OrderSysID, ExchangeID, CombOffsetFlag, TradeID, TradeType} = field;
-        // console.log(field, 22222)
+    
           const index = this.traded.findIndex(e => e.TradeType === TradeType && e.ExchangeID + e.OrderSysID + e.TradeID===ExchangeID + OrderSysID + TradeID);
           if(index > -1){
             console.log(this.traded, field, 1112356)
@@ -467,9 +466,9 @@ export default {
            //以为网络等原因拍单情况下 成交信息会比报单信息先返回，所以这里一单出现这种情况将成交信息放到延迟队列中等报单信息返回在做操作
            const delay = function(CombOffsetFlag){
             if(CombOffsetFlag === '0'){
-              const key = Direction  === '0' ? 'todayBuy': 'todayAsk';
+              const key = Direction  === '0' ? 'todayBuy': 'todayAsk';instrumetmit
               this.instrumet[key] += Volume;
-              this.instrument.todayVolume ++
+              this.instrumet.todayVolume ++
             }else{
 
               let yesterDay =  Direction  === '0' ? 'yesterdayAsk': 'yesterdayBuy';
@@ -495,6 +494,7 @@ export default {
                  this.instrumet[todayAsk] -= Volume;
                }
             }
+            
             this.update();
            }
            if(item){
@@ -844,7 +844,10 @@ export default {
     },
     update(){
         const instrumet =  this.instrumet;
+          
         const {id, accountIndex, volumeMultiple, tick} = this.$route.query;
+      ipcRenderer.send('info-log', `${id} 今多：${instrumet.todayBuy} 今空：${instrumet.todayAsk} 昨多：${instrumet.yesterdayBuy} 昨空：${instrumet.yesterdayAsk} 今开仓：${instrumet.todayVolume} 今撤单：${instrumet.todayCancel}  大额撤单: ${instrumet.big_todayCancel} `)
+
         const {volume, type, closeType} = this.config;
         const title =getWinName(id , volume, type, closeType) + getHoldCondition(instrumet);
         ipcRenderer.send('change-title', {id, title});
@@ -976,7 +979,7 @@ export default {
       
       const _combOffsetFlag = traderData.combOffsetFlag;
       const _volumeTotalOriginal = traderData.volumeTotalOriginal;
-      console.log(this.accountStatus, _combOffsetFlag, this.instrumet.vtp_client_openvolume_limit)
+      console.log(this.accountStatus, _combOffsetFlag, this.instrumet)
       
       if(_combOffsetFlag === '0' && this.instrumet.vtp_client_openvolume_limit2){
         
@@ -990,6 +993,7 @@ export default {
                 message: `当前手数${_volumeTotalOriginal}, 超过下单阈值${this.instrumet.vtp_client_openvolume_limit2}！`,
                 duration: 5000
           })
+          ipcRenderer.send('err-log', `${this.$route.query.id}当前手数${_volumeTotalOriginal}, 超过下单阈值${this.instrumet.vtp_client_openvolume_limit2}！`)
           return 
         }
   
@@ -1000,6 +1004,7 @@ export default {
               message: `当前开仓笔数${open}, 超过开仓笔数阈值${this.instrumet.vtp_client_openvolume_limit}！`,
               duration: 5000
           })
+          ipcRenderer.send('err-log', `${this.$route.query.id}当前开仓笔数${open}, 超过开仓笔数阈值${this.instrumet.vtp_client_openvolume_limit}！`)
         }
        
       }
@@ -1224,14 +1229,17 @@ export default {
         console.log(((value -LowerLimitPrice) * Math.pow(10, decimal)).toFixed()% (tick * Math.pow(10, decimal)))
         
         if( ((value -LowerLimitPrice) * Math.pow(10, decimal)).toFixed()% (tick * Math.pow(10, decimal)) !==0) {
+          console.log(this.$route.query.id)
+           ipcRenderer.send('err-log', `${this.$route.query.id}价格最小变动单位错误！`)
           return callback(new Error(`价格最小变动单位错误！`))
         }
         callback();
       },
       validator1(rules, value, callback){
           const instrumentID = this.$route.query.id;
-          if(value!== instrumentID){
-              return callback(new Error(`合约代码错误！`))
+          if(value!== instrumentID){  
+            ipcRenderer.send('err-log', `${this.$route.query.id}合约代码错误！`)
+            return callback(new Error(`合约代码错误！`))
           }
            callback();
       },

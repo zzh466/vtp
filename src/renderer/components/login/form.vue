@@ -50,8 +50,8 @@ export default {
         return {
             showhidden: false,
             form: {
-                userNm: this.userAccount || '10300333',
-                userPwd: 'xdqh1234',
+                userNm: this.userAccount || '100139',
+                userPwd: 'abc123!@',
                 authCode: '',
                 appId: '',
                 tradeAddr: '',

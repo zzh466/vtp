@@ -143,7 +143,7 @@
     watch:{
       locked(val, old){
         if(val && !old){
-          this.forceClose()
+          // this.forceClose()
          ipcRenderer.send('info-log', `锁定账户`)
           ipcRenderer.send('change-lock', true)
         }

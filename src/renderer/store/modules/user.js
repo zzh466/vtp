@@ -8,6 +8,8 @@ const state = {
    },
    over_price: 0,
     vtp_client_openvolume_limit: '',
+    vtp_client_openvolume_limit2: '',
+    vtp_client_cancelvolume_limit: '',
     broadcast: true,
     config: {},
     activeCtpaccount: 0,
