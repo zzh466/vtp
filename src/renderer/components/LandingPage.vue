@@ -610,8 +610,8 @@
        ipcRenderer.on('receive-price', (event, arg)=>{    
         //计算隔节误差;
         console.log(this.historyTraders, '12321313')
+        
         if(this.historyTraders.length){
-          
           for(let i = this.historyTraders.length - 1 ; i >= 0; i--){
            
             const {InstrumentID, Volume, Direction, TradeDate , ExchangeID } = this.historyTraders[i];
@@ -626,7 +626,7 @@
               
               let { SettlementPrice, ClosePrice, PreClosePrice, PreSettlementPrice , TradingDay, UpdateTime} = priceData[4];
               
-              if(ExchangeID === 'CFFEX' && !ClosePrice){
+              if(ExchangeID === 'CFFEX'&& !PreClosePrice  && !ClosePrice ){
                 const _priceData = this.$store.state.user.instrument_info_pre_tradday[InstrumentID];
                 PreSettlementPrice = _priceData.SettlementPrice;
                 SettlementPrice = _priceData.SettlementPrice;
