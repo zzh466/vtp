@@ -400,29 +400,22 @@ class onlineTrade extends Trade{
         //         return Promise.reject()
         //     }
         // })
-        return Promise.all([axios({
+        return axios({
             url: '/future/puppet',
             method: 'GET'
-        }),axios({
-            url: 'property/info/proxy_mac_list',
-            method: 'GET'
-        }).then(e => e.data) 
-    ]).then(([{data}, {propertyValue}]) => {
-            console.log(typeof(propertyValue),12133)
-            
-            propertyValue= JSON.parse(propertyValue)
+        }).then(({data}) => {
+            console.log(data)
             if(data.code === 'REQ_SUCCESS'){
                 const list = data.puppetInfoVOList
                
                 const account = list.find(({futureId}) => futureId === this.id)
-                const  ipData= propertyValue[this.m_UserId];
-                console.log(ipData, 'ipdata')
-                if(account && ipData){
+               
+                if(account ){
                     console.log(account)
-                    const { encrygyKey, port} = account
+                    const { encrygyKey, port, ip} = account
                     this._trader.encrygyKey =encrygyKey;
-                    this._trader.port = ipData.port;
-                    puppetIp = ipData.ip;
+                    this._trader.port = port;
+                    puppetIp = ip;
                     infoLog(`傀儡机信息 ${encrygyKey} ${port}`)
                     console.log(`傀儡机信息 ${encrygyKey} ${port}`)
                 }else{

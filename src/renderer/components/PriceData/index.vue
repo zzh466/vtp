@@ -234,9 +234,9 @@ export default {
                 
                 // console.log(arg)
               // if(this.time && id.startsWith('I')){
-                const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
-                console.log(log)
-                ipcRenderer.send('data-log', log)
+                // const log = `${id}, ${time - this.time}, ${arg.UpdateTime}`
+                // console.log(log)
+                // ipcRenderer.send('data-log', log)
               // }
               // for(let i =1; i<=5;i++){
               //   arg[`BidPrice${i}`] = Number.MAX_VALUE
@@ -311,10 +311,13 @@ export default {
       })
       function getorderKey(obj){
  
-        const {FrontID, SessionID,  OrderRef} = obj;
+        const {FrontID, SessionID,  OrderRef, OrderSysID} = obj;
         const frontId = FrontID.toString();
         const sessionId = SessionID.toString();
         const orderRef = OrderRef;
+         if(OrderSysID.startsWith('TJBD_')){
+          return  frontId + sessionId+ OrderSysID
+        }
         return frontId + sessionId + orderRef;
       }
 

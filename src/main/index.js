@@ -435,10 +435,13 @@ ipcMain.on('trade-login', (event, args) => {
 
   function getorderKey(obj){
  
-    const {FrontID, SessionID,  OrderRef} = obj;
+    const {FrontID, SessionID,  OrderRef, OrderSysID} = obj;
     const frontId = FrontID.toString();
     const sessionId = SessionID.toString();
     const orderRef = OrderRef;
+    if(OrderSysID.startsWith('TJBD_')){
+      return  frontId + sessionId+ OrderSysID
+    }
     return frontId + sessionId + orderRef;
   }
 
