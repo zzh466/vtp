@@ -754,8 +754,6 @@ struct CThostFtdcTradingAccountField
 	TThostFtdcMoneyType	FrozenSwap;
 	///剩余换汇额度
 	TThostFtdcMoneyType	RemainSwap;
-	///期权市值
-	TThostFtdcMoneyType	OptionValue;
 };
 
 ///投资者持仓
@@ -861,8 +859,6 @@ struct CThostFtdcInvestorPositionField
 	TThostFtdcMoneyType	TasPositionCost;
 	///合约代码
 	TThostFtdcInstrumentIDType	InstrumentID;
-	///期权市值
-	TThostFtdcMoneyType	OptionValue;
 };
 
 ///合约保证金率
@@ -2309,8 +2305,6 @@ struct CThostFtdcSyncingTradingAccountField
 	TThostFtdcMoneyType	FrozenSwap;
 	///剩余换汇额度
 	TThostFtdcMoneyType	RemainSwap;
-	///期权市值
-	TThostFtdcMoneyType	OptionValue;
 };
 
 ///正在同步中的投资者持仓
@@ -10561,8 +10555,6 @@ struct CThostFtdcSyncDeltaTradingAccountField
 	TThostFtdcMoneyType	FrozenSwap;
 	///剩余换汇额度
 	TThostFtdcMoneyType	RemainSwap;
-	///期权市值
-	TThostFtdcMoneyType	OptionValue;
 	///追平序号
 	TThostFtdcSequenceNoType	SyncDeltaSequenceNo;
 };
@@ -13375,29 +13367,6 @@ struct CThostFtdcQryAddrAppIDRelationField
 {
 	///经纪公司代码
 	TThostFtdcBrokerIDType	BrokerID;
-};
-
-///微信小程序等用户系统信息
-struct CThostFtdcWechatUserSystemInfoField
-{
-	///经纪公司代码
-	TThostFtdcBrokerIDType	BrokerID;
-	///用户代码
-	TThostFtdcUserIDType	UserID;
-	///微信小程序等用户端系统内部信息长度
-	TThostFtdcSystemInfoLenType	WechatCltSysInfoLen;
-	///微信小程序等用户端系统内部信息
-	TThostFtdcClientSystemInfoType	WechatCltSysInfo;
-	///终端IP端口
-	TThostFtdcIPPortType	ClientIPPort;
-	///登录成功时间
-	TThostFtdcTimeType	ClientLoginTime;
-	///App代码
-	TThostFtdcAppIDType	ClientAppID;
-	///用户公网IP
-	TThostFtdcIPAddressType	ClientPublicIP;
-	///客户登录备注2
-	TThostFtdcClientLoginRemarkType	ClientLoginRemark;
 };
 
 

@@ -610,10 +610,6 @@ public:
 	///上报用户终端信息，用于中继服务器操作员登录模式
 	///操作员登录后，可以多次调用该接口上报客户信息
 	virtual int SubmitUserSystemInfo(CThostFtdcUserSystemInfoField *pUserSystemInfo) = 0;
-	///注册用户终端信息，用于中继服务器多连接模式.用于微信小程序等应用上报信息.
-	virtual int RegisterWechatUserSystemInfo(CThostFtdcWechatUserSystemInfoField *pUserSystemInfo) = 0;
-	///上报用户终端信息，用于中继服务器操作员登录模式.用于微信小程序等应用上报信息.
-	virtual int SubmitWechatUserSystemInfo(CThostFtdcWechatUserSystemInfoField *pUserSystemInfo) = 0;
 
 	///用户登录请求
 	virtual int ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLoginField, int nRequestID) = 0;
