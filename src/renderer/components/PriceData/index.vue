@@ -245,7 +245,7 @@ export default {
         })
         ipcRenderer.on(`receive-${id}`, (event, arg) => {
           // p.then(()=>{
-            
+            console.log(arg)
          
             if(arg){
               // ipcRenderer.send('info-log', JSON.stringify(Object.values(arg)));
